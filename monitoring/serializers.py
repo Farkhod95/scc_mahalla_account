@@ -4,12 +4,6 @@ from rest_framework import serializers
 
 from directory.serializers import RegionListSerializer, DistrictSerializer, OrganizationListPublicSerializer, \
     DepartmentListPublicSerializer, PositionListPublicSerializer, DistrictListSerializer, MahallaListSerializer
-import requests
-from datetime import datetime
-from users.serializers import UserListPublicSerializer
-from django.conf import settings
-from rest_framework.exceptions import ValidationError
-from users.models import User
 
 
 class LocaleSerializer(serializers.ModelSerializer):
@@ -79,7 +73,7 @@ class ObjectCategoryListSerializer(LocaleSerializer):
 class ObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Object
-        fields = ('id', 'category', 'organization_name', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'category', 'organization', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
         extra_kwargs = {
             'full_name': {"required": True},
             'phone_number': {"required": True},
@@ -87,18 +81,34 @@ class ObjectSerializer(serializers.ModelSerializer):
 
 
 class ObjectMapSerializer(serializers.ModelSerializer):
+    organization_detail = OrganizationListPublicSerializer(source='organization', read_only=True)
 
     class Meta:
         model = Object
-        fields = ('id', 'organization_name', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
 
 class ObjectListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
+    organization_detail = OrganizationListPublicSerializer(source='organization', read_only=True)
 
     class Meta:
         model = Object
-        fields = ('id', 'category', 'category_detail', 'organization_name', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'category', 'category_detail', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+
+
+class ObjectExcelImportSerializer(serializers.Serializer):
+    excel_file = serializers.FileField(
+        required=True
+    )
+    organization_id = serializers.IntegerField(required=True)
+
+    def validate_excel_file(self, value):
+        if not value.name.endswith('.xlsx'):
+            raise serializers.ValidationError(
+                "Faqat .xlsx formatdagi fayllar qabul qilinadi"
+            )
+        return value
 
 
 class CrimeCategorySerializer(LocaleSerializer):

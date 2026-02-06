@@ -9,7 +9,8 @@ from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailV
 from monitoring.views.mahalla_information import MahallaInformationView, MahallaInformationDetailView, \
     MahallaInformationFieldInfoView
 from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDetailView, ObjectCategoryFieldInfoView
-from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView
+from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView, \
+    ObjectExcelImportView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 
 urlpatterns = [
@@ -31,6 +32,7 @@ urlpatterns = [
     path('object/for-map/', ObjectForMapView.as_view(), name='object_map_view'),
     path('object/<int:pk>', ObjectDetailView.as_view(), name='object_detail_view'),
     path('object/fields/', ObjectFieldInfoView.as_view(), name='object_fields_info'),
+    path('object/import-from-excel/', ObjectExcelImportView.as_view(), name='object-import-excel'),
 
     re_path(r'^crime-category/$', CrimeCategoryView.as_view(), name='crime_category_view'),
     path('crime-category/<int:pk>', CrimeCategoryDetailView.as_view(), name='crime_category_detail_view'),

@@ -32,13 +32,13 @@ class ObjectCategoryFilter(django_filters.FilterSet):
 
 
 class ObjectFilter(django_filters.FilterSet):
-    organization_name = django_filters.CharFilter(field_name='organization_name', lookup_expr='icontains')
+    organization_name = django_filters.CharFilter(field_name='organization__name', lookup_expr='icontains')
     full_name = django_filters.CharFilter(field_name='full_name', lookup_expr='icontains')
     phone_number = django_filters.CharFilter(field_name='phone_number', lookup_expr='icontains')
 
     class Meta:
         model = Object
-        fields = ('category', 'organization_name', 'full_name', 'phone_number')
+        fields = ('category', 'organization', 'organization_name', 'full_name', 'phone_number')
 
 
 class CrimeCategoryFilter(django_filters.FilterSet):

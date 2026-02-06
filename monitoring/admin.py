@@ -28,11 +28,11 @@ class ObjectCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Object)
 class ObjectAdmin(admin.ModelAdmin):
-    list_display = ('organization_name', 'full_name', 'phone_number', 'category', 'coordinate_x', 'coordinate_y')
-    list_select_related = ('category',)
-    search_fields = ('organization_name', 'full_name', 'phone_number')
-    list_filter = ('category',)
-    fields = ('category', 'organization_name', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+    list_display = ('organization', 'full_name', 'phone_number', 'category', 'coordinate_x', 'coordinate_y', 'avatar')
+    list_select_related = ('category', 'organization')
+    search_fields = ('organization__name', 'full_name', 'phone_number')
+    list_filter = ('category', 'organization')
+    fields = ('category', 'organization', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
 
 @admin.register(CrimeCategory)

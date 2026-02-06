@@ -63,9 +63,10 @@ class ObjectCategory(BaseModel):
 
 
 class Object(BaseModel):
-    category = models.ForeignKey(ObjectCategory, related_name='objects', on_delete=models.SET_NULL, null=True,
+    category = models.ForeignKey(ObjectCategory, related_name='category_objects', on_delete=models.SET_NULL, null=True,
                                      blank=True, help_text=_("Kategoriya"))
-    organization_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Tashkilot Nomi"))
+    organization = models.ForeignKey("directory.Organization", related_name='objects', on_delete=models.SET_NULL,
+                                     null=True, blank=True, help_text=_("Tashkilot"))
     full_name = models.CharField(max_length=255, help_text=_("Rahbar fio"))
     avatar = models.ImageField(upload_to='object_employee/%Y/%m/%d', null=True, blank=True, help_text=_("Profil rasmi"))
     phone_number = models.CharField(_("Phone number"), max_length=100, help_text=_("Telefon raqami"))
@@ -78,7 +79,7 @@ class Object(BaseModel):
         verbose_name_plural = _('Objects')
 
     def __str__(self):
-        return self.organization_name if self.organization_name else self.id
+        return self.organization.name if self.organization else str(self.id)
 
 
 # Jinoyat kategoriyasi
