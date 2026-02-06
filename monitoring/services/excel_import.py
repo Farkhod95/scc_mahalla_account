@@ -164,7 +164,6 @@ def _create_objects_from_dataframe(df, category, created_by_user, organization_i
             created_ids.append(obj.id)
 
             image_data = row.get('Расм')
-            print(image_data)
             if pd.notna(image_data) and image_data:
                 _process_image(obj, image_data, index)
 
