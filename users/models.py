@@ -53,6 +53,8 @@ class User(AbstractUser):
                                help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='user_district', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='user_mahalla', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Mahalla"))
     role = models.ForeignKey(Role, related_name='role_user', null=True, on_delete=models.SET_NULL)
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
     avatar = models.ImageField(upload_to='avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Profil rasmi"))

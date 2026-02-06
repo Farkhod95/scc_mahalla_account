@@ -4,9 +4,11 @@ db.sqlite3
 .python-version
 static/
 scc_static/
-#migrations/
+migrations/
 env/
 media/
 attachments/
 .gitlab-ci.yml
 wait-for-it.sh
+docker-compose.yml
+Dockerfile

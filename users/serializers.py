@@ -1,10 +1,11 @@
+from directory.models import Mahalla
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from directory.serializers import RegionListSerializer, DistrictSerializer
+from directory.serializers import RegionListSerializer, DistrictSerializer, MahallaSerializer
 
 from .models import User, Role, AppModule
 from .utils.permissions import get_user_permissions
@@ -51,7 +52,7 @@ class UserSerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active', 'date_joined',
             'organization', 'department', 'position',
-            'region', 'district',
+            'region', 'district', 'mahalla',
             'role', 'roles',
             'address', 'avatar',
             'pinfl', 'passport_series', 'passport_number',
@@ -73,6 +74,7 @@ class UserSerializer(serializers.ModelSerializer):
             'position': {'required': False, 'allow_null': True},
             'region': {'required': False, 'allow_null': True},
             'district': {'required': False, 'allow_null': True},
+            'mahalla': {'required': False, 'allow_null': True},
             'role': {'required': False, 'allow_null': True},
             'passport_series': {'required': False, 'allow_blank': True},
             'passport_number': {'required': False, 'allow_blank': True},
@@ -128,6 +130,7 @@ class UserListPublicSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(source='role', read_only=True)
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = User
@@ -136,8 +139,8 @@ class UserListPublicSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'second_name',
             'phone_number', 'email',
             'role', 'roles',
-            'region', 'district',
-            'region_detail', 'district_detail',
+            'region', 'district', 'mahalla',
+            'region_detail', 'district_detail', 'mahalla_detail',
             'avatar',
         )
 
@@ -155,7 +158,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active', 'date_joined',
             'role', 'roles',
-            'region', 'district',
+            'region', 'district', 'mahalla',
             'organization', 'department', 'position',
             'avatar',
             'pinfl', 'passport_series', 'passport_number',
@@ -184,7 +187,7 @@ class UserUpdateBySerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active',
             'role', 'roles',
-            'region', 'district',
+            'region', 'district', 'mahalla',
             'organization', 'department', 'position',
             'address', 'avatar',
             'pinfl', 'passport_series', 'passport_number',

@@ -6,17 +6,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from restapp.pagination import ResultsSetPagination
-from monitoring.filterset import ObjectFilter
-from monitoring.models import Object
-from monitoring.serializers import ObjectSerializer, ObjectListSerializer
+from monitoring.filterset import EmployeeFilter
+from monitoring.models import Employee
+from monitoring.serializers import EmployeeSerializer, EmployeeListSerializer
 
 
-class ObjectFieldInfoView(APIView):
+class EmployeeFieldInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         field_info = []
-        for field in Object._meta.fields:
+        for field in Employee._meta.fields:
             field_info.append({
                 "field_name": field.name,
                 "verbose_name": str(field.verbose_name),
@@ -28,43 +28,43 @@ class ObjectFieldInfoView(APIView):
         return Response(field_info)
 
 
-class ObjectView(ListCreateAPIView):
-    serializer_class = ObjectListSerializer
+class EmployeeView(ListCreateAPIView):
+    serializer_class = EmployeeListSerializer
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
-    filterset_class = ObjectFilter
-    search_fields = ('organization_name', 'full_name', 'phone_number')
+    filterset_class = EmployeeFilter
+    search_fields = ('full_name', 'phone_number')
     ordering = ['-pk']
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Object.objects.select_related('category').all()
+        return Employee.objects.select_related('organization', 'department', 'position', 'region', 'district', 'mahalla').all()
 
     def post(self, request, **kwargs):
-        serializer = ObjectSerializer(data=request.data)
+        serializer = EmployeeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by=self.request.user)
         return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-class ObjectDetailView(RetrieveUpdateDestroyAPIView):
-    serializer_class = ObjectSerializer
+class EmployeeDetailView(RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Object.objects.select_related('category').all()
+        return Employee.objects.select_related('organization', 'department', 'position', 'region', 'district', 'mahalla').all()
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
 
     def get(self, request, pk):
-        obj = get_object_or_404(Object, id=pk)
-        serializer = ObjectListSerializer(obj)
+        employee = get_object_or_404(Employee, id=pk)
+        serializer = EmployeeListSerializer(employee)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk):
-        obj = get_object_or_404(Object, id=pk)
-        serializer = self.serializer_class(obj, data=request.data)
+        employee = get_object_or_404(Employee, id=pk)
+        serializer = self.serializer_class(employee, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=self.request.user)
         return Response(serializer.data, status.HTTP_202_ACCEPTED)
