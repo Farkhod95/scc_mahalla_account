@@ -86,6 +86,13 @@ class ObjectSerializer(serializers.ModelSerializer):
         }
 
 
+class ObjectMapSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Object
+        fields = ('id', 'organization_name', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+
+
 class ObjectListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
 
@@ -120,6 +127,13 @@ class MahallaCrimeSerializer(serializers.ModelSerializer):
         }
 
 
+class MahallaCrimeMapSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = MahallaCrime
+        fields = ('id', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y')
+
+
 class MahallaCrimeListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
 
@@ -152,6 +166,13 @@ class CameraInformationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'status': {"required": True},
         }
+
+
+class CameraInformationMapSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CameraInformation
+        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'address', 'coordinate_x', 'coordinate_y', 'camera_type')
 
 
 class CameraInformationListSerializer(serializers.ModelSerializer):

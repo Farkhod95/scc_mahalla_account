@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from restapp.pagination import ResultsSetPagination
 from monitoring.filterset import MahallaCrimeFilter
 from monitoring.models import MahallaCrime
-from monitoring.serializers import MahallaCrimeSerializer, MahallaCrimeListSerializer
+from monitoring.serializers import MahallaCrimeSerializer, MahallaCrimeListSerializer, MahallaCrimeMapSerializer
 
 
 class MahallaCrimeFieldInfoView(APIView):
@@ -26,6 +26,19 @@ class MahallaCrimeFieldInfoView(APIView):
                 "choices": dict(field.choices) if field.choices else None
             })
         return Response(field_info)
+
+
+class MahallaCrimeForMapView(ListCreateAPIView):
+    serializer_class = MahallaCrimeMapSerializer
+    # pagination_class = False
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
+    filterset_class = MahallaCrimeFilter
+    search_fields = ('article', 'description')
+    ordering = ['-pk']
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        return MahallaCrime.objects.select_related('category').all()
 
 
 class MahallaCrimeView(ListCreateAPIView):

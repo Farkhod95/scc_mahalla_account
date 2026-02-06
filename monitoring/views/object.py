@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from restapp.pagination import ResultsSetPagination
 from monitoring.filterset import ObjectFilter
 from monitoring.models import Object
-from monitoring.serializers import ObjectSerializer, ObjectListSerializer
+from monitoring.serializers import ObjectSerializer, ObjectListSerializer, ObjectMapSerializer
 
 
 class ObjectFieldInfoView(APIView):
@@ -26,6 +26,18 @@ class ObjectFieldInfoView(APIView):
                 "choices": dict(field.choices) if field.choices else None
             })
         return Response(field_info)
+
+
+class ObjectForMapView(ListCreateAPIView):
+    serializer_class = ObjectMapSerializer
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
+    filterset_class = ObjectFilter
+    search_fields = ('organization_name', 'full_name', 'phone_number')
+    ordering = ['-pk']
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        return Object.objects.select_related('category').all()
 
 
 class ObjectView(ListCreateAPIView):

@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from restapp.pagination import ResultsSetPagination
 from monitoring.filterset import CameraInformationFilter
 from monitoring.models import CameraInformation
-from monitoring.serializers import CameraInformationSerializer, CameraInformationListSerializer
+from monitoring.serializers import CameraInformationSerializer, CameraInformationListSerializer, \
+    CameraInformationMapSerializer
 
 
 class CameraInformationFieldInfoView(APIView):
@@ -26,6 +27,19 @@ class CameraInformationFieldInfoView(APIView):
                 "choices": dict(field.choices) if field.choices else None
             })
         return Response(field_info)
+
+
+class CameraInformationForMapView(ListCreateAPIView):
+    serializer_class = CameraInformationMapSerializer
+    # pagination_class = False
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
+    filterset_class = CameraInformationFilter
+    search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
+    ordering = ['-pk']
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        return CameraInformation.objects.select_related('region', 'district', 'mahalla').all()
 
 
 class CameraInformationView(ListCreateAPIView):

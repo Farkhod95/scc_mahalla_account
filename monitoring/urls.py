@@ -1,14 +1,15 @@
 from django.urls import re_path, path
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
-    CameraInformationFieldInfoView
+    CameraInformationFieldInfoView, CameraInformationForMapView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
 from monitoring.views.employee import EmployeeView, EmployeeDetailView, EmployeeFieldInfoView
 from monitoring.views.import_by_mahalla_id import CameraInformationImportInfoView
-from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailView, MahallaCrimeFieldInfoView
+from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailView, MahallaCrimeFieldInfoView, \
+    MahallaCrimeForMapView
 from monitoring.views.mahalla_information import MahallaInformationView, MahallaInformationDetailView, \
     MahallaInformationFieldInfoView
 from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDetailView, ObjectCategoryFieldInfoView
-from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView
+from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 
 urlpatterns = [
@@ -27,6 +28,7 @@ urlpatterns = [
     path('object-category/fields/', ObjectCategoryFieldInfoView.as_view(), name='object_category_fields_info'),
 
     re_path(r'^object/$', ObjectView.as_view(), name='object_view'),
+    path('object/for-map/', ObjectForMapView.as_view(), name='object_map_view'),
     path('object/<int:pk>', ObjectDetailView.as_view(), name='object_detail_view'),
     path('object/fields/', ObjectFieldInfoView.as_view(), name='object_fields_info'),
 
@@ -35,6 +37,7 @@ urlpatterns = [
     path('crime-category/fields/', CrimeCategoryFieldInfoView.as_view(), name='crime_category_fields_info'),
 
     re_path(r'^mahalla-crime/$', MahallaCrimeView.as_view(), name='mahalla_crime_view'),
+    path('mahalla-crime/for-map/', MahallaCrimeForMapView.as_view(), name='mahalla_crime_map_view'),
     path('mahalla-crime/<int:pk>', MahallaCrimeDetailView.as_view(), name='mahalla_crime_detail_view'),
     path('mahalla-crime/fields/', MahallaCrimeFieldInfoView.as_view(), name='mahalla_crime_fields_info'),
 
@@ -43,6 +46,7 @@ urlpatterns = [
     path('patrol-car/fields/', PatrolCarFieldInfoView.as_view(), name='patrol_car_fields_info'),
 
     re_path(r'^camera-information/$', CameraInformationView.as_view(), name='camera_information_view'),
+    path('camera-information/for-map/', CameraInformationForMapView.as_view(), name='camera_information_map_view'),
     path('camera-information/<int:pk>', CameraInformationDetailView.as_view(), name='camera_information_detail_view'),
     path('camera-information/fields/', CameraInformationFieldInfoView.as_view(), name='camera_information_fields_info'),
     path('camera-information/fields/import-by-mahalla-id/', CameraInformationImportInfoView.as_view(), name='camera_information_fields_info'),
