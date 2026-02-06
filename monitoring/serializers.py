@@ -148,7 +148,7 @@ class PatrolCarListSerializer(serializers.ModelSerializer):
 class CameraInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CameraInformation
-        fields = ('id', 'status', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
         extra_kwargs = {
             'status': {"required": True},
         }
@@ -161,4 +161,15 @@ class CameraInformationListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CameraInformation
-        fields = ('id', 'status', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+
+
+class CameraInformationImportSerializer(serializers.Serializer):
+    mahalla_id = serializers.IntegerField(required=True)
+    file = serializers.FileField(required=True)
+
+    def validate_file(self, f):
+        name = (f.name or "").lower()
+        if not (name.endswith(".xlsx") or name.endswith(".xlsm") or name.endswith(".xltx") or name.endswith(".xltm")):
+            raise serializers.ValidationError("Fayl formati xlsx bo‘lishi kerak.")
+        return f

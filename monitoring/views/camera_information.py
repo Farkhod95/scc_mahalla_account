@@ -33,7 +33,7 @@ class CameraInformationView(ListCreateAPIView):
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = CameraInformationFilter
-    search_fields = ('ip_address', 'address')
+    search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
     ordering = ['-pk']
     permission_classes = [IsAuthenticated]
 

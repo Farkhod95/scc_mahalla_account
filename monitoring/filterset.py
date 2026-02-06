@@ -69,9 +69,13 @@ class PatrolCarFilter(django_filters.FilterSet):
 
 
 class CameraInformationFilter(django_filters.FilterSet):
+    object_name = django_filters.CharFilter(field_name='object_name', lookup_expr='icontains')
+    direction = django_filters.CharFilter(field_name='direction', lookup_expr='icontains')
     ip_address = django_filters.CharFilter(field_name='ip_address', lookup_expr='icontains')
     address = django_filters.CharFilter(field_name='address', lookup_expr='icontains')
+    login = django_filters.CharFilter(field_name='login', lookup_expr='icontains')
+    camera_type = django_filters.CharFilter(field_name='camera_type', lookup_expr='icontains')
 
     class Meta:
         model = CameraInformation
-        fields = ('status', 'region', 'district', 'mahalla', 'ip_address', 'address')
+        fields = ('status', 'camera_type', 'region', 'district', 'mahalla', 'object_name', 'direction', 'ip_address', 'address', 'login')

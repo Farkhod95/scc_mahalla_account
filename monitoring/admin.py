@@ -60,8 +60,8 @@ class PatrolCarAdmin(admin.ModelAdmin):
 
 @admin.register(CameraInformation)
 class CameraInformationAdmin(admin.ModelAdmin):
-    list_display = ('status', 'ip_address', 'region', 'district', 'mahalla', 'coordinate_x', 'coordinate_y')
+    list_display = ('object_name', 'direction', 'status', 'ip_address', 'camera_type', 'region', 'district', 'mahalla', 'coordinate_x', 'coordinate_y')
     list_select_related = ('region', 'district', 'mahalla')
-    list_filter = ('status', 'region', 'district')
-    search_fields = ('ip_address', 'address')
-    fields = ('status', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')
+    list_filter = ('status', 'camera_type', 'region', 'district', 'mahalla')
+    search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
+    fields = ('object_name', 'direction', 'status', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')

@@ -130,7 +130,8 @@ class CameraInformation(BaseModel):
     class STATUS(models.TextChoices):
         INSTALLED = 'Installed', _('Installed')
         PLANNED = 'Planned', _('Planned')
-
+    object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
+    direction = models.CharField(max_length=255, null=True, blank=True, help_text=_("Yo'nalish"))
     status = models.CharField(max_length=30, choices=STATUS.choices,
                             verbose_name=_('Camera status'), help_text=_("Kamera holati"))
     ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
@@ -143,12 +144,15 @@ class CameraInformation(BaseModel):
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+    login = models.CharField(max_length=100, null=True, blank=True, help_text=_("Login"))
+    parol = models.CharField(max_length=100, null=True, blank=True, help_text=_("parol"))
+    camera_type = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kamer turi"))
 
     class Meta:
         verbose_name = _('Camera Information')
         verbose_name_plural = _('Camera Informations')
 
     def __str__(self):
-        return self.ip_address if self.ip_address else self.id
+        return self.ip_address if self.ip_address else self.object_name
 
 

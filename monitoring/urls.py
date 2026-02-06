@@ -3,6 +3,7 @@ from monitoring.views.camera_information import CameraInformationView, CameraInf
     CameraInformationFieldInfoView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
 from monitoring.views.employee import EmployeeView, EmployeeDetailView, EmployeeFieldInfoView
+from monitoring.views.import_by_mahalla_id import CameraInformationImportInfoView
 from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailView, MahallaCrimeFieldInfoView
 from monitoring.views.mahalla_information import MahallaInformationView, MahallaInformationDetailView, \
     MahallaInformationFieldInfoView
@@ -44,4 +45,5 @@ urlpatterns = [
     re_path(r'^camera-information/$', CameraInformationView.as_view(), name='camera_information_view'),
     path('camera-information/<int:pk>', CameraInformationDetailView.as_view(), name='camera_information_detail_view'),
     path('camera-information/fields/', CameraInformationFieldInfoView.as_view(), name='camera_information_fields_info'),
+    path('camera-information/fields/import-by-mahalla-id/', CameraInformationImportInfoView.as_view(), name='camera_information_fields_info'),
 ]
