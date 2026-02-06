@@ -96,7 +96,7 @@ class CrimeCategory(BaseModel):
 
 # Mahallada sodir etilgan jonoyatchilik
 class MahallaCrime(BaseModel):
-    category = models.ForeignKey(ObjectCategory, related_name='crimes', on_delete=models.SET_NULL, null=True,
+    category = models.ForeignKey(CrimeCategory, related_name='crimes', on_delete=models.SET_NULL, null=True,
                                  blank=True, help_text=_("Jinoyat kategoriyasi"))
     date = models.DateField(_('Date'), null=True, blank=True, help_text=_("Jinoyat sodir etilgan sana"))
     article = models.CharField(max_length=255, help_text=_("Modda"))
