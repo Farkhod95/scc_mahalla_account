@@ -1,0 +1,12 @@
+.idea/
+__pycache__
+db.sqlite3
+.python-version
+static/
+scc_static/
+migrations/
+env/
+media/
+attachments/
+.gitlab-ci.yml
+wait-for-it.sh
