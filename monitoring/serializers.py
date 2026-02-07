@@ -1,5 +1,5 @@
 from monitoring.models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, \
-    PatrolCar, CameraInformation
+    PatrolCar, CameraInformation, MahallaInformationCategory
 from rest_framework import serializers
 
 from directory.serializers import RegionListSerializer, DistrictSerializer, OrganizationListPublicSerializer, \
@@ -36,21 +36,40 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         fields = ('id', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail', 'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
 
 
-class MahallaInformationSerializer(serializers.ModelSerializer):
+class MahallaInformationCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = MahallaInformation
-        fields = ('id', 'name', 'count', 'icon')
+        model = MahallaInformationCategory
+        fields = ('id', 'name', 'icon')
         extra_kwargs = {
             'name': {"required": False, "allow_blank": True, "allow_null": True},
-            'count': {"required": False},
             'icon': {"required": False, "allow_blank": True, "allow_null": True},
         }
 
 
-class MahallaInformationListSerializer(serializers.ModelSerializer):
+class MahallaInformationCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MahallaInformationCategory
+        fields = ('id', 'name', 'icon')
+
+
+class MahallaInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = MahallaInformation
-        fields = ('id', 'name', 'count', 'icon')
+        fields = ('id', 'count', 'category', 'region', 'district', 'mahalla')
+        extra_kwargs = {
+            'count': {"required": False},
+        }
+
+
+class MahallaInformationListSerializer(serializers.ModelSerializer):
+    category_detail = MahallaInformationCategoryListSerializer(source='category', read_only=True)
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictListSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
+
+    class Meta:
+        model = MahallaInformation
+        fields = ('id', 'count', 'category', 'category_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail')
 
 
 class ObjectCategorySerializer(LocaleSerializer):

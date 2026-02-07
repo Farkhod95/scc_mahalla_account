@@ -8,6 +8,8 @@ from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailV
     MahallaCrimeForMapView
 from monitoring.views.mahalla_information import MahallaInformationView, MahallaInformationDetailView, \
     MahallaInformationFieldInfoView
+from monitoring.views.mahalla_information_category import MahallaInformationCategoryView, \
+    MahallaInformationCategoryDetailView, MahallaInformationCategoryFieldInfoView
 from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDetailView, ObjectCategoryFieldInfoView
 from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView, \
     ObjectExcelImportView
@@ -19,6 +21,13 @@ urlpatterns = [
     re_path(r'^employee/$', EmployeeView.as_view(), name='employee_view'),
     path('employee/<int:pk>', EmployeeDetailView.as_view(), name='employee_detail_view'),
     path('employee/fields/', EmployeeFieldInfoView.as_view(), name='employee_fields_info'),
+
+    re_path(r'^mahalla-information-category/$', MahallaInformationCategoryView.as_view(),
+            name='mahalla_information_category_view'),
+    path('mahalla-information-category/<int:pk>', MahallaInformationCategoryDetailView.as_view(),
+         name='mahalla_information_category_detail_view'),
+    path('mahalla-information-category/fields/', MahallaInformationCategoryFieldInfoView.as_view(),
+         name='mahalla_information_category_fields_info'),
 
     re_path(r'^mahalla-information/$', MahallaInformationView.as_view(), name='mahalla_information_view'),
     path('mahalla-information/<int:pk>', MahallaInformationDetailView.as_view(),

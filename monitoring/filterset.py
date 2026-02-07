@@ -1,6 +1,6 @@
 import django_filters
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
-    CameraInformation
+    CameraInformation, MahallaInformationCategory
 
 
 class EmployeeFilter(django_filters.FilterSet):
@@ -12,13 +12,22 @@ class EmployeeFilter(django_filters.FilterSet):
         fields = ('organization', 'department', 'position', 'region', 'district', 'mahalla', 'gender', 'full_name', 'phone_number')
 
 
-class MahallaInformationFilter(django_filters.FilterSet):
+class MahallaInformationCategoryFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
-    count = django_filters.NumberFilter(field_name='count')
+
+    class Meta:
+        model = MahallaInformationCategory
+        fields = ('name',)
+
+
+
+class MahallaInformationFilter(django_filters.FilterSet):
+    count_from = django_filters.NumberFilter(field_name='count', lookup_expr='gte')
+    count_to = django_filters.NumberFilter(field_name='count', lookup_expr='lte')
 
     class Meta:
         model = MahallaInformation
-        fields = ('name', 'count')
+        fields = ('category', 'region', 'district', 'mahalla', 'count')
 
 
 class ObjectCategoryFilter(django_filters.FilterSet):

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
-    CameraInformation
+    CameraInformation, MahallaInformationCategory
 
 
 @admin.register(Employee)
@@ -12,11 +12,20 @@ class EmployeeAdmin(admin.ModelAdmin):
     fields = ('full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'district', 'mahalla', 'address', 'avatar')
 
 
+@admin.register(MahallaInformationCategory)
+class MahallaInformationCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    fields = ('name', 'icon')
+
+
 @admin.register(MahallaInformation)
 class MahallaInformationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'count')
-    search_fields = ('name',)
-    fields = ('name', 'count', 'icon')
+    list_display = ('count', 'category', 'region', 'district', 'mahalla')
+    list_select_related = ('category', 'region', 'district', 'mahalla')
+    list_filter = ('category', 'region', 'district', 'mahalla')
+    search_fields = ('count',)
+    fields = ('count', 'category', 'region', 'district', 'mahalla')
 
 
 @admin.register(ObjectCategory)

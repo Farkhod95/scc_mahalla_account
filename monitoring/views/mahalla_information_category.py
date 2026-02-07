@@ -6,17 +6,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from restapp.pagination import ResultsSetPagination
-from monitoring.filterset import MahallaInformationFilter
-from monitoring.models import MahallaInformation
-from monitoring.serializers import MahallaInformationSerializer, MahallaInformationListSerializer
+from monitoring.filterset import MahallaInformationCategoryFilter
+from monitoring.models import MahallaInformationCategory
+from monitoring.serializers import MahallaInformationCategorySerializer, MahallaInformationCategoryListSerializer
 
 
-class MahallaInformationFieldInfoView(APIView):
+class MahallaInformationCategoryFieldInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         field_info = []
-        for field in MahallaInformation._meta.fields:
+        for field in MahallaInformationCategory._meta.fields:
             field_info.append({
                 "field_name": field.name,
                 "verbose_name": str(field.verbose_name),
@@ -28,42 +28,42 @@ class MahallaInformationFieldInfoView(APIView):
         return Response(field_info)
 
 
-class MahallaInformationView(ListCreateAPIView):
-    serializer_class = MahallaInformationListSerializer
+class MahallaInformationCategoryView(ListCreateAPIView):
+    serializer_class = MahallaInformationCategoryListSerializer
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
-    filterset_class = MahallaInformationFilter
-    search_fields = ()  # count integer bo'lgani uchun search_fields qo'ymadik
+    filterset_class = MahallaInformationCategoryFilter
+    search_fields = ('name',)
     ordering = ['-pk']
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return MahallaInformation.objects.select_related('category', 'region', 'district', 'mahalla').all()
+        return MahallaInformationCategory.objects.all()
 
     def post(self, request, **kwargs):
-        serializer = MahallaInformationSerializer(data=request.data)
+        serializer = MahallaInformationCategorySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by=self.request.user)
         return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-class MahallaInformationDetailView(RetrieveUpdateDestroyAPIView):
-    serializer_class = MahallaInformationSerializer
+class MahallaInformationCategoryDetailView(RetrieveUpdateDestroyAPIView):
+    serializer_class = MahallaInformationCategorySerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return MahallaInformation.objects.select_related('category', 'region', 'district', 'mahalla').all()
+        return MahallaInformationCategory.objects.all()
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
 
     def get(self, request, pk):
-        obj = get_object_or_404(MahallaInformation, id=pk)
-        serializer = MahallaInformationListSerializer(obj)
+        obj = get_object_or_404(MahallaInformationCategory, id=pk)
+        serializer = MahallaInformationCategoryListSerializer(obj)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk):
-        obj = get_object_or_404(MahallaInformation, id=pk)
+        obj = get_object_or_404(MahallaInformationCategory, id=pk)
         serializer = self.serializer_class(obj, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=self.request.user)

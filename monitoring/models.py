@@ -38,17 +38,29 @@ class Employee(BaseModel):
         return self.full_name if self.full_name else self.id
 
 
-class MahallaInformation(BaseModel):
+class MahallaInformationCategory(BaseModel):
     name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Nomi"))
-    count = models.IntegerField(default=0, null=True, blank=True, help_text=_("Soni"))
     icon = models.TextField(null=True, blank=True, help_text=_("SVG icon"))
+
+
+class MahallaInformation(BaseModel):
+    count = models.IntegerField(default=0, null=True, blank=True, help_text=_("Soni"))
+    category = models.ForeignKey(MahallaInformationCategory, related_name='mahalla_informations', on_delete=models.SET_NULL,
+                               null=True,
+                               blank=True, help_text=_("Viloyat"))
+    region = models.ForeignKey("directory.Region", related_name='mahalla_informations', on_delete=models.SET_NULL, null=True,
+                               blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='mahalla_informations', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='mahalla_informations', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
 
     class Meta:
         verbose_name = _('Mahalla Information')
         verbose_name_plural = _('Mahalla Informations')
 
     def __str__(self):
-        return self.name if self.name else self.count
+        return str(self.count) if self.count is not None else str(self.id)
 
 
 class ObjectCategory(BaseModel):
