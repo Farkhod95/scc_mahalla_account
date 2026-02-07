@@ -65,7 +65,7 @@ class ObjectCategory(BaseModel):
 class Object(BaseModel):
     category = models.ForeignKey(ObjectCategory, related_name='category_objects', on_delete=models.SET_NULL, null=True,
                                      blank=True, help_text=_("Kategoriya"))
-    organization = models.ForeignKey("directory.Organization", related_name='objects', on_delete=models.SET_NULL,
+    organization = models.ForeignKey("directory.Organization", related_name='organization_objects', on_delete=models.SET_NULL,
                                      null=True, blank=True, help_text=_("Tashkilot"))
     full_name = models.CharField(max_length=255, help_text=_("Rahbar fio"))
     avatar = models.ImageField(upload_to='object_employee/%Y/%m/%d', null=True, blank=True, help_text=_("Profil rasmi"))
