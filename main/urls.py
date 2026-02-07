@@ -23,7 +23,7 @@ urlpatterns = [
     path('', empty_root),
     re_path(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api/v1/admin/', admin.site.urls),
-    path('api/v1/docs', schema_view),
+    path('api/v1/docs/', schema_view),
     path('api/v1/', include('restapp.urls')),
     path('api/v1/gps-ws', index),
 ]

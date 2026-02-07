@@ -70,6 +70,22 @@ class ObjectCategoryListSerializer(LocaleSerializer):
         fields = ('id', 'name', 'name_uz', 'name_ru', 'name_en', 'icon')
 
 
+
+class ObjectCategoryForDashboardSerializer(serializers.ModelSerializer):
+    # Agar siz modeltranslation ishlatayotgan bo'lsangiz, odatda name_uz/name_ru/name_en fieldlari mavjud bo'ladi.
+    # Agar sizda boshqa nomlar bo'lsa (masalan name_uz_cyrl, name_kaa), shu yerini moslab qo'ying.
+    name_uz = serializers.CharField(read_only=True)
+    name_ru = serializers.CharField(read_only=True)
+    name_en = serializers.CharField(read_only=True)
+    icon = serializers.CharField(read_only=True)
+
+    objects_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ObjectCategory
+        fields = ("id", "name_uz", "name_ru", "name_en", 'icon', "objects_count")
+
+
 class ObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Object

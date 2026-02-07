@@ -11,7 +11,9 @@ from monitoring.views.mahalla_information import MahallaInformationView, Mahalla
 from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDetailView, ObjectCategoryFieldInfoView
 from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView, \
     ObjectExcelImportView
+from monitoring.views.object_category_dashboard import ObjectCategoryForDashboardView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
+
 
 urlpatterns = [
     re_path(r'^employee/$', EmployeeView.as_view(), name='employee_view'),
@@ -27,6 +29,7 @@ urlpatterns = [
     re_path(r'^object-category/$', ObjectCategoryView.as_view(), name='object_category_view'),
     path('object-category/<int:pk>', ObjectCategoryDetailView.as_view(), name='object_category_detail_view'),
     path('object-category/fields/', ObjectCategoryFieldInfoView.as_view(), name='object_category_fields_info'),
+    path('object-category/for-dashboard/', ObjectCategoryForDashboardView.as_view(), name='for_dashboard_info'),
 
     re_path(r'^object/$', ObjectView.as_view(), name='object_view'),
     path('object/for-map/', ObjectForMapView.as_view(), name='object_map_view'),
