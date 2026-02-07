@@ -21,11 +21,11 @@ class MahallaInformationCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(MahallaInformation)
 class MahallaInformationAdmin(admin.ModelAdmin):
-    list_display = ('count', 'category', 'region', 'district', 'mahalla')
+    list_display = ('region', 'district', 'mahalla', 'count', 'category')
     list_select_related = ('category', 'region', 'district', 'mahalla')
     list_filter = ('category', 'region', 'district', 'mahalla')
     search_fields = ('count',)
-    fields = ('count', 'category', 'region', 'district', 'mahalla')
+    fields = ('region', 'district', 'mahalla', 'count', 'category')
 
 
 @admin.register(ObjectCategory)
