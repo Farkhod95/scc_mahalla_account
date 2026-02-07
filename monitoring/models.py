@@ -35,12 +35,19 @@ class Employee(BaseModel):
         verbose_name_plural = _('Employees')
 
     def __str__(self):
-        return self.full_name if self.full_name else self.id
+        return self.full_name if self.full_name else str(self.id)
 
 
 class MahallaInformationCategory(BaseModel):
     name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Nomi"))
     icon = models.TextField(null=True, blank=True, help_text=_("SVG icon"))
+
+    class Meta:
+        verbose_name = _('Mahalla Information Category')
+        verbose_name_plural = _('Mahalla Information Categories')
+
+    def __str__(self):
+        return self.name if self.name else str(self.id)
 
 
 class MahallaInformation(BaseModel):
@@ -72,7 +79,7 @@ class ObjectCategory(BaseModel):
         verbose_name_plural = _('Object Categories')
 
     def __str__(self):
-        return self.name if self.name else self.id
+        return self.name if self.name else str(self.id)
 
 
 class Object(BaseModel):
@@ -122,7 +129,7 @@ class MahallaCrime(BaseModel):
         verbose_name_plural = _('Mahalla Crimes')
 
     def __str__(self):
-        return self.article if self.article else self.id
+        return self.article if self.article else str(self.id)
 
 
 # Patrolga biriktirilgan Avtomobillar
