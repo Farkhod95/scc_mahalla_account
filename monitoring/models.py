@@ -123,6 +123,13 @@ class MahallaCrime(BaseModel):
     description = models.TextField(_("Description"), null=True, blank=True, help_text=_("Tasnif"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+    region = models.ForeignKey("directory.Region", related_name='mahalla_crimes', on_delete=models.SET_NULL,
+                               null=True,
+                               blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='mahalla_crimes', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='mahalla_crimes', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
 
     class Meta:
         verbose_name = _('Mahalla Crime')

@@ -166,7 +166,7 @@ class CrimeCategoryListSerializer(LocaleSerializer):
 class MahallaCrimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MahallaCrime
-        fields = ('id', 'category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla')
         extra_kwargs = {
             'article': {"required": True},
         }
@@ -181,10 +181,13 @@ class MahallaCrimeMapSerializer(serializers.ModelSerializer):
 
 class MahallaCrimeListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictListSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = MahallaCrime
-        fields = ('id', 'category', 'category_detail', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'category', 'category_detail', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail')
 
 
 class PatrolCarSerializer(serializers.ModelSerializer):

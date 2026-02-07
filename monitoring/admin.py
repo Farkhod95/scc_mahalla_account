@@ -53,11 +53,11 @@ class CrimeCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(MahallaCrime)
 class MahallaCrimeAdmin(admin.ModelAdmin):
-    list_display = ('article', 'date', 'category', 'coordinate_x', 'coordinate_y')
+    list_display = ('region', 'district', 'mahalla', 'article', 'date', 'category', 'coordinate_x', 'coordinate_y')
     list_select_related = ('category',)
     search_fields = ('article', 'description')
     list_filter = ('category', 'date')
-    fields = ('category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y')
+    fields = ('region', 'district', 'mahalla', 'category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y')
 
 
 @admin.register(PatrolCar)

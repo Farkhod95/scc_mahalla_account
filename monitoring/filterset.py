@@ -64,7 +64,7 @@ class MahallaCrimeFilter(django_filters.FilterSet):
 
     class Meta:
         model = MahallaCrime
-        fields = ('category', 'date', 'article', 'description')
+        fields = ('category', 'date', 'article', 'description', 'region', 'district', 'mahalla')
 
 
 class PatrolCarFilter(django_filters.FilterSet):
