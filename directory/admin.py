@@ -41,8 +41,8 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ('name_en', 'name_ru', 'name_uz')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz')
+    list_display = ('name_en', 'name_ru', 'name_uz', 'organization')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'organization')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz')
 
 
