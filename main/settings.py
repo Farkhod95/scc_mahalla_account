@@ -126,17 +126,17 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('redis', 16379)],
+            "hosts": [('redis', 6379)],
         },
     },
 }
 
-CELERY_BROKER_URL = 'redis://redis:16379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://redis:16379/1',
+        'LOCATION': 'redis://redis:6379/1',
     }
 }
 
