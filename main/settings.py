@@ -19,9 +19,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    # 'daphne',
+    'daphne',
     'django.contrib.staticfiles',
-    # 'channels',
+    'channels',
     'users.apps.UsersConfig',
     'restapp',
     'rest_framework',
@@ -81,12 +81,12 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'main.wsgi.application'
 ASGI_APPLICATION = 'main.asgi.application'
 
-# CELERY_RESULT_BACKEND = 'django-db'
-#
-#
-# CELERY_CACHE_BACKEND = 'default'
-#
-# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+CELERY_RESULT_BACKEND = 'django-db'
+
+
+CELERY_CACHE_BACKEND = 'default'
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
 
 ### Local Host uchun
 

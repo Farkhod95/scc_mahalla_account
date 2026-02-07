@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_swagger.views import get_swagger_view
 from restapp.urls import urlpatterns as rest_urlpatterns
-# from monitoring.view import index
+from monitoring.view import index
 from main.views import custom_404
 from django.shortcuts import redirect
 from django.http import HttpResponse
@@ -21,12 +21,11 @@ schema_view = get_swagger_view(title=api_title, patterns=rest_urlpatterns, url='
 
 urlpatterns = [
     path('', empty_root),
-    path('', empty_root),
     re_path(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api/v1/admin/', admin.site.urls),
     path('api/v1/docs', schema_view),
     path('api/v1/', include('restapp.urls')),
-    # path('test-ws', index),
+    path('api/v1/gps-ws', index),
 ]
 
 if settings.DEBUG:

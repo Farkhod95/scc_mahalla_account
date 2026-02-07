@@ -114,16 +114,26 @@ class MahallaCrime(BaseModel):
 
 # Patrolga biriktirilgan Avtomobillar
 class PatrolCar(BaseModel):
-    model = models.CharField(max_length=255, null=True, blank=True, help_text=_("Nomi"))
-    license_plate = models.CharField(max_length=255, null=True, blank=True, help_text=_("Avtomobil raqami"))
-    gps_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("GPS raqami"))
+    mobjectId = models.IntegerField(null=True, blank=True, help_text=_("Mobile ID"))
+    mobject_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Nomi"))
+    plate_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("plate number"))
+    imei = models.CharField(max_length=255, null=True, blank=True, help_text=_("imei"))
+    brand_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("brand Name"))
+    group_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("group Name"))
+    last_date = models.DateField(null=True, blank=True, help_text=_("Last date"))
+    coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
+    coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+
 
     class Meta:
         verbose_name = _('Patrol Car')
         verbose_name_plural = _('Patrol Cars')
+        indexes = [
+            models.Index(fields=["mobjectId"]),
+        ]
 
     def __str__(self):
-        return self.license_plate if self.license_plate else self.model
+        return self.plate_number if self.plate_number else self.mobjectId
 
 
 # Kamera malumtlari

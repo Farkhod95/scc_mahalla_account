@@ -155,18 +155,30 @@ class MahallaCrimeListSerializer(serializers.ModelSerializer):
 class PatrolCarSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatrolCar
-        fields = ('id', 'model', 'license_plate', 'gps_number')
-        extra_kwargs = {
-            'model': {"required": False, "allow_blank": True, "allow_null": True},
-            'license_plate': {"required": False, "allow_blank": True, "allow_null": True},
-            'gps_number': {"required": False, "allow_blank": True, "allow_null": True},
-        }
+        fields = ('id', 'mobjectId', 'mobject_name', 'plate_number', 'imei', 'brand_name', 'group_name', 'last_date', 'coordinate_x', 'coordinate_y')
+        # extra_kwargs = {
+        #     'mobjectId': {"required": False, "allow_null": True},
+        #     'mobject_name': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'plate_number': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'imei': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'brand_name': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'group_name': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'last_date': {"required": False, "allow_null": True},
+        #     'coordinate_x': {"required": False, "allow_blank": True, "allow_null": True},
+        #     'coordinate_y': {"required": False, "allow_blank": True, "allow_null": True},
+        # }
+
+
+class PatrolCarGPSSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatrolCar
+        fields = ('id', 'mobjectId', 'mobject_name', 'plate_number', 'imei', 'brand_name', 'group_name', 'last_date', 'coordinate_x', 'coordinate_y')
 
 
 class PatrolCarListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatrolCar
-        fields = ('id', 'model', 'license_plate', 'gps_number')
+        fields = ('id', 'mobjectId', 'mobject_name', 'plate_number', 'brand_name', 'group_name', 'last_date')
 
 
 class CameraInformationSerializer(serializers.ModelSerializer):

@@ -33,7 +33,7 @@ class PatrolCarView(ListCreateAPIView):
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = PatrolCarFilter
-    search_fields = ('model', 'license_plate', 'gps_number')
+    search_fields = ('mobject_name', 'plate_number', 'brand_name')
     ordering = ['-pk']
     permission_classes = [IsAuthenticated]
 

@@ -59,13 +59,20 @@ class MahallaCrimeFilter(django_filters.FilterSet):
 
 
 class PatrolCarFilter(django_filters.FilterSet):
-    model = django_filters.CharFilter(field_name='model', lookup_expr='icontains')
-    license_plate = django_filters.CharFilter(field_name='license_plate', lookup_expr='icontains')
-    gps_number = django_filters.CharFilter(field_name='gps_number', lookup_expr='icontains')
+    mobjectId = django_filters.NumberFilter(field_name='mobjectId')
+    mobject_name = django_filters.CharFilter(field_name='mobject_name', lookup_expr='icontains')
+    plate_number = django_filters.CharFilter(field_name='plate_number', lookup_expr='icontains')
+    imei = django_filters.CharFilter(field_name='imei', lookup_expr='icontains')
+    brand_name = django_filters.CharFilter(field_name='brand_name', lookup_expr='icontains')
+    group_name = django_filters.CharFilter(field_name='group_name', lookup_expr='icontains')
+
+    last_date = django_filters.DateFilter(field_name='last_date')  # exact
+    last_date_from = django_filters.DateFilter(field_name='last_date', lookup_expr='gte')
+    last_date_to = django_filters.DateFilter(field_name='last_date', lookup_expr='lte')
 
     class Meta:
         model = PatrolCar
-        fields = ('model', 'license_plate', 'gps_number')
+        fields = ('mobjectId', 'mobject_name', 'plate_number', 'imei', 'brand_name', 'group_name', 'last_date')
 
 
 class CameraInformationFilter(django_filters.FilterSet):

@@ -53,9 +53,10 @@ class MahallaCrimeAdmin(admin.ModelAdmin):
 
 @admin.register(PatrolCar)
 class PatrolCarAdmin(admin.ModelAdmin):
-    list_display = ('license_plate', 'model', 'gps_number')
-    search_fields = ('license_plate', 'model', 'gps_number')
-    fields = ('model', 'license_plate', 'gps_number')
+    list_display = ('plate_number', 'brand_name', 'mobject_name', 'imei', 'mobjectId', 'group_name', 'last_date')
+    search_fields = ('plate_number', 'brand_name', 'mobject_name', 'imei', 'group_name', 'mobjectId')
+    list_filter = ('brand_name', 'group_name', 'last_date')
+    fields = ('mobjectId', 'mobject_name', 'plate_number', 'imei', 'brand_name', 'group_name', 'last_date', 'coordinate_x', 'coordinate_y')
 
 
 @admin.register(CameraInformation)
