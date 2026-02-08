@@ -117,10 +117,11 @@ class ObjectSerializer(serializers.ModelSerializer):
 
 class ObjectMapSerializer(serializers.ModelSerializer):
     organization_detail = OrganizationListPublicSerializer(source='organization', read_only=True)
+    category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
 
     class Meta:
         model = Object
-        fields = ('id', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'category', 'category_detail','organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
 
 class ObjectListSerializer(serializers.ModelSerializer):
