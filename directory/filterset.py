@@ -41,6 +41,9 @@ class OrganizationFilter(FilterSet):
         fields = {
             'number': ['exact'],
             'code': ['exact'],
+            'region': ['exact'],
+            'district': ['exact'],
+            'mahalla': ['exact'],
         }
 
 

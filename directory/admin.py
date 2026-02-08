@@ -33,10 +33,10 @@ class MahallaAdmin(admin.ModelAdmin):
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'region', 'district')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district')
+    list_display = ('name', 'code', 'region', 'district', 'mahalla')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'mahalla')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz')
-    autocomplete_fields = ('region', 'district')
+    autocomplete_fields = ('region', 'district', 'mahalla')
 
 
 @admin.register(Department)

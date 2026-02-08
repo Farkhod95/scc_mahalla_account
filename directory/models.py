@@ -68,6 +68,8 @@ class Organization(BaseModel):
                                help_text=_("Viloyat jadvali bilan bog'lanish"))
     district = models.ForeignKey(District, related_name='organ_district', on_delete=models.SET_NULL, null=True,
                                  blank=True, help_text=_("Tuman jadvali bilan bog'lanish"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='organ_mahalla', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
 
     class Meta:
         verbose_name = _('Organization')

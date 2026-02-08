@@ -45,9 +45,13 @@ class ObjectFilter(django_filters.FilterSet):
     full_name = django_filters.CharFilter(field_name='full_name', lookup_expr='icontains')
     phone_number = django_filters.CharFilter(field_name='phone_number', lookup_expr='icontains')
 
+    region = django_filters.NumberFilter(field_name='organization__region_id')
+    district = django_filters.NumberFilter(field_name='organization__district_id')
+    mahalla = django_filters.NumberFilter(field_name='organization__mahalla_id')
+
     class Meta:
         model = Object
-        fields = ('category', 'organization', 'organization_name', 'full_name', 'phone_number')
+        fields = ('category', 'organization', 'organization_name', 'full_name', 'phone_number', 'region', 'district', 'mahalla')
 
 
 class CrimeCategoryFilter(django_filters.FilterSet):

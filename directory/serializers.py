@@ -105,10 +105,14 @@ class OrganizationSerializer(LocaleSerializer):
 
 
 class OrganizationListSerializer(LocaleSerializer):
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictListSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
+
     class Meta:
         model = Organization
-        fields = ('id', 'number', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region',
-                  'district')
+        fields = ('id', 'number', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail',
+                  'district', 'district_detail', 'mahalla', 'mahalla_detail')
 
 
 class OrganizationListPublicSerializer(LocaleSerializer):
