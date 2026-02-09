@@ -200,11 +200,11 @@ class OfficeCamera(BaseModel):
     object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
     direction = models.CharField(max_length=255, null=True, blank=True, help_text=_("Yo'nalish"))
     ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
-    region = models.ForeignKey("directory.Region", related_name='cameras', on_delete=models.SET_NULL, null=True,
+    region = models.ForeignKey("directory.Region", related_name='office_cameras', on_delete=models.SET_NULL, null=True,
                                blank=True, help_text=_("Viloyat"))
-    district = models.ForeignKey("directory.District", related_name='cameras', on_delete=models.SET_NULL,
+    district = models.ForeignKey("directory.District", related_name='office_cameras', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
-    mahalla = models.ForeignKey("directory.Mahalla", related_name='cameras', on_delete=models.SET_NULL,
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='office_cameras', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
