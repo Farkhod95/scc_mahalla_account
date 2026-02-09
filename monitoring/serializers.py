@@ -1,5 +1,5 @@
 from monitoring.models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, \
-    PatrolCar, CameraInformation, MahallaInformationCategory
+    PatrolCar, CameraInformation, MahallaInformationCategory, OfficeCamera
 from rest_framework import serializers
 
 from directory.serializers import RegionListSerializer, DistrictSerializer, OrganizationListPublicSerializer, \
@@ -255,3 +255,19 @@ class CameraInformationImportSerializer(serializers.Serializer):
         if not (name.endswith(".xlsx") or name.endswith(".xlsm") or name.endswith(".xltx") or name.endswith(".xltm")):
             raise serializers.ValidationError("Fayl formati xlsx bo‘lishi kerak.")
         return f
+
+
+class OfficeCameraSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfficeCamera
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+
+
+class OfficeCameraListSerializer(serializers.ModelSerializer):
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictListSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
+
+    class Meta:
+        model = OfficeCamera
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')

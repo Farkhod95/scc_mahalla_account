@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
-    CameraInformation, MahallaInformationCategory
+    CameraInformation, MahallaInformationCategory, OfficeCamera
 
 
 @admin.register(Employee)
@@ -75,3 +75,12 @@ class CameraInformationAdmin(admin.ModelAdmin):
     list_filter = ('status', 'camera_type', 'region', 'district', 'mahalla')
     search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
     fields = ('object_name', 'direction', 'status', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')
+
+
+@admin.register(OfficeCamera)
+class OfficeCameraAdmin(admin.ModelAdmin):
+    list_display = ('object_name', 'direction', 'ip_address', 'camera_type', 'region', 'district', 'mahalla', 'coordinate_x', 'coordinate_y')
+    list_select_related = ('region', 'district', 'mahalla')
+    list_filter = ('camera_type', 'region', 'district', 'mahalla')
+    search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
+    fields = ('object_name', 'direction', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')

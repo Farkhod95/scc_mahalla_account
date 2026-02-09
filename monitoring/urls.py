@@ -14,6 +14,7 @@ from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDe
 from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView, \
     ObjectExcelImportView
 from monitoring.views.object_category_dashboard import ObjectCategoryForDashboardView
+from monitoring.views.office_camera import OfficeCameraView, OfficeCameraDetailView, OfficeCameraFieldInfoView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 
 
@@ -64,4 +65,8 @@ urlpatterns = [
     path('camera-information/<int:pk>', CameraInformationDetailView.as_view(), name='camera_information_detail_view'),
     path('camera-information/fields/', CameraInformationFieldInfoView.as_view(), name='camera_information_fields_info'),
     path('camera-information/fields/import-by-mahalla-id/', CameraInformationImportInfoView.as_view(), name='camera_information_fields_info'),
+
+    re_path(r'^office-camera/$', OfficeCameraView.as_view(), name='office_camera_view'),
+    path('office-camera/<int:pk>', OfficeCameraDetailView.as_view(), name='office_camera_detail_view'),
+    path('office-camera/fields/', OfficeCameraFieldInfoView.as_view(), name='office_camera_fields_info'),
 ]
