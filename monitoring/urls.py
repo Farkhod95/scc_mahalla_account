@@ -1,4 +1,6 @@
 from django.urls import re_path, path
+
+from monitoring.views.all_count_by_mahalla import AllCountByMahallaView
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
     CameraInformationFieldInfoView, CameraInformationForMapView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
@@ -69,4 +71,6 @@ urlpatterns = [
     re_path(r'^office-camera/$', OfficeCameraView.as_view(), name='office_camera_view'),
     path('office-camera/<int:pk>', OfficeCameraDetailView.as_view(), name='office_camera_detail_view'),
     path('office-camera/fields/', OfficeCameraFieldInfoView.as_view(), name='office_camera_fields_info'),
+
+    path('stats/all-count-by-mahalla/', AllCountByMahallaView.as_view(), name='all-count-by-mahalla'),
 ]
