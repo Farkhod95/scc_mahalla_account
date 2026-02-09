@@ -84,6 +84,7 @@ class ObjectCategory(BaseModel):
 
 
 class Object(BaseModel):
+    name = models.CharField(max_length=100, null=True, blank=True, help_text=_("Nomi"))
     category = models.ForeignKey(ObjectCategory, related_name='category_objects', on_delete=models.SET_NULL, null=True,
                                      blank=True, help_text=_("Kategoriya"))
     organization = models.ForeignKey("directory.Organization", related_name='organization_objects', on_delete=models.SET_NULL,
@@ -100,7 +101,7 @@ class Object(BaseModel):
         verbose_name_plural = _('Objects')
 
     def __str__(self):
-        return self.organization.name if self.organization else str(self.id)
+        return self.name if self.name else str(self.id)
 
 
 # Jinoyat kategoriyasi

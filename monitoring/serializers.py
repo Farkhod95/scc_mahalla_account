@@ -108,7 +108,7 @@ class ObjectCategoryForDashboardSerializer(serializers.ModelSerializer):
 class ObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Object
-        fields = ('id', 'category', 'organization', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'name', 'category', 'organization', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
         extra_kwargs = {
             'full_name': {"required": True},
             'phone_number': {"required": True},
@@ -121,7 +121,7 @@ class ObjectMapSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Object
-        fields = ('id', 'category', 'category_detail','organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'name', 'category', 'category_detail','organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
 
 class ObjectListSerializer(serializers.ModelSerializer):
@@ -130,7 +130,7 @@ class ObjectListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Object
-        fields = ('id', 'category', 'category_detail', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+        fields = ('id', 'name', 'category', 'category_detail', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
 
 class ObjectExcelImportSerializer(serializers.Serializer):

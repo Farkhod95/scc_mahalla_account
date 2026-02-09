@@ -52,7 +52,7 @@ class ObjectFilter(django_filters.FilterSet):
 
     class Meta:
         model = Object
-        fields = ('category', 'organization', 'organization_name', 'full_name', 'phone_number', 'region', 'district', 'mahalla')
+        fields = ('name', 'category', 'organization', 'organization_name', 'full_name', 'phone_number', 'region', 'district', 'mahalla')
 
 
 class CrimeCategoryFilter(django_filters.FilterSet):
