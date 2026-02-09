@@ -79,8 +79,8 @@ class CameraInformationAdmin(admin.ModelAdmin):
 
 @admin.register(OfficeCamera)
 class OfficeCameraAdmin(admin.ModelAdmin):
-    list_display = ('object_name', 'direction', 'ip_address', 'camera_type', 'region', 'district', 'mahalla', 'coordinate_x', 'coordinate_y')
+    list_display = ('object_name', 'direction', 'ip_address', 'camera_type', 'region', 'district', 'mahalla', 'coordinate_x', 'coordinate_y', 'camera_url')
     list_select_related = ('region', 'district', 'mahalla')
     list_filter = ('camera_type', 'region', 'district', 'mahalla')
     search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
-    fields = ('object_name', 'direction', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y')
+    fields = ('object_name', 'direction', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'camera_url')

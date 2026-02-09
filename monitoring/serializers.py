@@ -260,7 +260,7 @@ class CameraInformationImportSerializer(serializers.Serializer):
 class OfficeCameraSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficeCamera
-        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
 
 
 class OfficeCameraListSerializer(serializers.ModelSerializer):
@@ -270,4 +270,4 @@ class OfficeCameraListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OfficeCamera
-        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')

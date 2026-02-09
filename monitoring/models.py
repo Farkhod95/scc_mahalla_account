@@ -213,6 +213,7 @@ class OfficeCamera(BaseModel):
     login = models.CharField(max_length=100, null=True, blank=True, help_text=_("Login"))
     parol = models.CharField(max_length=100, null=True, blank=True, help_text=_("parol"))
     camera_type = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kamer turi"))
+    camera_url = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kamer turi"))
 
     class Meta:
         verbose_name = _('Office Camera')
