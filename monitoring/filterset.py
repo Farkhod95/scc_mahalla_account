@@ -36,6 +36,7 @@ class ObjectCategoryFilter(django_filters.FilterSet):
         model = ObjectCategory
         fields = {
             'name': ['exact'],
+            'key': ['exact'],
         }
 
 
