@@ -75,7 +75,7 @@ class MahallaInformationListSerializer(serializers.ModelSerializer):
 class ObjectCategorySerializer(LocaleSerializer):
     class Meta:
         model = ObjectCategory
-        fields = ('id', 'key', 'name', 'name_uz', 'name_ru', 'name_en', 'icon', 'color')
+        fields = ('id', 'key', 'name', 'name_uz', 'name_ru', 'name_en', 'icon', 'color', 'icon_color')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},
@@ -86,7 +86,7 @@ class ObjectCategorySerializer(LocaleSerializer):
 class ObjectCategoryListSerializer(LocaleSerializer):
     class Meta:
         model = ObjectCategory
-        fields = ('id', 'key', 'name', 'name_uz', 'name_ru', 'name_en', 'icon', 'color')
+        fields = ('id', 'key', 'name', 'name_uz', 'name_ru', 'name_en', 'icon', 'color', 'icon_color')
 
 
 
@@ -102,7 +102,7 @@ class ObjectCategoryForDashboardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ObjectCategory
-        fields = ("id", 'key', "name_uz", "name_ru", "name_en", 'icon', "objects_count", 'color')
+        fields = ("id", 'key', "name_uz", "name_ru", "name_en", 'icon', "objects_count", 'color', 'icon_color')
 
 
 class ObjectSerializer(serializers.ModelSerializer):

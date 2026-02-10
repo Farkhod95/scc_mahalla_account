@@ -75,6 +75,7 @@ class ObjectCategory(BaseModel):
     name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Nomi"))
     color = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rang"))
     icon = models.TextField(null=True, blank=True, help_text=_("SVG icon"))
+    icon_color = models.CharField(max_length=255, null=True, blank=True, help_text=_("Icon Rang"))
 
     class Meta:
         verbose_name = _('Object Category')
