@@ -30,8 +30,8 @@ class MahallaInformationAdmin(admin.ModelAdmin):
 
 @admin.register(ObjectCategory)
 class ObjectCategoryAdmin(admin.ModelAdmin):
-    list_display = ('key','name_en', 'name_ru', 'name_uz')
-    fields = ('key', 'name', 'name_en', 'name_ru', 'name_uz', 'icon')
+    list_display = ('key','name_en', 'name_ru', 'name_uz', 'color')
+    fields = ('key', 'name', 'name_en', 'name_ru', 'name_uz', 'icon' , 'color')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz')
 
 
