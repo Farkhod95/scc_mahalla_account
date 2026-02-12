@@ -128,9 +128,26 @@ class ObjectListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
     organization_detail = OrganizationListPublicSerializer(source='organization', read_only=True)
 
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = Object
         fields = ('id', 'name', 'category', 'category_detail', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
 
 
 class ObjectExcelImportSerializer(serializers.Serializer):

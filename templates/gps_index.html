@@ -179,8 +179,9 @@
 <script>
   // ===== WS URL =====
   const WS_PATH = "/ws/gps-url/";
-  {#const WS_URL = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + WS_PATH;#}
-  const WS_URL = "ws://192.168.168.149:8080/ws/gps-url/"
+  const WS_URL = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + WS_PATH;
+  {#const WS_URL = "ws://192.168.168.149:8080/ws/gps-url/"#}
+  {#const WS_URL = "ws://192.168.168.149:8080/ws/gps-url/"#}
   document.getElementById("wsUrlText").textContent = WS_URL;
 
   // ===== settings =====
