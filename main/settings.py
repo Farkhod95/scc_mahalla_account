@@ -38,10 +38,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # for front
     # ✅ DEBUG=True bo‘lsa ham 404 sahifani oddiy qiladi
     'restapp.middlewares.simple_404.SimpleNotFoundMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # for front
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -61,14 +62,21 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ORIGIN_ALLOW_ALL = False
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://localhost:5173",
+    "https://127.0.0.1:5173",
+
     "http://192.168.168.149:3000",
     "https://192.168.168.149:3000",
-    "https://api-mm.safecity.uz",
-    "http://api-mm.safecity.uz",
+
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
-    "http://localhost:3000",  # agar lokalda ishlayotgan bo‘lsa
-    "http://localhost:5173",  # agar lokalda ishlayotgan bo‘lsa
+    "https://api-mm.safecity.uz",
+    "http://api-mm.safecity.uz",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
