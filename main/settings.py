@@ -51,6 +51,13 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',  # for translation
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://api-mm.safecity.uz",
+    "http://api-mm.safecity.uz",
+    "https://mm.safecity.uz",
+    "http://mm.safecity.uz",
+]
+
 CORS_ORIGIN_ALLOW_ALL = False
 
 CORS_ALLOWED_ORIGINS = [
