@@ -56,6 +56,8 @@ CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOWED_ORIGINS = [
     "http://192.168.168.149:3000",
     "https://192.168.168.149:3000",
+    "https://api-mm.safecity.uz",
+    "http://api-mm.safecity.uz",
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
     "http://localhost:3000",  # agar lokalda ishlayotgan bo‘lsa
