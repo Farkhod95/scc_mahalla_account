@@ -51,7 +51,16 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',  # for translation
 ]
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = False
+
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.168.149:3000",
+    "https://192.168.168.149:3000",
+    "https://mm.safecity.uz",
+    "http://mm.safecity.uz",
+    "http://localhost:3000",  # agar lokalda ishlayotgan bo‘lsa
+    "http://localhost:5173",  # agar lokalda ishlayotgan bo‘lsa
+]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'language-code',
