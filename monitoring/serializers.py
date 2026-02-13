@@ -30,11 +30,26 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
         fields = ('id', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail', 'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
 
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
 
 class MahallaInformationCategorySerializer(serializers.ModelSerializer):
     class Meta:
