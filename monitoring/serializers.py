@@ -36,36 +36,20 @@ class EmployeeListSerializer(serializers.ModelSerializer):
         model = Employee
         fields = ('id', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail', 'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
 
-    # def get_avatar(self, obj):
-    #     if not obj.avatar:
-    #         return None
-    #
-    #     request = self.context.get('request')
-    #     if not request:
-    #         # request bo'lmasa ham kamida fayl url qaytadi
-    #         return obj.avatar.url
-    #
-    #     url = request.build_absolute_uri(obj.avatar.url)
-    #
-    #     # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
-    #     # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
-    #     return url.replace('http://', 'https://', 1)
     def get_avatar(self, obj):
         if not obj.avatar:
             return None
 
         request = self.context.get('request')
         if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
             return obj.avatar.url
 
         url = request.build_absolute_uri(obj.avatar.url)
 
-        # Faqat http bo‘lsin:
-        if url.startswith('https://'):
-            url = url.replace('https://', 'http://', 1)
-
-        return url
-
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
 
 class MahallaInformationCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -165,20 +149,6 @@ class ObjectListSerializer(serializers.ModelSerializer):
         model = Object
         fields = ('id', 'name', 'category', 'category_detail', 'organization', 'organization_detail', 'full_name', 'avatar', 'phone_number', 'address', 'coordinate_x', 'coordinate_y')
 
-    # def get_avatar(self, obj):
-    #     if not obj.avatar:
-    #         return None
-    #
-    #     request = self.context.get('request')
-    #     if not request:
-    #         # request bo'lmasa ham kamida fayl url qaytadi
-    #         return obj.avatar.url
-    #
-    #     url = request.build_absolute_uri(obj.avatar.url)
-    #
-    #     # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
-    #     # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
-    #     return url.replace('http://', 'https://', 1)
     def get_avatar(self, obj):
         if not obj.avatar:
             return None
@@ -190,11 +160,9 @@ class ObjectListSerializer(serializers.ModelSerializer):
 
         url = request.build_absolute_uri(obj.avatar.url)
 
-        # Faqat http bo'lishi kerak:
-        if url.startswith('https://'):
-            url = url.replace('https://', 'http://', 1)
-
-        return url
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
 
 
 class ObjectExcelImportSerializer(serializers.Serializer):
