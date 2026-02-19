@@ -148,6 +148,9 @@ class UserListPublicSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(source='role', read_only=True)
     avatar = serializers.SerializerMethodField()
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictSerializer(source='district', read_only=True)
+    mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = User
@@ -158,7 +161,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active', 'date_joined',
             'role', 'roles',
-            'region', 'district', 'mahalla',
+            'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail',
             'organization', 'department', 'position',
             'avatar',
             'pinfl', 'passport_series', 'passport_number',
