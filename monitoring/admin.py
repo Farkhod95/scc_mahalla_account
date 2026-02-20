@@ -5,11 +5,11 @@ from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeC
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'phone_number', 'organization', 'department', 'position', 'region', 'district', 'mahalla')
+    list_display = ('sorting', 'full_name', 'phone_number', 'organization', 'department', 'position', 'region', 'district', 'mahalla')
     list_select_related = ('organization', 'department', 'position', 'region', 'district', 'mahalla')
     search_fields = ('full_name', 'phone_number')
     list_filter = ('organization', 'department', 'position', 'region', 'district', 'mahalla', 'gender')
-    fields = ('full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'district', 'mahalla', 'address', 'avatar')
+    fields = ('sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'district', 'mahalla', 'address', 'avatar')
 
 
 @admin.register(MahallaInformationCategory)

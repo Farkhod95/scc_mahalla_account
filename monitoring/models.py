@@ -29,6 +29,7 @@ class Employee(BaseModel):
                                  null=True, blank=True, help_text=_("Mahalla"))
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
     avatar = models.ImageField(upload_to='employee/%Y/%m/%d', null=True, blank=True, help_text=_("Profil rasmi"))
+    sorting = models.IntegerField(_("Sorting"), null=True, blank=True, help_text=_("Sorting"))
 
     class Meta:
         verbose_name = _('Employee')

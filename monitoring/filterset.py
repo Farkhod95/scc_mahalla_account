@@ -9,7 +9,7 @@ class EmployeeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Employee
-        fields = ('organization', 'department', 'position', 'region', 'district', 'mahalla', 'gender', 'full_name', 'phone_number')
+        fields = ('organization', 'department', 'position', 'region', 'district', 'mahalla', 'gender', 'full_name', 'phone_number', 'sorting')
 
 
 class MahallaInformationCategoryFilter(django_filters.FilterSet):
