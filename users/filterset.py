@@ -18,6 +18,7 @@ class UserFilter(FilterSet):
             'position': ['exact'],
             'region': ['exact'],
             'district': ['exact'],
+            'mahalla': ['exact'],
             'pinfl': ['exact'],
             'gender': ['exact'],
             'role': ['exact'],
