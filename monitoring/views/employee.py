@@ -34,7 +34,7 @@ class EmployeeView(ListCreateAPIView):
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = EmployeeFilter
     search_fields = ('full_name', 'phone_number')
-    ordering = ['-pk']
+    ordering = ['sorting', '-pk']
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
