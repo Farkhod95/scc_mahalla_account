@@ -1,6 +1,7 @@
 import django_filters
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
-    CameraInformation, MahallaInformationCategory, OfficeCamera
+    CameraInformation, MahallaInformationCategory, OfficeCamera, Shop, ShopCamera, ShopTenant, TenantEmployee, \
+    ShopTradeStats
 
 
 class EmployeeFilter(django_filters.FilterSet):
@@ -113,3 +114,66 @@ class OfficeCameraFilter(django_filters.FilterSet):
     class Meta:
         model = OfficeCamera
         fields = ('region', 'district', 'mahalla', 'camera_type', 'object_name', 'direction', 'ip_address', 'address', 'login')
+
+
+class ShopFilter(django_filters.FilterSet):
+    code = django_filters.CharFilter(field_name='code', lookup_expr='icontains')
+    owner_fio = django_filters.CharFilter(field_name='owner_fio', lookup_expr='icontains')
+    owner_jshshir = django_filters.CharFilter(field_name='owner_jshshir', lookup_expr='icontains')
+    owner_phone = django_filters.CharFilter(field_name='owner_phone', lookup_expr='icontains')
+    total_area_from = django_filters.NumberFilter(field_name='total_area', lookup_expr='gte')
+    total_area_to = django_filters.NumberFilter(field_name='total_area', lookup_expr='lte')
+    rented_area_from = django_filters.NumberFilter(field_name='rented_area', lookup_expr='gte')
+    rented_area_to = django_filters.NumberFilter(field_name='rented_area', lookup_expr='lte')
+
+    class Meta:
+        model = Shop
+        fields = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_jshshir', 'owner_phone', 'tenants_count', 'total_area', 'rented_area')
+
+
+class ShopCameraFilter(django_filters.FilterSet):
+    url = django_filters.CharFilter(field_name='url', lookup_expr='icontains')
+
+    class Meta:
+        model = ShopCamera
+        fields = ('shop', 'url')
+
+
+class ShopTenantFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
+    leader_fio = django_filters.CharFilter(field_name='leader_fio', lookup_expr='icontains')
+    leader_jshshir = django_filters.CharFilter(field_name='leader_jshshir', lookup_expr='icontains')
+    leader_phone = django_filters.CharFilter(field_name='leader_phone', lookup_expr='icontains')
+    stir = django_filters.CharFilter(field_name='stir', lookup_expr='icontains')
+    certificate_number = django_filters.CharFilter(field_name='certificate_number', lookup_expr='icontains')
+    employees_count_from = django_filters.NumberFilter(field_name='employees_count', lookup_expr='gte')
+    employees_count_to = django_filters.NumberFilter(field_name='employees_count', lookup_expr='lte')
+
+    class Meta:
+        model = ShopTenant
+        fields = ('shop', 'name', 'stir', 'certificate_number', 'leader_fio', 'leader_jshshir', 'leader_phone', 'employees_count')
+
+
+class TenantEmployeeFilter(django_filters.FilterSet):
+    fio = django_filters.CharFilter(field_name='fio', lookup_expr='icontains')
+    jshshir = django_filters.CharFilter(field_name='jshshir', lookup_expr='icontains')
+    phone = django_filters.CharFilter(field_name='phone', lookup_expr='icontains')
+
+    class Meta:
+        model = TenantEmployee
+        fields = ('tenant', 'fio', 'jshshir', 'phone')
+
+
+class ShopTradeStatsFilter(django_filters.FilterSet):
+    cash_register_number = django_filters.CharFilter(field_name='cash_register_number', lookup_expr='icontains')
+    red_reason = django_filters.CharFilter(field_name='red_reason', lookup_expr='icontains')
+
+    ytd_okkm_from = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='gte')
+    ytd_okkm_to = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='lte')
+
+    monthly_visitors_from = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='gte')
+    monthly_visitors_to = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='lte')
+
+    class Meta:
+        model = ShopTradeStats
+        fields = ('shop', 'tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category', 'cash_register_number', 'red_reason')

@@ -18,7 +18,11 @@ from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInf
 from monitoring.views.object_category_dashboard import ObjectCategoryForDashboardView
 from monitoring.views.office_camera import OfficeCameraView, OfficeCameraDetailView, OfficeCameraFieldInfoView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
-
+from monitoring.views.shop import ShopView, ShopDetailView, ShopFieldInfoView
+from monitoring.views.shop_camera import ShopCameraView, ShopCameraDetailView, ShopCameraFieldInfoView
+from monitoring.views.shop_tenant import ShopTenantView, ShopTenantDetailView, ShopTenantFieldInfoView
+from monitoring.views.shop_trade_stats import ShopTradeStatsView, ShopTradeStatsDetailView, ShopTradeStatsFieldInfoView
+from monitoring.views.tenant_employee import TenantEmployeeView, TenantEmployeeDetailView, TenantEmployeeFieldInfoView
 
 urlpatterns = [
     re_path(r'^employee/$', EmployeeView.as_view(), name='employee_view'),
@@ -73,4 +77,26 @@ urlpatterns = [
     path('office-camera/fields/', OfficeCameraFieldInfoView.as_view(), name='office_camera_fields_info'),
 
     path('stats/all-count-by-mahalla/', AllCountByMahallaView.as_view(), name='all-count-by-mahalla'),
+
+
+    re_path(r'^shop/$', ShopView.as_view(), name='shop_view'),
+    path('shop/<int:pk>', ShopDetailView.as_view(), name='shop_detail_view'),
+    path('shop/fields/', ShopFieldInfoView.as_view(), name='shop_fields_info'),
+
+    re_path(r'^shop-camera/$', ShopCameraView.as_view(), name='shop_camera_view'),
+    path('shop-camera/<int:pk>', ShopCameraDetailView.as_view(), name='shop_camera_detail_view'),
+    path('shop-camera/fields/', ShopCameraFieldInfoView.as_view(), name='shop_camera_fields_info'),
+
+    re_path(r'^shop-tenant/$', ShopTenantView.as_view(), name='shop_tenant_view'),
+    path('shop-tenant/<int:pk>', ShopTenantDetailView.as_view(), name='shop_tenant_detail_view'),
+    path('shop-tenant/fields/', ShopTenantFieldInfoView.as_view(), name='shop_tenant_fields_info'),
+
+    re_path(r'^tenant-employee/$', TenantEmployeeView.as_view(), name='tenant_employee_view'),
+    path('tenant-employee/<int:pk>', TenantEmployeeDetailView.as_view(), name='tenant_employee_detail_view'),
+    path('tenant-employee/fields/', TenantEmployeeFieldInfoView.as_view(), name='tenant_employee_fields_info'),
+
+
+    re_path(r'^shop-trade-stats/$', ShopTradeStatsView.as_view(), name='shop_trade_stats_view'),
+    path('shop-trade-stats/<int:pk>', ShopTradeStatsDetailView.as_view(), name='shop_trade_stats_detail_view'),
+    path('shop-trade-stats/fields/', ShopTradeStatsFieldInfoView.as_view(), name='shop_trade_stats_fields_info'),
 ]

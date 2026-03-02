@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
-    CameraInformation, MahallaInformationCategory, OfficeCamera
+    CameraInformation, MahallaInformationCategory, OfficeCamera, ShopCamera, Shop, ShopTenant, TenantEmployee, \
+    ShopTradeStats
 
 
 @admin.register(Employee)
@@ -84,3 +85,48 @@ class OfficeCameraAdmin(admin.ModelAdmin):
     list_filter = ('camera_type', 'region', 'district', 'mahalla')
     search_fields = ('object_name', 'direction', 'ip_address', 'address', 'login', 'camera_type')
     fields = ('object_name', 'direction', 'ip_address', 'login', 'parol', 'camera_type', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'camera_url')
+
+
+@admin.register(Shop)
+class ShopAdmin(admin.ModelAdmin):
+    list_display = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_phone', 'total_area', 'tenants_count', 'rented_area')
+    list_filter = ('block_type',)
+    search_fields = ('code', 'owner_fio', 'owner_jshshir', 'owner_phone')
+    ordering = ('block_type', 'shop_number')
+    fields = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_jshshir', 'owner_phone', 'total_area', 'tenants_count', 'rented_area')
+
+
+@admin.register(ShopCamera)
+class ShopCameraAdmin(admin.ModelAdmin):
+    list_display = ('shop', 'url')
+    list_select_related = ('shop',)
+    list_filter = ('shop',)
+    search_fields = ('url', 'shop__code', 'shop__owner_fio')
+    fields = ('shop', 'url')
+
+
+@admin.register(ShopTenant)
+class ShopTenantAdmin(admin.ModelAdmin):
+    list_display = ('shop', 'name', 'stir', 'certificate_number', 'leader_fio', 'leader_phone', 'employees_count')
+    list_select_related = ('shop',)
+    list_filter = ('shop',)
+    search_fields = ('name', 'stir', 'certificate_number', 'leader_fio', 'leader_jshshir', 'leader_phone', 'shop__code')
+    fields = ('shop', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'employees_count')
+
+
+@admin.register(TenantEmployee)
+class TenantEmployeeAdmin(admin.ModelAdmin):
+    list_display = ('tenant', 'fio', 'jshshir', 'phone')
+    list_select_related = ('tenant',)
+    list_filter = ('tenant',)
+    search_fields = ('fio', 'jshshir', 'phone', 'tenant__name', 'tenant__stir', 'tenant__certificate_number')
+    fields = ('tenant', 'fio', 'jshshir', 'phone')
+
+
+@admin.register(ShopTradeStats)
+class ShopTradeStatsAdmin(admin.ModelAdmin):
+    list_display = ('shop', 'tax_type', 'cash_register_number', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category')
+    list_select_related = ('shop',)
+    list_filter = ('tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category')
+    search_fields = ('shop__code', 'shop__owner_fio', 'cash_register_number', 'red_reason')
+    fields = ('shop', 'tax_type', 'cash_register_number', 'ytd_okkm', 'ytd_e_invoice', 'ytd_qr', 'mtd_okkm', 'mtd_e_invoice', 'mtd_qr', 'dtd_okkm', 'dtd_e_invoice', 'dtd_qr', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors', 'daily_visitors', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')

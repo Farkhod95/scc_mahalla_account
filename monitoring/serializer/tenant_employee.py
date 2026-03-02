@@ -1,0 +1,23 @@
+from rest_framework import serializers
+from monitoring.models import TenantEmployee
+from monitoring.serializer.shop_tenant import ShopTenantListSerializer  # ShopTenantListSerializer qayerda bo'lsa importni moslang
+
+
+class TenantEmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TenantEmployee
+        fields = ('id', 'tenant', 'fio', 'jshshir', 'phone')
+        extra_kwargs = {
+            'tenant': {"required": True},
+            'fio': {"required": False, "allow_null": True, "allow_blank": True},
+            'jshshir': {"required": False, "allow_null": True, "allow_blank": True},
+            'phone': {"required": False, "allow_null": True, "allow_blank": True},
+        }
+
+
+class TenantEmployeeListSerializer(serializers.ModelSerializer):
+    tenant_detail = ShopTenantListSerializer(source='tenant', read_only=True)
+
+    class Meta:
+        model = TenantEmployee
+        fields = ('id', 'tenant', 'tenant_detail', 'fio', 'jshshir', 'phone')
