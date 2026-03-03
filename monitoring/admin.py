@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, ShopCamera, Shop, ShopTenant, TenantEmployee, \
-    ShopTradeStats
+    ShopTradeStats, BazarCamera
 
 
 @admin.register(Employee)
