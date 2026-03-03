@@ -19,7 +19,7 @@ UPSTREAM_TIMEOUT = 10
 class FaceDetectionCountProxyView(APIView):
     """
     Frontend yuboradi:
-      region_id=10
+      region_soato=10
       ip_address=192.168.11.105
       from=26.02.2026 00:00:00
       to=26.02.2026 23:59:59
@@ -43,7 +43,7 @@ class FaceDetectionCountProxyView(APIView):
         # ---------------------------------------
         s = FaceDetectionCountQuerySerializer(
             data={
-                "region_id": request.query_params.get("region_id"),
+                "region_soato": request.query_params.get("region_soato"),
                 "ip_address": request.query_params.get("ip_address"),
                 "from_dt": request.query_params.get("from"),
                 "to_dt": request.query_params.get("to"),
@@ -63,7 +63,7 @@ class FaceDetectionCountProxyView(APIView):
         # ---------------------------------------
         upstream_url = f"{UPSTREAM_BASE_URL.rstrip('/')}/lkvs-manager/v1/camera/face/detection-count"
         params = {
-            "region_id": int(v["region_id"]),
+            "region_soato": int(v["region_soato"]),
             "ip_address": str(v["ip_address"]),
             "from": from_str,
             "to": to_str,
