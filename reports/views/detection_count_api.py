@@ -1,7 +1,7 @@
 import requests
 
 from rest_framework import serializers, status
-from rest_framework.permissions import AllowAny  # xohlasangiz IsAuthenticated qiling
+from rest_framework.permissions import IsAuthenticated  # xohlasangiz IsAuthenticated qiling
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,7 +15,7 @@ UPSTREAM_TIMEOUT_SEC = 10
 
 
 class DetectionCountProxyView(APIView):
-    permission_classes = [AllowAny]  # kerak bo‘lsa: [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # kerak bo‘lsa: [IsAuthenticated]
 
     def get(self, request):
         """
