@@ -239,6 +239,12 @@ class BazarCamera(BaseModel):
     icon = models.TextField(null=True, blank=True, help_text=_("Kamera icon"))
     login = models.CharField(max_length=100, null=True, blank=True, help_text=_("Login"))
     parol = models.CharField(max_length=100, null=True, blank=True, help_text=_("parol"))
+    region = models.ForeignKey("directory.Region", related_name='bazar_cameras', on_delete=models.SET_NULL, null=True,
+                               blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='bazar_cameras', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='bazar_cameras', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
 
     class Meta:
         verbose_name = _("Bazar Camera")
