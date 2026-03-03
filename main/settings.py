@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # 'django_dump_load_utf8',      # for backup
     'monitoring',
     'directory',
+    'reports',
     'django_celery_results',
     'django_celery_beat',
 ]

@@ -1,6 +1,7 @@
 from django.urls import re_path, path
 
 from monitoring.views.all_count_by_mahalla import AllCountByMahallaView
+from monitoring.views.bazar_camera import BazarCameraView, BazarCameraDetailView, BazarCameraFieldInfoView
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
     CameraInformationFieldInfoView, CameraInformationForMapView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
@@ -99,4 +100,8 @@ urlpatterns = [
     re_path(r'^shop-trade-stats/$', ShopTradeStatsView.as_view(), name='shop_trade_stats_view'),
     path('shop-trade-stats/<int:pk>', ShopTradeStatsDetailView.as_view(), name='shop_trade_stats_detail_view'),
     path('shop-trade-stats/fields/', ShopTradeStatsFieldInfoView.as_view(), name='shop_trade_stats_fields_info'),
+
+    re_path(r'^bazar-camera/$', BazarCameraView.as_view(), name='bazar_camera_view'),
+    path('bazar-camera/<int:pk>', BazarCameraDetailView.as_view(), name='bazar_camera_detail_view'),
+    path('bazar-camera/fields/', BazarCameraFieldInfoView.as_view(), name='bazar_camera_fields_info'),
 ]

@@ -1,7 +1,7 @@
 import django_filters
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, Shop, ShopCamera, ShopTenant, TenantEmployee, \
-    ShopTradeStats
+    ShopTradeStats, BazarCamera
 
 
 class EmployeeFilter(django_filters.FilterSet):
@@ -177,3 +177,13 @@ class ShopTradeStatsFilter(django_filters.FilterSet):
     class Meta:
         model = ShopTradeStats
         fields = ('shop', 'tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category', 'cash_register_number', 'red_reason')
+
+
+class BazarCameraFilter(django_filters.FilterSet):
+    object_name = django_filters.CharFilter(field_name='object_name', lookup_expr='icontains')
+    url = django_filters.CharFilter(field_name='url', lookup_expr='icontains')
+    login = django_filters.CharFilter(field_name='login', lookup_expr='icontains')
+
+    class Meta:
+        model = BazarCamera
+        fields = ('type', 'object_name', 'url', 'login')

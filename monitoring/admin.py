@@ -130,3 +130,11 @@ class ShopTradeStatsAdmin(admin.ModelAdmin):
     list_filter = ('tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category')
     search_fields = ('shop__code', 'shop__owner_fio', 'cash_register_number', 'red_reason')
     fields = ('shop', 'tax_type', 'cash_register_number', 'ytd_okkm', 'ytd_e_invoice', 'ytd_qr', 'mtd_okkm', 'mtd_e_invoice', 'mtd_qr', 'dtd_okkm', 'dtd_e_invoice', 'dtd_qr', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors', 'daily_visitors', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
+
+
+@admin.register(BazarCamera)
+class BazarCameraAdmin(admin.ModelAdmin):
+    list_display = ('object_name', 'type', 'url', 'coordinate_x', 'coordinate_y')
+    list_filter = ('type',)
+    search_fields = ('object_name', 'url', 'login')
+    fields = ('object_name', 'type', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol')

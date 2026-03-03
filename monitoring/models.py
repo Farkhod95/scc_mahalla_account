@@ -226,6 +226,28 @@ class OfficeCamera(BaseModel):
         return self.ip_address if self.ip_address else self.object_name
 
 
+class BazarCamera(BaseModel):
+    class TYPE(models.TextChoices):
+        DRB = "drb", _("DRB")
+        FACE = "face", _("FACE")
+
+    object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
+    type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
+    coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
+    coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+    url = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kamera url"))
+    icon = models.TextField(null=True, blank=True, help_text=_("Kamera icon"))
+    login = models.CharField(max_length=100, null=True, blank=True, help_text=_("Login"))
+    parol = models.CharField(max_length=100, null=True, blank=True, help_text=_("parol"))
+
+    class Meta:
+        verbose_name = _("Bazar Camera")
+        verbose_name_plural = _("Bazar Cameras")
+
+    def __str__(self):
+        return f"Bazar Camera #{self.pk}"
+
+
 class Shop(BaseModel):
     """
     Do'kon: "Blok A - 1-do'kon"

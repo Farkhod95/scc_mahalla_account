@@ -18,6 +18,7 @@ urlpatterns = [
     path('', include('users.urls')),
     path('', include('monitoring.urls')),
     path('', include('directory.urls')),
+    path('', include('reports.urls')),
     re_path(r'^settings/languages/$', LanguagesView.as_view(), name='languages_list'),
     re_path(r'^settings/translations/$', TermView.as_view(), name='translations_list'),
     path('settings/translations/<int:pk>', TermDetailView.as_view(), name='translations_list'),
