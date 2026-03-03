@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from directory.serializers import RegionListSerializer, DistrictListSerializer, MahallaListSerializer
 from monitoring.models import BazarCamera
 
 
