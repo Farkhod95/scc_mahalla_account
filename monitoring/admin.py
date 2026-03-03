@@ -134,7 +134,7 @@ class ShopTradeStatsAdmin(admin.ModelAdmin):
 
 @admin.register(BazarCamera)
 class BazarCameraAdmin(admin.ModelAdmin):
-    list_display = ('object_name', 'type', 'url', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla')
+    list_display = ('object_name', 'ip_address', 'type', 'url', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla')
     list_filter = ('type', 'region', 'district')
-    search_fields = ('object_name', 'url', 'login')
-    fields = ('object_name', 'type', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla')
+    search_fields = ('object_name', 'ip_address', 'url', 'login')
+    fields = ('object_name', 'ip_address', 'type', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla')

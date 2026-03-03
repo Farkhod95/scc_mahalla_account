@@ -233,6 +233,7 @@ class BazarCamera(BaseModel):
 
     object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
     type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
+    ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
     url = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kamera url"))
@@ -251,7 +252,7 @@ class BazarCamera(BaseModel):
         verbose_name_plural = _("Bazar Cameras")
 
     def __str__(self):
-        return f"Bazar Camera #{self.pk}"
+        return f"{self.object_name}" or f"Bazar Camera #{self.pk}"
 
 
 class Shop(BaseModel):
