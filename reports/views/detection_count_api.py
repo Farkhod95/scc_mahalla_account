@@ -30,7 +30,7 @@ class DetectionCountProxyView(APIView):
         qs = DetectionCountQuerySerializer(
             data={
                 "ip_address": request.query_params.get("ip_address"),
-                "region_id": request.query_params.get("region_soato"),
+                "region_soato": request.query_params.get("region_soato"),
                 "from_dt": request.query_params.get("from"),
                 "to_dt": request.query_params.get("to"),
             }
@@ -45,7 +45,7 @@ class DetectionCountProxyView(APIView):
         url = f"{UPSTREAM_BASE_URL.rstrip('/')}/detection-count"
         params = {
             "ip_address": str(v["ip_address"]),
-            "region_id": int(v["region_id"]),
+            "region_soato": int(v["region_soato"]),
             "from": from_str,
             "to": to_str,
         }

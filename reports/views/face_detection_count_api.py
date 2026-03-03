@@ -43,7 +43,7 @@ class FaceDetectionCountProxyView(APIView):
         # ---------------------------------------
         s = FaceDetectionCountQuerySerializer(
             data={
-                "region_id": request.query_params.get("region_soato"),
+                "region_soato": request.query_params.get("region_soato"),
                 "ip_address": request.query_params.get("ip_address"),
                 "from_dt": request.query_params.get("from"),
                 "to_dt": request.query_params.get("to"),
@@ -64,7 +64,7 @@ class FaceDetectionCountProxyView(APIView):
         upstream_url = f"{UPSTREAM_BASE_URL.rstrip('/')}/lkvs-manager/v1/camera/face/detection-count"
         params = {
             "region_id": int(v["region_id"]),
-            "ip_address": str(v["ip_address"]),
+            "region_soato": str(v["region_soato"]),
             "from": from_str,
             "to": to_str,
         }
