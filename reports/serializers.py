@@ -11,8 +11,19 @@ class DetectionCountQuerySerializer(serializers.Serializer):
 
 
 class FaceDetectionCountQuerySerializer(serializers.Serializer):
-    region_soato = serializers.IntegerField(required=True, min_value=1)
-    ip_address = serializers.IPAddressField(required=True)
-
+    region_soato = serializers.IntegerField(required=True)
+    ip_address = serializers.CharField(required=True)  # kamera IP bo‘lishi mumkin
     from_dt = serializers.DateTimeField(required=True, input_formats=["%d.%m.%Y %H:%M:%S"])
     to_dt = serializers.DateTimeField(required=True, input_formats=["%d.%m.%Y %H:%M:%S"])
+
+
+class MalikaFlowQuerySerializer(serializers.Serializer):
+    region_soato = serializers.IntegerField(required=True)
+    from_date = serializers.DateTimeField(
+        required=True,
+        input_formats=["%d.%m.%Y %H:%M:%S"],  # 2026-02-25 00:00:00
+    )
+    to_date = serializers.DateTimeField(
+        required=True,
+        input_formats=["%d.%m.%Y %H:%M:%S"],  # 2026-02-25 23:59:59
+    )

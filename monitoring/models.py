@@ -251,6 +251,7 @@ class BazarCamera(BaseModel):
                                  null=True, blank=True, help_text=_("Tuman"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='bazar_cameras', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
+    is_active = models.BooleanField(default=True, help_text=_("Is active"))
 
     class Meta:
         verbose_name = _("Bazar Camera")
