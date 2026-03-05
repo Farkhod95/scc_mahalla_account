@@ -6,7 +6,7 @@ from monitoring.serializer.shop_tenant import ShopTenantListSerializer  # ShopTe
 class TenantEmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = TenantEmployee
-        fields = ('id', 'tenant', 'fio', 'jshshir', 'phone')
+        fields = ('id', 'tenant', 'fio', 'jshshir', 'phone', 'avatar')
         extra_kwargs = {
             'tenant': {"required": True},
             'fio': {"required": False, "allow_null": True, "allow_blank": True},
@@ -20,4 +20,4 @@ class TenantEmployeeListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TenantEmployee
-        fields = ('id', 'tenant', 'tenant_detail', 'fio', 'jshshir', 'phone')
+        fields = ('id', 'tenant', 'tenant_detail', 'fio', 'jshshir', 'phone', 'avatar')

@@ -6,7 +6,7 @@ from monitoring.serializer.shop import ShopListSerializer  # ShopListSerializer 
 class ShopTenantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopTenant
-        fields = ('id', 'shop', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'employees_count')
+        fields = ('id', 'shop', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count')
         extra_kwargs = {
             'shop': {"required": True},
             'name': {"required": False, "allow_null": True, "allow_blank": True},
@@ -24,4 +24,4 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShopTenant
-        fields = ('id', 'shop', 'shop_detail', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'employees_count')
+        fields = ('id', 'shop', 'shop_detail', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count')

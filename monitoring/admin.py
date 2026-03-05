@@ -93,7 +93,7 @@ class ShopAdmin(admin.ModelAdmin):
     list_filter = ('block_type',)
     search_fields = ('code', 'owner_fio', 'owner_jshshir', 'owner_phone')
     ordering = ('block_type', 'shop_number')
-    fields = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_jshshir', 'owner_phone', 'total_area', 'tenants_count', 'rented_area')
+    fields = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'rented_area')
 
 
 @admin.register(ShopCamera)
@@ -111,7 +111,7 @@ class ShopTenantAdmin(admin.ModelAdmin):
     list_select_related = ('shop',)
     list_filter = ('shop',)
     search_fields = ('name', 'stir', 'certificate_number', 'leader_fio', 'leader_jshshir', 'leader_phone', 'shop__code')
-    fields = ('shop', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'employees_count')
+    fields = ('shop', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count')
 
 
 @admin.register(TenantEmployee)
@@ -120,7 +120,7 @@ class TenantEmployeeAdmin(admin.ModelAdmin):
     list_select_related = ('tenant',)
     list_filter = ('tenant',)
     search_fields = ('fio', 'jshshir', 'phone', 'tenant__name', 'tenant__stir', 'tenant__certificate_number')
-    fields = ('tenant', 'fio', 'jshshir', 'phone')
+    fields = ('tenant', 'fio', 'jshshir', 'phone', 'avatar')
 
 
 @admin.register(ShopTradeStats)
