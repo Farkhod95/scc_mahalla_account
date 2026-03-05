@@ -227,12 +227,17 @@ class OfficeCamera(BaseModel):
 
 
 class BazarCamera(BaseModel):
-    class TYPE(models.TextChoices):
+    class CAMERA_TYPE(models.TextChoices):
         DRB = "drb", _("DRB")
         FACE = "face", _("FACE")
 
+    class TYPE(models.TextChoices):
+        INPUT = "input", _("Input")
+        OUTPUT = "output", _("Output")
+
     object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
-    type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
+    type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Tip"))
+    camera_type = models.CharField(max_length=50, choices=CAMERA_TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
     ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))

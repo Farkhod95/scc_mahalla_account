@@ -186,4 +186,4 @@ class BazarCameraFilter(django_filters.FilterSet):
 
     class Meta:
         model = BazarCamera
-        fields = ('type', 'ip_address', 'region', 'district', 'mahalla', 'object_name', 'url', 'login')
+        fields = ('type', 'camera_type', 'ip_address', 'region', 'district', 'mahalla', 'object_name', 'url', 'login')
