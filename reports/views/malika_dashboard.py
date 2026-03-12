@@ -67,7 +67,7 @@ class MalikaDashboardReportView(APIView):
 
         revenue_fields = self._get_period_fields(period)
 
-        shops_qs = Shop.objects.filter(is_delete=False)
+        shops_qs = Shop.objects.all()
         tenants_qs = ShopTenant.objects.filter(is_delete=False)
         employees_qs = TenantEmployee.objects.filter(is_delete=False)
 
