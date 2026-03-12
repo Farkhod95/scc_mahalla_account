@@ -7,6 +7,7 @@ from monitoring.views.camera_information import CameraInformationView, CameraInf
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
 from monitoring.views.employee import EmployeeView, EmployeeDetailView, EmployeeFieldInfoView
 from monitoring.views.import_by_mahalla_id import CameraInformationImportInfoView
+from monitoring.views.import_excel_shop import ShopExcelImportView, ShopExcelImportStatusView
 from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailView, MahallaCrimeFieldInfoView, \
     MahallaCrimeForMapView
 from monitoring.views.mahalla_information import MahallaInformationView, MahallaInformationDetailView, \
@@ -20,10 +21,13 @@ from monitoring.views.object_category_dashboard import ObjectCategoryForDashboar
 from monitoring.views.office_camera import OfficeCameraView, OfficeCameraDetailView, OfficeCameraFieldInfoView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 from monitoring.views.shop import ShopView, ShopDetailView, ShopFieldInfoView
+from monitoring.views.shop_and_tenant_avatars import SyncShopOwnerAvatarAPIView, SyncShopOwnerAvatarStatusAPIView, \
+    SyncShopTenantLeaderAvatarAPIView, SyncShopTenantLeaderAvatarStatusAPIView
 from monitoring.views.shop_camera import ShopCameraView, ShopCameraDetailView, ShopCameraFieldInfoView
 from monitoring.views.shop_tenant import ShopTenantView, ShopTenantDetailView, ShopTenantFieldInfoView
-from monitoring.views.shop_trade_stats import ShopTradeStatsView, ShopTradeStatsDetailView, ShopTradeStatsFieldInfoView
 from monitoring.views.tenant_employee import TenantEmployeeView, TenantEmployeeDetailView, TenantEmployeeFieldInfoView
+from monitoring.views.tenant_employee_avatar import SyncTenantEmployeeAvatarAPIView, \
+    SyncTenantEmployeeAvatarStatusAPIView
 
 urlpatterns = [
     re_path(r'^employee/$', EmployeeView.as_view(), name='employee_view'),
@@ -83,6 +87,8 @@ urlpatterns = [
     re_path(r'^shop/$', ShopView.as_view(), name='shop_view'),
     path('shop/<int:pk>', ShopDetailView.as_view(), name='shop_detail_view'),
     path('shop/fields/', ShopFieldInfoView.as_view(), name='shop_fields_info'),
+    path("shop/sync-owner-avatars/", SyncShopOwnerAvatarAPIView.as_view(), name="shop-sync-owner-avatars",),
+    path("shop/sync-owner-avatars/status/<str:task_id>/", SyncShopOwnerAvatarStatusAPIView.as_view(), name="shop-sync-owner-avatars-status",),
 
     re_path(r'^shop-camera/$', ShopCameraView.as_view(), name='shop_camera_view'),
     path('shop-camera/<int:pk>', ShopCameraDetailView.as_view(), name='shop_camera_detail_view'),
@@ -91,17 +97,23 @@ urlpatterns = [
     re_path(r'^shop-tenant/$', ShopTenantView.as_view(), name='shop_tenant_view'),
     path('shop-tenant/<int:pk>', ShopTenantDetailView.as_view(), name='shop_tenant_detail_view'),
     path('shop-tenant/fields/', ShopTenantFieldInfoView.as_view(), name='shop_tenant_fields_info'),
+    path("shop-tenant/sync-leader-avatars/", SyncShopTenantLeaderAvatarAPIView.as_view(),
+        name="shop-tenant-sync-leader-avatars", ),
+    path("shop-tenant/sync-leader-avatars/status/<str:task_id>/", SyncShopTenantLeaderAvatarStatusAPIView.as_view(),
+        name="shop-tenant-sync-leader-avatars-status", ),
 
     re_path(r'^tenant-employee/$', TenantEmployeeView.as_view(), name='tenant_employee_view'),
     path('tenant-employee/<int:pk>', TenantEmployeeDetailView.as_view(), name='tenant_employee_detail_view'),
     path('tenant-employee/fields/', TenantEmployeeFieldInfoView.as_view(), name='tenant_employee_fields_info'),
-
-
-    re_path(r'^shop-trade-stats/$', ShopTradeStatsView.as_view(), name='shop_trade_stats_view'),
-    path('shop-trade-stats/<int:pk>', ShopTradeStatsDetailView.as_view(), name='shop_trade_stats_detail_view'),
-    path('shop-trade-stats/fields/', ShopTradeStatsFieldInfoView.as_view(), name='shop_trade_stats_fields_info'),
+    path("tenant-employee/sync-avatars/", SyncTenantEmployeeAvatarAPIView.as_view(), name="tenant-employee-sync-avatars",),
+    path("tenant-employee/sync-avatars/status/<str:task_id>/", SyncTenantEmployeeAvatarStatusAPIView.as_view(), name="tenant-employee-sync-avatars-status",),
 
     re_path(r'^bazar-camera/$', BazarCameraView.as_view(), name='bazar_camera_view'),
     path('bazar-camera/<int:pk>', BazarCameraDetailView.as_view(), name='bazar_camera_detail_view'),
     path('bazar-camera/fields/', BazarCameraFieldInfoView.as_view(), name='bazar_camera_fields_info'),
+
+    path("import-excel/", ShopExcelImportView.as_view(), name="shop-excel-import"),
+    path("import-excel/status/<str:task_id>/", ShopExcelImportStatusView.as_view(), name="shop-excel-import-status"),
+
+
 ]

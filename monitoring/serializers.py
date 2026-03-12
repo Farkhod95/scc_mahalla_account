@@ -304,3 +304,13 @@ class OfficeCameraListSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficeCamera
         fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
+
+
+class ShopExcelImportSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+    def validate_file(self, value):
+        filename = value.name.lower()
+        if not (filename.endswith(".xlsx") or filename.endswith(".xlsm") or filename.endswith(".xltx") or filename.endswith(".xltm")):
+            raise serializers.ValidationError("Faqat Excel fayl yuklash mumkin (.xlsx, .xlsm, .xltx, .xltm).")
+        return value

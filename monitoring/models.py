@@ -265,34 +265,35 @@ class Shop(BaseModel):
     """
     Do'kon: "Blok A - 1-do'kon"
     """
+
     class BlockType(models.TextChoices):
-        A = "A", _("Blok A")
-        B = "B", _("Blok B")
+        BLOK_A = "A", _("Blok A")
+        BLOK_B = "B", _("Blok B")
+        BLOK_J = "J", _("Blok J")
+        SAVDO_MARKAZ = "SM", _("Savdo Markazi")
+        PARKOVKA = "P", _("Avtoturargoh")
 
-    block_type = models.CharField(max_length=1, choices=BlockType.choices, null=True, blank=True, help_text=_("Blok turi (A/B)"))
-    shop_number = models.PositiveIntegerField(null=True, blank=True, help_text=_("Do'kon raqami"))
-    code = models.CharField(max_length=120, null=True, blank=True, help_text=_("Kod (masalan: 'Blok A 1-do'kon')"))
-    # Do'kon egasi
+    block_type = models.CharField(max_length=100, choices=BlockType.choices, null=True, blank=True, help_text=_("Blok turi (A/B)"))
+    shop_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon raqami"))
+    owner_company_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasiga tegishli MCHJ nomi"))
     owner_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi F.I.Sh"))
-    owner_jshshir = models.CharField(max_length=20, null=True, blank=True, help_text=_("Do'kon egasi JSHSHIR"))
-    owner_phone = models.CharField(max_length=30, null=True, blank=True, help_text=_("Do'kon egasi telefon raqami"))
-    avatar = models.ImageField(upload_to='owner/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
-
+    owner_jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi JSHSHIR"))
+    owner_phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi telefon raqami"))
+    avatar = models.ImageField(upload_to='owner/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Do'kon egasi rasmi"))
     total_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text=_("Do'kon umumiy maydoni (kv.m)"))
     tenants_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Ijaraga olgan tadbirkor soni"))
-    rented_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text=_("Ijaraga berilgan maydon (kv.m)"))
 
     class Meta:
         verbose_name = _("Shop")
         verbose_name_plural = _("Shops")
-        indexes = [models.Index(fields=["block_type", "shop_number"]), models.Index(fields=["code"])]
+        indexes = [
+            models.Index(fields=["block_type", "shop_number"]),
+        ]
         constraints = [
             models.UniqueConstraint(fields=["block_type", "shop_number"], name="uq_shop_block_type_shop_number"),
         ]
 
     def __str__(self):
-        if self.code:
-            return self.code
         if self.block_type and self.shop_number:
             return f"Blok {self.block_type} - {self.shop_number}-do'kon"
         return f"Shop #{self.pk}"
@@ -318,50 +319,11 @@ class ShopTenant(BaseModel):
     Do'konda faoliyat olib borayotgan tadbirkorlik subyekti (MCHJ, YTT ...)
     Bitta do'konda bir nechta tenant bo'lishi mumkin.
     """
-    shop = models.ForeignKey(Shop, related_name="tenants", on_delete=models.CASCADE, help_text=_("Do'kon"))
-    name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Tadbirkorlik subyekti nomi"))
-    # Rahbar ma'lumotlari
-    leader_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar F.I.SH"))
-    leader_jshshir = models.CharField(max_length=20, null=True, blank=True, help_text=_("Rahbar JSHSHIR"))
-    leader_phone = models.CharField(max_length=30, null=True, blank=True, help_text=_("Rahbar telefon raqami"))
-    avatar = models.ImageField(upload_to='lider/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
-    # Rekvizitlar
-    stir = models.CharField(max_length=30, null=True, blank=True, help_text=_("STIR (INN)"))
-    certificate_number = models.CharField(max_length=80, null=True, blank=True, help_text=_("Guvohnoma raqami"))
-    employees_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Subyektda ishlaydigan xodimlar soni"))
+    class BusinessType(models.TextChoices):
+        YTT = "ytt", _("YTT")
+        LEGAL = "legal", _("Yuridik")
+        OTHER = "other", _("Boshqa")
 
-    class Meta:
-        verbose_name = _("Shop Tenant")
-        verbose_name_plural = _("Shop Tenants")
-        indexes = [models.Index(fields=["shop", "stir"]), models.Index(fields=["certificate_number"])]
-
-    def __str__(self):
-        return self.name or f"Tenant #{self.pk}"
-
-
-class TenantEmployee(BaseModel):
-    """
-    Tenant (subyekt) xodimlari ro'yxati
-    """
-    tenant = models.ForeignKey(ShopTenant, related_name="employees", on_delete=models.CASCADE, help_text=_("Tadbirkorlik subyekti"))
-    fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim F.I.SH"))
-    jshshir = models.CharField(max_length=20, null=True, blank=True, help_text=_("Xodim JSHSHIR"))
-    phone = models.CharField(max_length=30, null=True, blank=True, help_text=_("Xodim telefon raqami"))
-    avatar = models.ImageField(upload_to='employee/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
-
-    class Meta:
-        verbose_name = _("Tenant Employee")
-        verbose_name_plural = _("Tenant Employees")
-
-    def __str__(self):
-        return self.fio or f"Employee #{self.pk}"
-
-
-class ShopTradeStats(BaseModel):
-    """
-    Do'kon bo'yicha savdo / kassa / tashrif / xavfsizlik holati.
-    Bu modelni "snapshot" sifatida yuritish mumkin (masalan kunlik/oylik yangilab borish).
-    """
     class TaxType(models.TextChoices):
         VAT = "vat", _("QQS")
         MONTHLY_INCOME = "monthly_income", _("Oylik daromad solig'i")
@@ -376,10 +338,22 @@ class ShopTradeStats(BaseModel):
         MEDIUM = "medium", _("O'rtacha")
         HIGH = "high", _("Yuqori")
 
-    shop = models.OneToOneField(Shop, related_name="stats", on_delete=models.CASCADE, help_text=_("Do'kon"))
-    # Soliq / kassa
-    tax_type = models.CharField(max_length=50, choices=TaxType.choices, null=True, blank=True, help_text=_("Soliq turi"))
-    cash_register_number = models.CharField(max_length=80, null=True, blank=True, help_text=_("Kassa apparat raqami"))
+    rented_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text=_("Ijaraga berilgan maydon (kv.m)"))
+    business_type = models.CharField(max_length=255, choices=BusinessType.choices, null=True, blank=True)
+    tax_type = models.CharField(max_length=100, choices=TaxType.choices, null=True, blank=True, help_text=_("Soliq turi"))
+    activity_status = models.CharField(max_length=100, choices=ActivityStatus.choices, null=True, blank=True, help_text=_("Tadbirkorlik subyekti holati (FAOL/NOFAOL)"))
+    shop = models.ForeignKey(Shop, related_name="tenants", on_delete=models.CASCADE, help_text=_("Do'kon"))
+    name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Faoliyat olib borayotgan Tadbirkorlik subyekti Rahbarining"))
+    # Rahbar ma'lumotlari
+    leader_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar F.I.SH"))
+    leader_jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar JSHSHIR"))
+    leader_phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar telefon raqami"))
+    avatar = models.ImageField(upload_to='lider/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Rahbar rasmi"))
+    # Rekvizitlar
+    stir = models.CharField(max_length=255, null=True, blank=True, help_text=_("STIR (INN)"))
+    certificate_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Guvohnoma raqami"))
+    employees_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Subyektda ishlaydigan xodimlar soni"))
+    cash_register_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kassa apparat raqami"))
     # Yil boshidan savdo tushumi (3 kanal)
     ytd_okkm = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (OKKM)"))
     ytd_e_invoice = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (EHF)"))
@@ -399,8 +373,8 @@ class ShopTradeStats(BaseModel):
     monthly_visitors = models.PositiveIntegerField(null=True, blank=True, help_text=_("1 oy davomida kirayotgan fuqarolar soni"))
     daily_visitors = models.PositiveIntegerField(null=True, blank=True, help_text=_("1 kun davomida kirayotgan fuqarolar soni"))
     # Holat / yong'in xavfsizligi
-    activity_status = models.CharField(max_length=20, choices=ActivityStatus.choices, null=True, blank=True, help_text=_("Tadbirkorlik subyekti holati (FAOL/NOFAOL)"))
-    fire_safety_level = models.CharField(max_length=20, choices=FireSafetyLevel.choices, null=True, blank=True, help_text=_("Yong'in xavfsizlik darajasi"))
+
+    fire_safety_level = models.CharField(max_length=255, choices=FireSafetyLevel.choices, null=True, blank=True, help_text=_("Yong'in xavfsizlik darajasi"))
     has_fire_alarm = models.BooleanField(default=False, help_text=_("Yong'indan xabar beruvchi qurilma bor-yo'qligi"))
     extinguisher_info = models.CharField(max_length=255, null=True, blank=True, help_text=_("Birlamchi yong'in o'chirish vositasi (Ognetushitel) turi/soni"))
     # Qizil toifa
@@ -408,8 +382,27 @@ class ShopTradeStats(BaseModel):
     red_reason = models.CharField(max_length=255, null=True, blank=True, help_text=_("Qizilga kirgan sababi"))
 
     class Meta:
-        verbose_name = _("Shop Trade Stats")
-        verbose_name_plural = _("Shop Trade Stats")
+        verbose_name = _("Shop Tenant")
+        verbose_name_plural = _("Shop Tenants")
+        indexes = [models.Index(fields=["shop", "stir"]), models.Index(fields=["certificate_number"])]
 
     def __str__(self):
-        return f"Stats: {self.shop}"
+        return self.name or f"Tenant #{self.pk}"
+
+
+class TenantEmployee(BaseModel):
+    """
+    Tenant (subyekt) xodimlari ro'yxati
+    """
+    tenant = models.ForeignKey(ShopTenant, related_name="employees", on_delete=models.CASCADE, help_text=_("Tadbirkorlik subyekti"))
+    fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim F.I.SH"))
+    jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim JSHSHIR"))
+    phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim telefon raqami"))
+    avatar = models.ImageField(upload_to='employee/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
+
+    class Meta:
+        verbose_name = _("Tenant Employee")
+        verbose_name_plural = _("Tenant Employees")
+
+    def __str__(self):
+        return self.fio or f"Employee #{self.pk}"

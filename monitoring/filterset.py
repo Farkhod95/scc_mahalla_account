@@ -1,7 +1,7 @@
 import django_filters
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, Shop, ShopCamera, ShopTenant, TenantEmployee, \
-    ShopTradeStats, BazarCamera
+    BazarCamera
 
 
 class EmployeeFilter(django_filters.FilterSet):
@@ -118,17 +118,18 @@ class OfficeCameraFilter(django_filters.FilterSet):
 
 class ShopFilter(django_filters.FilterSet):
     code = django_filters.CharFilter(field_name='code', lookup_expr='icontains')
+    owner_company_name = django_filters.CharFilter(field_name='owner_company_name', lookup_expr='icontains')
     owner_fio = django_filters.CharFilter(field_name='owner_fio', lookup_expr='icontains')
     owner_jshshir = django_filters.CharFilter(field_name='owner_jshshir', lookup_expr='icontains')
     owner_phone = django_filters.CharFilter(field_name='owner_phone', lookup_expr='icontains')
     total_area_from = django_filters.NumberFilter(field_name='total_area', lookup_expr='gte')
     total_area_to = django_filters.NumberFilter(field_name='total_area', lookup_expr='lte')
-    rented_area_from = django_filters.NumberFilter(field_name='rented_area', lookup_expr='gte')
-    rented_area_to = django_filters.NumberFilter(field_name='rented_area', lookup_expr='lte')
+    tenants_count_from = django_filters.NumberFilter(field_name='tenants_count', lookup_expr='gte')
+    tenants_count_to = django_filters.NumberFilter(field_name='tenants_count', lookup_expr='lte')
 
     class Meta:
         model = Shop
-        fields = ('block_type', 'shop_number', 'code', 'owner_fio', 'owner_jshshir', 'owner_phone', 'tenants_count', 'total_area', 'rented_area')
+        fields = ('block_type', 'shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'tenants_count', 'total_area')
 
 
 class ShopCameraFilter(django_filters.FilterSet):
@@ -139,6 +140,11 @@ class ShopCameraFilter(django_filters.FilterSet):
         fields = ('shop', 'url')
 
 
+import django_filters
+
+from monitoring.models import ShopTenant
+
+
 class ShopTenantFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains')
     leader_fio = django_filters.CharFilter(field_name='leader_fio', lookup_expr='icontains')
@@ -146,12 +152,44 @@ class ShopTenantFilter(django_filters.FilterSet):
     leader_phone = django_filters.CharFilter(field_name='leader_phone', lookup_expr='icontains')
     stir = django_filters.CharFilter(field_name='stir', lookup_expr='icontains')
     certificate_number = django_filters.CharFilter(field_name='certificate_number', lookup_expr='icontains')
+    cash_register_number = django_filters.CharFilter(field_name='cash_register_number', lookup_expr='icontains')
+    rented_area_from = django_filters.NumberFilter(field_name='rented_area', lookup_expr='gte')
+    rented_area_to = django_filters.NumberFilter(field_name='rented_area', lookup_expr='lte')
     employees_count_from = django_filters.NumberFilter(field_name='employees_count', lookup_expr='gte')
     employees_count_to = django_filters.NumberFilter(field_name='employees_count', lookup_expr='lte')
+    monthly_checks_count_from = django_filters.NumberFilter(field_name='monthly_checks_count', lookup_expr='gte')
+    monthly_checks_count_to = django_filters.NumberFilter(field_name='monthly_checks_count', lookup_expr='lte')
+    daily_checks_count_from = django_filters.NumberFilter(field_name='daily_checks_count', lookup_expr='gte')
+    daily_checks_count_to = django_filters.NumberFilter(field_name='daily_checks_count', lookup_expr='lte')
+    monthly_visitors_from = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='gte')
+    monthly_visitors_to = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='lte')
+    daily_visitors_from = django_filters.NumberFilter(field_name='daily_visitors', lookup_expr='gte')
+    daily_visitors_to = django_filters.NumberFilter(field_name='daily_visitors', lookup_expr='lte')
+    ytd_okkm_from = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='gte')
+    ytd_okkm_to = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='lte')
+    ytd_e_invoice_from = django_filters.NumberFilter(field_name='ytd_e_invoice', lookup_expr='gte')
+    ytd_e_invoice_to = django_filters.NumberFilter(field_name='ytd_e_invoice', lookup_expr='lte')
+    ytd_qr_from = django_filters.NumberFilter(field_name='ytd_qr', lookup_expr='gte')
+    ytd_qr_to = django_filters.NumberFilter(field_name='ytd_qr', lookup_expr='lte')
+    mtd_okkm_from = django_filters.NumberFilter(field_name='mtd_okkm', lookup_expr='gte')
+    mtd_okkm_to = django_filters.NumberFilter(field_name='mtd_okkm', lookup_expr='lte')
+    mtd_e_invoice_from = django_filters.NumberFilter(field_name='mtd_e_invoice', lookup_expr='gte')
+    mtd_e_invoice_to = django_filters.NumberFilter(field_name='mtd_e_invoice', lookup_expr='lte')
+    mtd_qr_from = django_filters.NumberFilter(field_name='mtd_qr', lookup_expr='gte')
+    mtd_qr_to = django_filters.NumberFilter(field_name='mtd_qr', lookup_expr='lte')
+    dtd_okkm_from = django_filters.NumberFilter(field_name='dtd_okkm', lookup_expr='gte')
+    dtd_okkm_to = django_filters.NumberFilter(field_name='dtd_okkm', lookup_expr='lte')
+    dtd_e_invoice_from = django_filters.NumberFilter(field_name='dtd_e_invoice', lookup_expr='gte')
+    dtd_e_invoice_to = django_filters.NumberFilter(field_name='dtd_e_invoice', lookup_expr='lte')
+    dtd_qr_from = django_filters.NumberFilter(field_name='dtd_qr', lookup_expr='gte')
+    dtd_qr_to = django_filters.NumberFilter(field_name='dtd_qr', lookup_expr='lte')
 
     class Meta:
         model = ShopTenant
-        fields = ('shop', 'name', 'stir', 'certificate_number', 'leader_fio', 'leader_jshshir', 'leader_phone', 'employees_count')
+        fields = ('shop', 'business_type', 'tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm',
+                  'is_red_category', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number',
+                  'cash_register_number', 'employees_count', 'monthly_checks_count', 'daily_checks_count',
+                  'monthly_visitors', 'daily_visitors')
 
 
 class TenantEmployeeFilter(django_filters.FilterSet):
@@ -162,21 +200,6 @@ class TenantEmployeeFilter(django_filters.FilterSet):
     class Meta:
         model = TenantEmployee
         fields = ('tenant', 'fio', 'jshshir', 'phone')
-
-
-class ShopTradeStatsFilter(django_filters.FilterSet):
-    cash_register_number = django_filters.CharFilter(field_name='cash_register_number', lookup_expr='icontains')
-    red_reason = django_filters.CharFilter(field_name='red_reason', lookup_expr='icontains')
-
-    ytd_okkm_from = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='gte')
-    ytd_okkm_to = django_filters.NumberFilter(field_name='ytd_okkm', lookup_expr='lte')
-
-    monthly_visitors_from = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='gte')
-    monthly_visitors_to = django_filters.NumberFilter(field_name='monthly_visitors', lookup_expr='lte')
-
-    class Meta:
-        model = ShopTradeStats
-        fields = ('shop', 'tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category', 'cash_register_number', 'red_reason')
 
 
 class BazarCameraFilter(django_filters.FilterSet):
