@@ -6,12 +6,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from monitoring.models import Shop, ShopTenant, TenantEmployee, ShopCamera
+from monitoring.models import Shop, ShopTenant, TenantEmployee
 
 
 class MalikaDashboardReportView(APIView):
     """
-    Dashboard API
+    Dashboard uchun 1:1 response.
 
     Query params:
         ?period=daily
@@ -28,256 +28,262 @@ class MalikaDashboardReportView(APIView):
         except Exception:
             return Decimal("0")
 
-    def _money(self, value):
-        value = self._d(value)
-        return float(value)
+    def _format_int(self, value):
+        try:
+            return f"{int(value):,}".replace(",", " ")
+        except Exception:
+            return "0"
 
-    def get_revenue_fields(self, period: str):
-        """
-        period bo'yicha fieldlar
-        """
+    def _format_money(self, value):
+        value = self._d(value)
+        s = f"{value:,.2f}".replace(",", " ")
+        if s.endswith(".00"):
+            s = s[:-3]
+        return s
+
+    def _get_period_fields(self, period):
         if period == "daily":
-            return "dtd_okkm", "dtd_e_invoice", "dtd_qr"
+            return {
+                "okkm": "dtd_okkm",
+                "e_invoice": "dtd_e_invoice",
+                "qr": "dtd_qr",
+            }
         elif period == "monthly":
-            return "mtd_okkm", "mtd_e_invoice", "mtd_qr"
-        return "ytd_okkm", "ytd_e_invoice", "ytd_qr"
+            return {
+                "okkm": "mtd_okkm",
+                "e_invoice": "mtd_e_invoice",
+                "qr": "mtd_qr",
+            }
+        return {
+            "okkm": "ytd_okkm",
+            "e_invoice": "ytd_e_invoice",
+            "qr": "ytd_qr",
+        }
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
         if period not in ["daily", "monthly", "yearly"]:
             period = "yearly"
 
-        okkm_field, einvoice_field, qr_field = self.get_revenue_fields(period)
+        revenue_fields = self._get_period_fields(period)
 
-        # -----------------------------
-        # 1. Shop statistikasi
-        # -----------------------------
         shops_qs = Shop.objects.filter(is_delete=False)
+        tenants_qs = ShopTenant.objects.filter(is_delete=False)
+        employees_qs = TenantEmployee.objects.filter(is_delete=False)
 
+        # =========================
+        # 1. DO'KONLAR
+        # =========================
         total_shops = shops_qs.count()
 
-        shop_block_counts = shops_qs.values("block_type").annotate(
-            count=Count("id")
-        ).order_by("block_type")
+        a_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_A).count()
+        b_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_B).count()
+        j_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_J).count()
+        merkalo_count = shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count()
 
-        block_map = {
-            Shop.BlockType.BLOK_A: "A blok",
-            Shop.BlockType.BLOK_B: "B blok",
-            Shop.BlockType.BLOK_J: "J blok",
-            Shop.BlockType.SAVDO_MARKAZ: "Savdo markazi",
-            Shop.BlockType.PARKOVKA: "Avtoturargoh",
-        }
+        # Sizning modelda OFFICE va SKLAD yo'q.
+        # Hozircha 0 qaytaryapmiz.
+        office_count = 0
+        sklad_count = 0
 
-        blocks = []
-        for item in shop_block_counts:
-            code = item["block_type"]
-            blocks.append({
-                "code": code,
-                "name": block_map.get(code, code),
-                "count": item["count"],
-            })
+        shops_items = [
+            {
+                "key": "A",
+                "name": "A blok",
+                "count": a_count,
+                "formatted": self._format_int(a_count),
+            },
+            {
+                "key": "B",
+                "name": "B blok",
+                "count": b_count,
+                "formatted": self._format_int(b_count),
+            },
+            {
+                "key": "J",
+                "name": "J blok",
+                "count": j_count,
+                "formatted": self._format_int(j_count),
+            },
+            {
+                "key": "SM",
+                "name": 'TЦ "Merkalo"',
+                "count": merkalo_count,
+                "formatted": self._format_int(merkalo_count),
+            },
+            {
+                "key": "OFFICE",
+                "name": "Ofis",
+                "count": office_count,
+                "formatted": self._format_int(office_count),
+            },
+            {
+                "key": "SKLAD",
+                "name": "Sklad",
+                "count": sklad_count,
+                "formatted": self._format_int(sklad_count),
+            },
+        ]
 
-        # -----------------------------
-        # 2. Tenant statistikasi
-        # -----------------------------
-        tenants_qs = ShopTenant.objects.filter(is_delete=False)
+        shops_chart = [
+            {"name": item["name"], "value": item["count"]}
+            for item in shops_items
+        ]
 
-        total_tenants = tenants_qs.count()
+        # =========================
+        # 2. ISHCHILAR
+        # =========================
+        employees_total = employees_qs.count()
 
-        tenant_type_counts = tenants_qs.values("business_type").annotate(
-            count=Count("id")
-        ).order_by("business_type")
-
-        business_type_map = {
-            ShopTenant.BusinessType.YTT: "YTT",
-            ShopTenant.BusinessType.LEGAL: "MCHJ",
-            ShopTenant.BusinessType.OTHER: "Boshqa",
-        }
-
-        tenant_types = []
-        for item in tenant_type_counts:
-            code = item["business_type"]
-            tenant_types.append({
-                "code": code,
-                "name": business_type_map.get(code, code or "Noma'lum"),
-                "count": item["count"],
-            })
-
-        # -----------------------------
-        # 3. Xodimlar statistikasi
-        # -----------------------------
-        employees_qs = TenantEmployee.objects.filter(is_delete=False)
-        total_employees = employees_qs.count()
-
-        declared_employees_count = tenants_qs.aggregate(
-            total=Coalesce(Sum("employees_count"), 0)
-        )["total"] or 0
-
-        # -----------------------------
-        # 4. Kameralar / terminallar / kassa
-        # -----------------------------
-        total_cameras = ShopCamera.objects.filter(is_delete=False).count()
-
-        total_terminals = tenants_qs.exclude(
+        # =========================
+        # 3. TERMINALLAR
+        # Screenshotdagi terminal soni uchun sizda alohida model yo'q.
+        # cash_register_number bo'sh bo'lmagan tenantlarni terminal deb olyapmiz.
+        # =========================
+        terminals_total = tenants_qs.exclude(
             cash_register_number__isnull=True
         ).exclude(
             cash_register_number__exact=""
         ).count()
 
-        total_cash_registers = tenants_qs.exclude(
+        # =========================
+        # 4. SOLIQ TUSHUMLARI
+        # Sizning modelda alohida soliq summasi yo'q.
+        # Frontend kartani to'ldirish uchun vaqtincha savdo tushum totalini ishlatamiz.
+        # Agar real soliq summasi bo'lsa, alohida field qo'shiladi.
+        # =========================
+        tax_revenue_agg = tenants_qs.aggregate(
+            total=Coalesce(
+                Sum(revenue_fields["okkm"]) +
+                Sum(revenue_fields["e_invoice"]) +
+                Sum(revenue_fields["qr"]),
+                Decimal("0")
+            )
+        )
+        tax_revenue_total = self._d(tax_revenue_agg["total"])
+
+        # =========================
+        # 5. SAVDO TUSHUMLARI
+        # =========================
+        sales_agg = tenants_qs.aggregate(
+            okkm=Coalesce(Sum(revenue_fields["okkm"]), Decimal("0")),
+            e_invoice=Coalesce(Sum(revenue_fields["e_invoice"]), Decimal("0")),
+            qr=Coalesce(Sum(revenue_fields["qr"]), Decimal("0")),
+        )
+
+        sales_okkm = self._d(sales_agg["okkm"])
+        sales_e_invoice = self._d(sales_agg["e_invoice"])
+        sales_qr = self._d(sales_agg["qr"])
+        sales_total = sales_okkm + sales_e_invoice + sales_qr
+
+        # =========================
+        # 6. KASSA APPARATLARI
+        # distinct cash_register_number
+        # =========================
+        cash_registers_total = tenants_qs.exclude(
             cash_register_number__isnull=True
         ).exclude(
             cash_register_number__exact=""
         ).values("cash_register_number").distinct().count()
 
-        # -----------------------------
-        # 5. Savdo tushumlari
-        # -----------------------------
-        revenue_agg = tenants_qs.aggregate(
-            okkm=Coalesce(Sum(okkm_field), Decimal("0")),
-            e_invoice=Coalesce(Sum(einvoice_field), Decimal("0")),
-            qr=Coalesce(Sum(qr_field), Decimal("0")),
-        )
+        # =========================
+        # 7. TADBIRKORLIK SUBYEKTLARI
+        # =========================
+        mchj_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.LEGAL).count()
+        ytt_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.YTT).count()
+        other_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.OTHER).count()
+        business_total = tenants_qs.count()
 
-        total_sales_revenue = (
-            self._d(revenue_agg["okkm"]) +
-            self._d(revenue_agg["e_invoice"]) +
-            self._d(revenue_agg["qr"])
-        )
+        business_items = [
+            {
+                "key": "LEGAL",
+                "name": "MCHJ",
+                "count": mchj_count,
+                "formatted": self._format_int(mchj_count),
+            },
+            {
+                "key": "YTT",
+                "name": "YTT",
+                "count": ytt_count,
+                "formatted": self._format_int(ytt_count),
+            },
+            {
+                "key": "OTHER",
+                "name": "Boshqa",
+                "count": other_count,
+                "formatted": self._format_int(other_count),
+            },
+        ]
 
-        # -----------------------------
-        # 6. Soliq tushumlari
-        # Eslatma:
-        # modelda alohida soliq summasi yo'q.
-        # Shu sababli hozircha tax_type bo'yicha count qaytaryapmiz.
-        # Agar keyin soliq_summasi field qo'shilsa, summaga o'tkazamiz.
-        # -----------------------------
-        tax_type_counts = tenants_qs.values("tax_type").annotate(
-            count=Count("id")
-        ).order_by("tax_type")
+        business_chart = [
+            {"name": item["name"], "value": item["count"]}
+            for item in business_items if item["count"] > 0
+        ]
 
-        tax_type_map = {
-            ShopTenant.TaxType.VAT: "QQS",
-            ShopTenant.TaxType.MONTHLY_INCOME: "Oylik daromad solig'i",
-            ShopTenant.TaxType.OTHER: "Boshqa",
-        }
-
-        tax_types = []
-        for item in tax_type_counts:
-            code = item["tax_type"]
-            tax_types.append({
-                "code": code,
-                "name": tax_type_map.get(code, code or "Noma'lum"),
-                "count": item["count"],
-            })
-
-        # -----------------------------
-        # 7. Qizil toifa
-        # -----------------------------
-        red_category_count = tenants_qs.filter(is_red_category=True).count()
-
-        # -----------------------------
-        # 8. Yong'in xavfsizligi
-        # -----------------------------
-        fire_level_counts = tenants_qs.values("fire_safety_level").annotate(
-            count=Count("id")
-        ).order_by("fire_safety_level")
-
-        fire_level_map = {
-            ShopTenant.FireSafetyLevel.LOW: "Past",
-            ShopTenant.FireSafetyLevel.MEDIUM: "O'rtacha",
-            ShopTenant.FireSafetyLevel.HIGH: "Yuqori",
-        }
-
-        fire_levels = []
-        for item in fire_level_counts:
-            code = item["fire_safety_level"]
-            fire_levels.append({
-                "code": code,
-                "name": fire_level_map.get(code, code or "Noma'lum"),
-                "count": item["count"],
-            })
-
-        fire_alarm_count = tenants_qs.filter(has_fire_alarm=True).count()
-
-        # -----------------------------
-        # 9. Tashrif va chek statistikasi
-        # -----------------------------
-        if period == "daily":
-            visitors_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("daily_visitors"), 0)
-            )["total"] or 0
-            checks_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("daily_checks_count"), 0)
-            )["total"] or 0
-        elif period == "monthly":
-            visitors_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("monthly_visitors"), 0)
-            )["total"] or 0
-            checks_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("monthly_checks_count"), 0)
-            )["total"] or 0
-        else:
-            visitors_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("monthly_visitors"), 0)
-            )["total"] or 0
-            checks_total = tenants_qs.aggregate(
-                total=Coalesce(Sum("monthly_checks_count"), 0)
-            )["total"] or 0
-
-        data = {
+        response_data = {
             "period": period,
-
-            "summary": {
-                "total_shops": total_shops,
-                "total_tenants": total_tenants,
-                "total_employees": total_employees,
-                "declared_employees_count": declared_employees_count,
-                "total_cameras": total_cameras,
-                "total_terminals": total_terminals,
-                "total_cash_registers": total_cash_registers,
-                "red_category_count": red_category_count,
-                "visitors_total": visitors_total,
-                "checks_total": checks_total,
-            },
-
-            "shop_statistics": {
-                "total": total_shops,
-                "blocks": blocks,
-            },
-
-            "tenant_statistics": {
-                "total": total_tenants,
-                "business_types": tenant_types,
-            },
-
-            "employee_statistics": {
-                "actual_employee_records": total_employees,
-                "declared_employee_count": declared_employees_count,
-            },
-
-            "equipment_statistics": {
-                "cameras": total_cameras,
-                "terminals": total_terminals,
-                "cash_registers": total_cash_registers,
-            },
-
-            "sales_revenue": {
-                "period": period,
-                "okkm": self._money(revenue_agg["okkm"]),
-                "e_invoice": self._money(revenue_agg["e_invoice"]),
-                "qr": self._money(revenue_agg["qr"]),
-                "total": self._money(total_sales_revenue),
-            },
-
-            "tax_statistics": {
-                "types": tax_types,
-            },
-
-            "fire_safety_statistics": {
-                "levels": fire_levels,
-                "has_fire_alarm_count": fire_alarm_count,
-            },
+            "dashboard": {
+                "shops": {
+                    "title": "Do'konlar",
+                    "count": total_shops,
+                    "formatted": self._format_int(total_shops),
+                    "items": shops_items,
+                    "chart": shops_chart,
+                },
+                "employees": {
+                    "title": "Ishchilar",
+                    "label": "Nafar",
+                    "count": employees_total,
+                    "formatted": self._format_int(employees_total),
+                },
+                "terminals": {
+                    "title": "Terminallar",
+                    "count": terminals_total,
+                    "formatted": self._format_int(terminals_total),
+                },
+                "tax_revenue": {
+                    "title": "Soliq tushumlari",
+                    "count": float(tax_revenue_total),
+                    "formatted": f"{self._format_money(tax_revenue_total)} so'm",
+                },
+                "sales_revenue": {
+                    "title": "Savdo tushumlari",
+                    "count": float(sales_total),
+                    "formatted": f"{self._format_money(sales_total)} so'm",
+                    "items": [
+                        {
+                            "key": "OKKM",
+                            "name": "OKKM",
+                            "count": float(sales_okkm),
+                            "formatted": self._format_money(sales_okkm),
+                        },
+                        {
+                            "key": "E_INVOICE",
+                            "name": "EHF",
+                            "count": float(sales_e_invoice),
+                            "formatted": self._format_money(sales_e_invoice),
+                        },
+                        {
+                            "key": "QR",
+                            "name": "QR",
+                            "count": float(sales_qr),
+                            "formatted": self._format_money(sales_qr),
+                        },
+                    ],
+                },
+                "cash_registers": {
+                    "title": "Kassa apparatlari",
+                    "count": cash_registers_total,
+                    "formatted": self._format_int(cash_registers_total),
+                },
+                "business_entities": {
+                    "title": "Tadbirkorlik subyekti",
+                    "count": business_total,
+                    "formatted": self._format_int(business_total),
+                    "items": business_items,
+                    "chart": business_chart,
+                },
+            }
         }
 
-        return Response(data)
+        return Response(response_data)
