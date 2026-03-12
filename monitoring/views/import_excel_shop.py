@@ -1,33 +1,49 @@
 import os
-import uuid
 
 from celery.result import AsyncResult
-from django.core.files.storage import default_storage
+from django.conf import settings
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from monitoring.serializers import ShopExcelImportSerializer
 from monitoring.tasks import import_shop_excel_task
 
 
 class ShopExcelImportView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
-        serializer = ShopExcelImportSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        """
+        Papkadagi tayyor excel faylni olib background taskga yuboradi.
+        Request body yuborish shart emas.
 
-        excel_file = serializer.validated_data["file"]
+        Ixtiyoriy:
+        {
+            "file_name": "malika_shablon.xlsx"
+        }
+        """
 
-        ext = os.path.splitext(excel_file.name)[1]
-        filename = f"shop_imports/{uuid.uuid4().hex}{ext}"
+        file_name = request.data.get("file_name") or "malika_shablon.xlsx"
 
-        saved_path = default_storage.save(filename, excel_file)
-        absolute_file_path = default_storage.path(saved_path)
+        # monitoring/uploads ichidan oladi
+        absolute_file_path = os.path.join(
+            settings.BASE_DIR,
+            "monitoring",
+            "uploads",
+            file_name
+        )
+
+        if not os.path.exists(absolute_file_path):
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Fayl topilmadi.",
+                    "file_name": file_name,
+                    "file_path": absolute_file_path,
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         task = import_shop_excel_task.delay(absolute_file_path)
 
@@ -35,7 +51,9 @@ class ShopExcelImportView(APIView):
             {
                 "message": "Excel import background taskga yuborildi.",
                 "task_id": task.id,
-                "status_url": f"/api/v1/shops/import-excel/status/{task.id}/",
+                "file_name": file_name,
+                "file_path": absolute_file_path,
+                "status_url": f"http://192.168.168.149:8080/api/v1/shops/import-excel/status/{task.id}/",
             },
             status=status.HTTP_202_ACCEPTED
         )
@@ -47,22 +65,22 @@ class ShopExcelImportStatusView(APIView):
     def get(self, request, task_id, *args, **kwargs):
         result = AsyncResult(task_id)
 
-        data = {
+        response_data = {
             "task_id": task_id,
             "state": result.state,
         }
 
         if result.state == "PENDING":
-            data["message"] = "Task navbatda."
+            response_data["message"] = "Task navbatda."
         elif result.state == "STARTED":
-            data["message"] = "Task ishlayapti."
+            response_data["message"] = "Task ishlayapti."
         elif result.state == "SUCCESS":
-            data["message"] = "Task muvaffaqiyatli tugadi."
-            data["result"] = result.result
+            response_data["message"] = "Task muvaffaqiyatli tugadi."
+            response_data["result"] = result.result
         elif result.state == "FAILURE":
-            data["message"] = "Task xatolik bilan tugadi."
-            data["error"] = str(result.result)
+            response_data["message"] = "Task xatolik bilan tugadi."
+            response_data["error"] = str(result.result)
         else:
-            data["message"] = result.state
+            response_data["message"] = result.state
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(response_data, status=status.HTTP_200_OK)
