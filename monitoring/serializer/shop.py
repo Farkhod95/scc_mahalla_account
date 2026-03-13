@@ -28,12 +28,12 @@ class ShopCameraInlineSerializer(serializers.ModelSerializer):
 class ShopListSerializer(serializers.ModelSerializer):
     block_type_label = serializers.CharField(source='get_block_type_display', read_only=True)
     shop_cameras = ShopCameraInlineSerializer(many=True, read_only=True)
-
+    is_red_category = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Shop
-        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras')
+        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras', 'is_red_category')
 
     def get_avatar(self, obj):
         if not obj.avatar:
@@ -49,3 +49,6 @@ class ShopListSerializer(serializers.ModelSerializer):
         # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
         # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
         return url.replace('http://', 'https://', 1)
+
+    def get_is_red_category(self, obj):
+        return obj.tenants.filter(is_red_category=True).exists()
