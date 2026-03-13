@@ -280,7 +280,7 @@ class Shop(BaseModel):
     owner_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi F.I.Sh"))
     owner_jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi JSHSHIR"))
     owner_phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi telefon raqami"))
-    avatar = models.ImageField(upload_to='owner/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Do'kon egasi rasmi"))
+    avatar = models.ImageField(upload_to='owner/%Y/%m/%d', null=True, blank=True, help_text=_("Do'kon egasi rasmi"))
     total_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text=_("Do'kon umumiy maydoni (kv.m)"))
     tenants_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Ijaraga olgan tadbirkor soni"))
 
@@ -349,7 +349,7 @@ class ShopTenant(BaseModel):
     leader_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar F.I.SH"))
     leader_jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar JSHSHIR"))
     leader_phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Rahbar telefon raqami"))
-    avatar = models.ImageField(upload_to='lider/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Rahbar rasmi"))
+    avatar = models.ImageField(upload_to='lider/%Y/%m/%d', null=True, blank=True, help_text=_("Rahbar rasmi"))
     # Rekvizitlar
     stir = models.CharField(max_length=255, null=True, blank=True, help_text=_("STIR (INN)"))
     certificate_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Guvohnoma raqami"))
@@ -399,7 +399,7 @@ class TenantEmployee(BaseModel):
     fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim F.I.SH"))
     jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim JSHSHIR"))
     phone = models.CharField(max_length=255, null=True, blank=True, help_text=_("Xodim telefon raqami"))
-    avatar = models.ImageField(upload_to='employee/avatars/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
+    avatar = models.ImageField(upload_to='tenemployee/%Y/%m/%d', null=True, blank=True, help_text=_("Hodim rasmi"))
 
     class Meta:
         verbose_name = _("Tenant Employee")
