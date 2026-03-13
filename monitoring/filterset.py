@@ -129,7 +129,7 @@ class ShopFilter(django_filters.FilterSet):
 
     class Meta:
         model = Shop
-        fields = ('block_type', 'shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'tenants_count', 'total_area')
+        fields = ('block_type', 'shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'tenants_count', 'total_area', 'code')
 
 
 class ShopCameraFilter(django_filters.FilterSet):

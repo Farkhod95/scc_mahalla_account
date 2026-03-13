@@ -6,7 +6,7 @@ from monitoring.models import Shop, ShopCamera
 class ShopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
-        fields = ('id', 'block_type', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count')
+        fields = ('id', 'block_type', 'shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count')
         extra_kwargs = {
             'block_type': {'required': False, 'allow_null': True, 'allow_blank': True},
             'shop_number': {'required': False, 'allow_null': True, 'allow_blank': True},
@@ -31,4 +31,4 @@ class ShopListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shop
-        fields = ('id', 'block_type', 'block_type_label', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras')
+        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras')

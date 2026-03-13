@@ -89,11 +89,11 @@ class OfficeCameraAdmin(admin.ModelAdmin):
 
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
-    list_display = ('block_type', 'shop_number',  'owner_company_name', 'owner_fio', 'owner_phone', 'total_area', 'tenants_count')
+    list_display = ('block_type', 'shop_number', 'code',  'owner_company_name', 'owner_fio', 'owner_phone', 'total_area', 'tenants_count')
     list_filter = ('block_type',)
-    search_fields = ('shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone')
+    search_fields = ('shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone')
     ordering = ('block_type', 'shop_number')
-    fields = ('block_type', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count')
+    fields = ('block_type', 'shop_number', 'code', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count')
 
 
 @admin.register(ShopCamera)
