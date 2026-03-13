@@ -29,6 +29,23 @@ class ShopListSerializer(serializers.ModelSerializer):
     block_type_label = serializers.CharField(source='get_block_type_display', read_only=True)
     shop_cameras = ShopCameraInlineSerializer(many=True, read_only=True)
 
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = Shop
         fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras')
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)

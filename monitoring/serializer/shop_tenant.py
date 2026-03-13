@@ -54,6 +54,8 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
     shop_block_type = serializers.CharField(source='shop.block_type', read_only=True)
     shop_block_type_label = serializers.CharField(source='shop.get_block_type_display', read_only=True)
 
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = ShopTenant
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
@@ -63,3 +65,18 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
                   'mtd_okkm', 'mtd_e_invoice', 'mtd_qr', 'dtd_okkm', 'dtd_e_invoice', 'dtd_qr', 'monthly_checks_count',
                   'daily_checks_count', 'monthly_visitors', 'daily_visitors', 'fire_safety_level',
                   'fire_safety_level_label', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)

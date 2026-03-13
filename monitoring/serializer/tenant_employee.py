@@ -18,6 +18,24 @@ class TenantEmployeeSerializer(serializers.ModelSerializer):
 class TenantEmployeeListSerializer(serializers.ModelSerializer):
     tenant_detail = ShopTenantListSerializer(source='tenant', read_only=True)
 
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = TenantEmployee
         fields = ('id', 'tenant', 'tenant_detail', 'fio', 'jshshir', 'phone', 'avatar')
+
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
