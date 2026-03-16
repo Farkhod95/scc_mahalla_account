@@ -38,7 +38,7 @@ class BazarCameraView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return BazarCamera.objects.all()
+        return BazarCamera.objects.filter(location_type='malika')
 
     def post(self, request, **kwargs):
         serializer = BazarCameraSerializer(data=request.data)
@@ -52,7 +52,7 @@ class BazarCameraDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return BazarCamera.objects.all()
+        return BazarCamera.objects.filter(location_type='malika')
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)

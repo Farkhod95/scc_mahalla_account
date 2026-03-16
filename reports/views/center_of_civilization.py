@@ -83,7 +83,7 @@ def _region_names_3lang(region_obj: Region | None, soato_int: int) -> dict:
 # =========================
 # MAIN VIEW
 # =========================
-class MalikaFlowReportView(APIView):
+class CenterOfCivilizationReportView(APIView):
     """
     GET /reports/malika-flow?region_soato=1726&from_date=2026-02-01 00:00:00&to_date=2026-03-05 23:59:59
     """
@@ -115,7 +115,7 @@ class MalikaFlowReportView(APIView):
         # B) Kameralarni topish (logika o‘zgarmaydi)
         # ------------------------
         cameras = (
-            BazarCamera.objects.filter(is_active=True, location_type='malika')
+            BazarCamera.objects.filter(is_active=True, location_type='civilization')
             .exclude(ip_address__isnull=True)
             .exclude(ip_address="")
         )

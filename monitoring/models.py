@@ -235,9 +235,14 @@ class BazarCamera(BaseModel):
         INPUT = "input", _("Input")
         OUTPUT = "output", _("Output")
 
+    class LOCATION_TYPE(models.TextChoices):
+        MALIKA = "malika", _("Malika")
+        CICILIZATION = "civilization", _("Civilization")
+
     object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
     type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Tip"))
     camera_type = models.CharField(max_length=50, choices=CAMERA_TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
+    location_type = models.CharField(max_length=100, choices=LOCATION_TYPE.choices, null=True, blank=True, help_text=_("Lokatsiya tip"))
     ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))

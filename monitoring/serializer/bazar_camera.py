@@ -8,7 +8,7 @@ class BazarCameraSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BazarCamera
-        fields = ('id', 'object_name', 'type', 'camera_type', 'ip_address', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla', 'is_active')
+        fields = ('id', 'object_name', 'type', 'location_type', 'camera_type', 'ip_address', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla', 'is_active')
 
 
 class BazarCameraListSerializer(serializers.ModelSerializer):
@@ -18,4 +18,4 @@ class BazarCameraListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BazarCamera
-        fields = ('id', 'object_name', 'type', 'camera_type', 'ip_address', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'is_active')
+        fields = ('id', 'object_name', 'type', 'location_type', 'camera_type', 'ip_address', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'is_active')
