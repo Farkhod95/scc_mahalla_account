@@ -213,17 +213,12 @@ class CenterOfCivilizationReportView(APIView):
                             exit_ = 0
 
                     # ✅ QAT’IY taqsim:
-                    # if cam.type == BazarCamera.TYPE.INPUT:
-                    #     cars_in_by_region[soato_int] += entry
-                    #     cars_in_total += entry
-                    # elif cam.type == BazarCamera.TYPE.OUTPUT:
-                    #     cars_out_by_region[soato_int] += exit_
-                    #     cars_out_total += exit_
-                    cars_in_by_region[soato_int] += entry
-                    cars_out_by_region[soato_int] += exit_
-
-                    cars_in_total += entry
-                    cars_out_total += exit_
+                    if cam.type == BazarCamera.TYPE.INPUT:
+                        cars_in_by_region[soato_int] += entry
+                        cars_in_total += entry
+                    elif cam.type == BazarCamera.TYPE.OUTPUT:
+                        cars_out_by_region[soato_int] += exit_
+                        cars_out_total += exit_
 
                 continue
 
