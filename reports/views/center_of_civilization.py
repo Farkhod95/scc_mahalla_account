@@ -17,13 +17,13 @@ from reports.serializers import MalikaFlowQuerySerializer
 
 # DRB upstream (Basic Auth)
 DRB_UPSTREAM_BASE_URL = "http://172.20.20.9:8853"
-DRB_UPSTREAM_USERNAME = "safecity@2026"
-DRB_UPSTREAM_PASSWORD = ">3LP391)KUa7"
+DRB_UPSTREAM_USERNAME = "12121@2026"
+DRB_UPSTREAM_PASSWORD = ">1121212)KUa7"
 DRB_TIMEOUT = 10
 
 # FACE upstream (Token)
 FACE_UPSTREAM_BASE_URL = "https://172.20.20.9"
-FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
+FACE_TOKEN = "1212121212121"
 FACE_TIMEOUT = 10
 FACE_VERIFY_SSL = False  # self-signed bo‘lsa False
 
@@ -213,12 +213,17 @@ class CenterOfCivilizationReportView(APIView):
                             exit_ = 0
 
                     # ✅ QAT’IY taqsim:
-                    if cam.type == BazarCamera.TYPE.INPUT:
-                        cars_in_by_region[soato_int] += entry
-                        cars_in_total += entry
-                    elif cam.type == BazarCamera.TYPE.OUTPUT:
-                        cars_out_by_region[soato_int] += exit_
-                        cars_out_total += exit_
+                    # if cam.type == BazarCamera.TYPE.INPUT:
+                    #     cars_in_by_region[soato_int] += entry
+                    #     cars_in_total += entry
+                    # elif cam.type == BazarCamera.TYPE.OUTPUT:
+                    #     cars_out_by_region[soato_int] += exit_
+                    #     cars_out_total += exit_
+                    cars_in_by_region[soato_int] += entry
+                    cars_out_by_region[soato_int] += exit_
+
+                    cars_in_total += entry
+                    cars_out_total += exit_
 
                 continue
 
