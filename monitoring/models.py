@@ -407,3 +407,38 @@ class TenantEmployee(BaseModel):
 
     def __str__(self):
         return self.fio or f"Employee #{self.pk}"
+
+
+class CenterOfCivilization(BaseModel):
+    class CAMERA_TYPE(models.TextChoices):
+        DRB = "drb", _("DRB")
+        FACE = "face", _("FACE")
+
+    class TYPE(models.TextChoices):
+        INPUT = "input", _("Input")
+        OUTPUT = "output", _("Output")
+
+    object_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Obyekt Nomi"))
+    type = models.CharField(max_length=50, choices=TYPE.choices, null=True, blank=True, help_text=_("Tip"))
+    camera_type = models.CharField(max_length=50, choices=CAMERA_TYPE.choices, null=True, blank=True, help_text=_("Kamera tip"))
+    ip_address = models.CharField(max_length=255, null=True, blank=True, help_text=_("Ip address"))
+    coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
+    coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+    url = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kamera url"))
+    icon = models.TextField(null=True, blank=True, help_text=_("Kamera icon"))
+    login = models.CharField(max_length=100, null=True, blank=True, help_text=_("Login"))
+    parol = models.CharField(max_length=100, null=True, blank=True, help_text=_("parol"))
+    region = models.ForeignKey("directory.Region", related_name='civilization_cameras', on_delete=models.SET_NULL, null=True,
+                               blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='civilization_cameras', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='civilization_cameras', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
+    is_active = models.BooleanField(default=True, help_text=_("Is active"))
+
+    class Meta:
+        verbose_name = _("Center of civilization")
+        verbose_name_plural = _("Center of civilizations")
+
+    def __str__(self):
+        return f"{self.object_name}" or f"Center of civilization #{self.pk}"

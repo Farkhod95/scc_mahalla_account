@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, ShopCamera, Shop, ShopTenant, TenantEmployee, \
-    BazarCamera
+    BazarCamera, CenterOfCivilization
 
 
 @admin.register(Employee)
@@ -125,6 +125,14 @@ class TenantEmployeeAdmin(admin.ModelAdmin):
 
 @admin.register(BazarCamera)
 class BazarCameraAdmin(admin.ModelAdmin):
+    list_display = ('object_name', 'ip_address', 'type', 'camera_type', 'url', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla', 'is_active')
+    list_filter = ('type', 'camera_type', 'region', 'district', 'is_active')
+    search_fields = ('object_name', 'ip_address', 'url', 'login')
+    fields = ('object_name', 'ip_address', 'type', 'camera_type', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla', 'is_active')
+
+
+@admin.register(CenterOfCivilization)
+class CenterOfCivilizationAdmin(admin.ModelAdmin):
     list_display = ('object_name', 'ip_address', 'type', 'camera_type', 'url', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla', 'is_active')
     list_filter = ('type', 'camera_type', 'region', 'district', 'is_active')
     search_fields = ('object_name', 'ip_address', 'url', 'login')

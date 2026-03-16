@@ -4,6 +4,8 @@ from monitoring.views.all_count_by_mahalla import AllCountByMahallaView
 from monitoring.views.bazar_camera import BazarCameraView, BazarCameraDetailView, BazarCameraFieldInfoView
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
     CameraInformationFieldInfoView, CameraInformationForMapView
+from monitoring.views.center_of_civilization import CenterOfCivilizationView, CenterOfCivilizationDetailView, \
+    CenterOfCivilizationFieldInfoView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
 from monitoring.views.employee import EmployeeView, EmployeeDetailView, EmployeeFieldInfoView
 from monitoring.views.import_by_mahalla_id import CameraInformationImportInfoView
@@ -111,6 +113,11 @@ urlpatterns = [
     re_path(r'^bazar-camera/$', BazarCameraView.as_view(), name='bazar_camera_view'),
     path('bazar-camera/<int:pk>', BazarCameraDetailView.as_view(), name='bazar_camera_detail_view'),
     path('bazar-camera/fields/', BazarCameraFieldInfoView.as_view(), name='bazar_camera_fields_info'),
+
+
+    re_path(r'^center-of-civilization/$', CenterOfCivilizationView.as_view(), name='center_civilization_view'),
+    path('center-of-civilization/<int:pk>', CenterOfCivilizationDetailView.as_view(), name='center_civilization_detail_view'),
+    path('center-of-civilization/fields/', CenterOfCivilizationFieldInfoView.as_view(), name='center_civilization_fields_info'),
 
     path("import-excel/", ShopExcelImportView.as_view(), name="shop-excel-import"),
     path("import-excel/status/<str:task_id>/", ShopExcelImportStatusView.as_view(), name="shop-excel-import-status"),
