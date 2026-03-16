@@ -1,6 +1,7 @@
 # reports/views.py
 import requests
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -10,10 +11,6 @@ from directory.models import Region
 from monitoring.models import BazarCamera
 from reports.serializers import MalikaFlowQuerySerializer
 
-
-# =========================
-# UPSTREAM CONFIG
-# =========================
 
 # DRB upstream (Basic Auth)
 DRB_UPSTREAM_BASE_URL = "http://172.20.20.9:8853"
@@ -51,15 +48,7 @@ def _get_client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
-def _region_names_3lang(region_obj: Region | None, soato_int: int) -> dict:
-    """
-    RegionListSerializer dagi kabi:
-      name_uz, name_ru, name_en
-    Shu 3 ta nomni qaytaradi.
-
-    Agar region topilmasa (masalan soato=0):
-      - uz/ru/en uchun default "aniqlanmadi" matn.
-    """
+def _region_names_3lang(region_obj, soato_int: int) -> dict:
     if region_obj is None:
         if int(soato_int) == 0:
             return {
@@ -67,12 +56,7 @@ def _region_names_3lang(region_obj: Region | None, soato_int: int) -> dict:
                 "region_name_ru": "Регион не определён",
                 "region_name_en": "Region not defined",
             }
-        return {
-            "region_name_uz": "",
-            "region_name_ru": "",
-            "region_name_en": "",
-        }
-
+        return {"region_name_uz": "", "region_name_ru": "", "region_name_en": ""}
     return {
         "region_name_uz": getattr(region_obj, "name_uz", "") or "",
         "region_name_ru": getattr(region_obj, "name_ru", "") or "",
@@ -84,9 +68,6 @@ def _region_names_3lang(region_obj: Region | None, soato_int: int) -> dict:
 # MAIN VIEW
 # =========================
 class CenterOfCivilizationReportView(APIView):
-    """
-    GET /reports/malika-flow?region_soato=1726&from_date=2026-02-01 00:00:00&to_date=2026-03-05 23:59:59
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -107,15 +88,15 @@ class CenterOfCivilizationReportView(APIView):
         from_dt = v["from_date"]
         to_dt = v["to_date"]
 
-        # upstream kutadigan format
         from_str = from_dt.strftime("%d.%m.%Y %H:%M:%S")
         to_str = to_dt.strftime("%d.%m.%Y %H:%M:%S")
 
         # ------------------------
-        # B) Kameralarni topish (logika o‘zgarmaydi)
+        # B) Kameralarni topish
         # ------------------------
         cameras = (
             BazarCamera.objects.filter(is_active=True, location_type='civilization')
+            .select_related('region')
             .exclude(ip_address__isnull=True)
             .exclude(ip_address="")
         )
@@ -125,36 +106,29 @@ class CenterOfCivilizationReportView(APIView):
         face_cams = cameras.filter(camera_type=BazarCamera.CAMERA_TYPE.FACE)
 
         if total_cams == 0:
-            errors.append(
-                {
-                    "source": "db",
-                    "error": "No active cameras found for this region_soato",
-                    "region_soato": region_soato,
-                    "hint": "BazarCamera.region (code yoki id) region_soato ga mosligini tekshiring, is_active=True bo‘lsin",
-                }
-            )
+            errors.append({
+                "source": "db",
+                "error": "No active cameras found for this region_soato",
+                "region_soato": region_soato,
+                "hint": "BazarCamera.region (code yoki id) region_soato ga mosligini tekshiring, is_active=True bo‘lsin",
+            })
 
         # ------------------------
-        # C) CARS (DRB) - TYPE bo‘yicha QAT’IY:
-        #    INPUT -> entry
-        #    OUTPUT -> exit
-        #    (fallback yo‘q)
+        # C) DRB cameras - parallel requests
         # ------------------------
         cars_in_by_region = defaultdict(int)
         cars_out_by_region = defaultdict(int)
         cars_in_total = 0
         cars_out_total = 0
 
-        drb_url = f"{DRB_UPSTREAM_BASE_URL.rstrip('/')}/detection-count"
-
-        for cam in drb_cams:
+        def fetch_drb(cam):
+            drb_url = f"{DRB_UPSTREAM_BASE_URL.rstrip('/')}/detection-count"
             params = {
                 "ip_address": str(cam.ip_address),
                 "region_soato": region_soato,
                 "from": from_str,
                 "to": to_str,
             }
-
             try:
                 resp = requests.get(
                     drb_url,
@@ -162,186 +136,114 @@ class CenterOfCivilizationReportView(APIView):
                     auth=(DRB_UPSTREAM_USERNAME, DRB_UPSTREAM_PASSWORD),
                     timeout=DRB_TIMEOUT,
                 )
+                if resp.status_code >= 400:
+                    return {"error": f"HTTP {resp.status_code}", "ip": cam.ip_address}
+                return _safe_json(resp)
             except requests.RequestException as e:
-                errors.append(
-                    {
+                return {"error": str(e), "ip": cam.ip_address}
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(fetch_drb, cam): cam for cam in drb_cams}
+            for future in as_completed(futures):
+                cam = futures[future]
+                data = future.result()
+
+                if "error" in data:
+                    errors.append({
                         "source": "drb",
-                        "ip_address": cam.ip_address,
+                        "ip_address": data.get("ip"),
                         "camera_type": "drb",
                         "type": cam.type,
-                        "error": "Upstream connection error",
-                        "message": str(e),
-                    }
-                )
-                continue
+                        "message": data.get("error"),
+                    })
+                    continue
 
-            if resp.status_code >= 400:
-                errors.append(
-                    {
-                        "source": "drb",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "drb",
-                        "type": cam.type,
-                        "status_code": resp.status_code,
-                        "body": _clip(resp.text),
-                    }
-                )
-                continue
-
-            data = _safe_json(resp)
-            region_block = data.get("region")
-
-            # DRB response:
-            # {"total":..., "entry":..., "exit":..., "region": {"1726":{"entry":313,"exit":0}, ...}}
-            if isinstance(region_block, dict):
-                for soato_key, val in region_block.items():
-                    try:
-                        soato_int = int(soato_key)
-                    except Exception:
-                        continue
-
-                    entry = 0
-                    exit_ = 0
-                    if isinstance(val, dict):
+                region_block = data.get("region")
+                if isinstance(region_block, dict):
+                    for soato_key, val in region_block.items():
                         try:
-                            entry = int(val.get("entry") or 0)
+                            soato_int = int(soato_key)
                         except Exception:
-                            entry = 0
-                        try:
-                            exit_ = int(val.get("exit") or 0)
-                        except Exception:
-                            exit_ = 0
+                            continue
 
-                    # ✅ QAT’IY taqsim:
-                    # if cam.type == BazarCamera.TYPE.INPUT:
-                    #     cars_in_by_region[soato_int] += entry
-                    #     cars_in_total += entry
-                    # elif cam.type == BazarCamera.TYPE.OUTPUT:
-                    #     cars_out_by_region[soato_int] += exit_
-                    #     cars_out_total += exit_
+                        entry = int(val.get("entry") or 0) if isinstance(val, dict) else 0
+                        exit_ = int(val.get("exit") or 0) if isinstance(val, dict) else 0
 
-                    cars_in_by_region[soato_int] += entry
-                    cars_out_by_region[soato_int] += exit_
-
-                    cars_in_total += entry
-                    cars_out_total += exit_
-
-                continue
-
-            # fallback: agar region yo‘q bo‘lsa (bu holda ham TYPE bo‘yicha bitta tomonga qo‘shamiz)
-            count_val = data.get("count", data.get("total", 0))
-            try:
-                count_val = int(count_val or 0)
-            except Exception:
-                count_val = 0
-
-            # if cam.type == BazarCamera.TYPE.INPUT:
-            #     cars_in_total += count_val
-            #     cars_in_by_region[region_soato] += count_val
-            # elif cam.type == BazarCamera.TYPE.OUTPUT:
-            #     cars_out_total += count_val
-            #     cars_out_by_region[region_soato] += count_val
-            cars_in_total += count_val
-            cars_out_total += count_val
-
-            cars_in_by_region[region_soato] += count_val
-            cars_out_by_region[region_soato] += count_val
+                        cars_in_by_region[soato_int] += entry
+                        cars_out_by_region[soato_int] += exit_
+                        cars_in_total += entry
+                        cars_out_total += exit_
+                else:
+                    count_val = int(data.get("count", data.get("total", 0)) or 0)
+                    cars_in_total += count_val
+                    cars_out_total += count_val
+                    cars_in_by_region[region_soato] += count_val
+                    cars_out_by_region[region_soato] += count_val
 
         # ------------------------
-        # D) PEOPLE (FACE) - TYPE bo‘yicha
+        # D) FACE cameras - parallel requests
         # ------------------------
         people_in_total = 0
         people_out_total = 0
 
         face_url = f"{FACE_UPSTREAM_BASE_URL.rstrip('/')}/lkvs-manager/v1/camera/face/detection-count"
         face_headers = {
-            "Authorization": FACE_TOKEN,  # Bearer emas
+            "Authorization": FACE_TOKEN,
             "Accept": "application/json",
         }
-
         client_ip = _get_client_ip(request)
         if client_ip:
             face_headers["X-Forwarded-For"] = client_ip
             face_headers["X-Real-IP"] = client_ip
 
-        for cam in face_cams:
+        def fetch_face(cam):
             params = {
                 "region_soato": region_soato,
                 "ip_address": str(cam.ip_address),
                 "from": from_str,
                 "to": to_str,
             }
-
             try:
-                resp = requests.get(
-                    face_url,
-                    params=params,
-                    headers=face_headers,
-                    timeout=FACE_TIMEOUT,
-                    verify=FACE_VERIFY_SSL,
-                )
+                resp = requests.get(face_url, params=params, headers=face_headers, timeout=FACE_TIMEOUT, verify=FACE_VERIFY_SSL)
+                if resp.status_code >= 400:
+                    return {"error": f"HTTP {resp.status_code}", "ip": cam.ip_address}
+                return _safe_json(resp)
             except requests.RequestException as e:
-                errors.append(
-                    {
+                return {"error": str(e), "ip": cam.ip_address}
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(fetch_face, cam): cam for cam in face_cams}
+            for future in as_completed(futures):
+                cam = futures[future]
+                data = future.result()
+                if "error" in data:
+                    errors.append({
                         "source": "face",
-                        "ip_address": cam.ip_address,
+                        "ip_address": data.get("ip"),
                         "camera_type": "face",
                         "type": cam.type,
-                        "error": "Upstream connection error",
-                        "message": str(e),
-                    }
-                )
-                continue
-
-            if resp.status_code >= 400:
-                errors.append(
-                    {
-                        "source": "face",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "face",
-                        "type": cam.type,
-                        "status_code": resp.status_code,
-                        "body": _safe_json(resp),
-                    }
-                )
-                continue
-
-            data = _safe_json(resp)
-            try:
+                        "message": data.get("error"),
+                    })
+                    continue
                 count_val = int(data.get("count") or 0)
-            except Exception:
-                count_val = 0
-
-            if cam.type == BazarCamera.TYPE.INPUT:
-                people_in_total += count_val
-            elif cam.type == BazarCamera.TYPE.OUTPUT:
-                people_out_total += count_val
+                if cam.type == BazarCamera.TYPE.INPUT:
+                    people_in_total += count_val
+                elif cam.type == BazarCamera.TYPE.OUTPUT:
+                    people_out_total += count_val
 
         # ------------------------
-        # E) Region nomlari (3 tilda)
+        # E) Region nomlari
         # ------------------------
         all_soatos = set(cars_in_by_region.keys()) | set(cars_out_by_region.keys())
         regions = Region.objects.filter(code__in=[str(x) for x in all_soatos])
-
-        soato_to_region = {}
-        for r in regions:
-            if r.code and str(r.code).isdigit():
-                soato_to_region[int(r.code)] = r
+        soato_to_region = {int(r.code): r for r in regions if r.code and str(r.code).isdigit()}
 
         def build_list(d: dict):
             items = []
             for soato, cnt in d.items():
-                soato_int = int(soato)
-                region_obj = soato_to_region.get(soato_int)
-                names3 = _region_names_3lang(region_obj, soato_int)
-
-                items.append(
-                    {
-                        "region_soato": soato_int,
-                        **names3,
-                        "count": int(cnt),
-                    }
-                )
+                region_obj = soato_to_region.get(int(soato))
+                names3 = _region_names_3lang(region_obj, soato)
+                items.append({"region_soato": int(soato), **names3, "count": int(cnt)})
             items.sort(key=lambda x: x["count"], reverse=True)
             return items
 
