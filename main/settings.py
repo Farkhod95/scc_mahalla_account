@@ -74,6 +74,9 @@ CORS_ALLOWED_ORIGINS = [
 
     "http://192.168.168.149:3000",
     "https://192.168.168.149:3000",
+    "http://192.168.168.149:3030",
+    "https://192.168.168.149:3030",
+
 
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
