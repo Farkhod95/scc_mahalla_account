@@ -137,12 +137,7 @@ class ShopCameraFilter(django_filters.FilterSet):
 
     class Meta:
         model = ShopCamera
-        fields = ('shop', 'url')
-
-
-import django_filters
-
-from monitoring.models import ShopTenant
+        fields = ('shop', 'title', 'url')
 
 
 class ShopTenantFilter(django_filters.FilterSet):

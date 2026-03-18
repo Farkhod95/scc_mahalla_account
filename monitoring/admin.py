@@ -98,11 +98,11 @@ class ShopAdmin(admin.ModelAdmin):
 
 @admin.register(ShopCamera)
 class ShopCameraAdmin(admin.ModelAdmin):
-    list_display = ('shop', 'url')
+    list_display = ('shop', 'title', 'url')
     list_select_related = ('shop',)
     list_filter = ('shop',)
     search_fields = ('url', 'shop__owner_fio')
-    fields = ('shop', 'url')
+    fields = ('shop', 'title', 'url')
 
 
 @admin.register(ShopTenant)

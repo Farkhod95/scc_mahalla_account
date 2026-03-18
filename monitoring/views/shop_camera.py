@@ -33,7 +33,7 @@ class ShopCameraView(ListCreateAPIView):
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = ShopCameraFilter
-    search_fields = ('url', 'shop__code', 'shop__owner_fio')
+    search_fields = ('url', 'shop__code', 'shop__owner_fio', 'title')
     ordering = ['-pk']
     permission_classes = [IsAuthenticated]
 

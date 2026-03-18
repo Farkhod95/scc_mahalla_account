@@ -6,7 +6,7 @@ from monitoring.serializer.shop import ShopListSerializer  # agar ShopListSerial
 class ShopCameraSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopCamera
-        fields = ('id', 'shop', 'url')
+        fields = ('id', 'shop', 'title', 'url')
         extra_kwargs = {
             'shop': {"required": True},
             'url': {"required": False, "allow_null": True, "allow_blank": True},
@@ -18,4 +18,4 @@ class ShopCameraListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShopCamera
-        fields = ('id', 'shop', 'shop_detail', 'url')
+        fields = ('id', 'shop', 'title', 'shop_detail', 'url')

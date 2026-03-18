@@ -310,6 +310,7 @@ class ShopCamera(BaseModel):
     Do'konda kameralari.
     """
     shop = models.ForeignKey(Shop, related_name="shop_cameras", on_delete=models.CASCADE, help_text=_("Do'kon"))
+    title = models.CharField(max_length=255, null=True, blank=True, help_text=_("Izoh"))
     url = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kamera url"))
 
     class Meta:
