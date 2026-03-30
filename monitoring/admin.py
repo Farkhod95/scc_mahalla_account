@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, ShopCamera, Shop, ShopTenant, TenantEmployee, \
-    BazarCamera, CenterOfCivilization
+    BazarCamera, CenterOfCivilization, MFYCitizen
 
 
 @admin.register(Employee)
@@ -137,3 +137,16 @@ class CenterOfCivilizationAdmin(admin.ModelAdmin):
     list_filter = ('type', 'camera_type', 'region', 'district', 'is_active')
     search_fields = ('object_name', 'ip_address', 'url', 'login')
     fields = ('object_name', 'ip_address', 'type', 'camera_type', 'coordinate_x', 'coordinate_y', 'url', 'icon', 'login', 'parol', 'region', 'district', 'mahalla', 'is_active')
+
+
+@admin.register(MFYCitizen)
+class MFYCitizenAdmin(admin.ModelAdmin):
+    list_display = ('full_name', 'category', 'avatar', 'region', 'district', 'mahalla', 'is_active')
+    list_filter = ('category', 'region', 'district', 'is_active')
+    search_fields = ('full_name', 'avatar', 'address')
+    fields = (
+        'full_name', 'category', 'address', 'avatar', 'image',
+        'degree', 'type', 'location',
+        'region', 'district', 'mahalla',
+        'is_active'
+    )

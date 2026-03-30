@@ -448,3 +448,35 @@ class CenterOfCivilization(BaseModel):
 
     def __str__(self):
         return f"{self.object_name}" or f"Center of civilization #{self.pk}"
+
+
+class MFYCitizen(BaseModel):
+    class CATEGORY(models.TextChoices):
+        RUHIY = "ruhiy", _("Ruhiy kasallar")
+        JANJAL = "janjal", _("Janjalkash oilalar")
+        NARKO = "narko", _("Narkomanlar")
+
+    full_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("F.I.SH"))
+    address = models.CharField(max_length=500, null=True, blank=True, help_text=_("Yashash manzili"))
+    phone = models.CharField(max_length=50, null=True, blank=True, help_text=_("Telefon raqami"))
+    avatar = models.ImageField(upload_to='mfy/citizens/', null=True, blank=True, help_text=_("Fuqaro rasmi"))
+
+    category = models.CharField(max_length=20, choices=CATEGORY.choices, null=True, blank=True, help_text=_("Toifa"))
+
+    degree = models.CharField(max_length=100, null=True, blank=True, help_text=_("Darajasi (ruhiy uchun)"))
+    type = models.CharField(max_length=100, null=True, blank=True, help_text=_("Turi (narko uchun)"))
+
+    location = models.CharField(max_length=255, null=True, blank=True, help_text=_("Lokatsiya"))
+
+    region = models.ForeignKey("directory.Region", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Tuman"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Mahalla"))
+
+    is_active = models.BooleanField(default=True, help_text=_("Is active"))
+
+    class Meta:
+        verbose_name = _("MFY Citizen")
+        verbose_name_plural = _("MFY Citizens")
+
+    def __str__(self):
+        return f"{self.full_name}" or f"Citizen #{self.pk}"

@@ -1,7 +1,7 @@
 import django_filters
 from .models import Employee, MahallaInformation, ObjectCategory, Object, CrimeCategory, MahallaCrime, PatrolCar, \
     CameraInformation, MahallaInformationCategory, OfficeCamera, Shop, ShopCamera, ShopTenant, TenantEmployee, \
-    BazarCamera, CenterOfCivilization
+    BazarCamera, CenterOfCivilization, MFYCitizen
 
 
 class EmployeeFilter(django_filters.FilterSet):
@@ -215,3 +215,18 @@ class CenterOfCivilizationFilter(django_filters.FilterSet):
     class Meta:
         model = CenterOfCivilization
         fields = ('type', 'camera_type', 'ip_address', 'region', 'district', 'mahalla', 'object_name', 'url', 'login', 'is_active')
+
+
+class MFYCitizenFilter(django_filters.FilterSet):
+    full_name = django_filters.CharFilter(field_name='full_name', lookup_expr='icontains')
+
+    class Meta:
+        model = MFYCitizen
+        fields = (
+            'category',
+            'region',
+            'district',
+            'mahalla',
+            'full_name',
+            'is_active',
+        )

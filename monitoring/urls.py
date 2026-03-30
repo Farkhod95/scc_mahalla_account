@@ -16,6 +16,7 @@ from monitoring.views.mahalla_information import MahallaInformationView, Mahalla
     MahallaInformationFieldInfoView
 from monitoring.views.mahalla_information_category import MahallaInformationCategoryView, \
     MahallaInformationCategoryDetailView, MahallaInformationCategoryFieldInfoView
+from monitoring.views.mfy_citizen import MFYCitizenView, MFYCitizenDetailView, MFYCitizenFieldInfoView
 from monitoring.views.objec_category import ObjectCategoryView, ObjectCategoryDetailView, ObjectCategoryFieldInfoView
 from monitoring.views.object import ObjectView, ObjectDetailView, ObjectFieldInfoView, ObjectForMapView, \
     ObjectExcelImportView
@@ -118,6 +119,10 @@ urlpatterns = [
     re_path(r'^center-of-civilization/$', CenterOfCivilizationView.as_view(), name='center_civilization_view'),
     path('center-of-civilization/<int:pk>', CenterOfCivilizationDetailView.as_view(), name='center_civilization_detail_view'),
     path('center-of-civilization/fields/', CenterOfCivilizationFieldInfoView.as_view(), name='center_civilization_fields_info'),
+
+    re_path(r'^mfy-citizen/$', MFYCitizenView.as_view(), name='mfy_citizen_view'),
+    path('mfy-citizen/<int:pk>', MFYCitizenDetailView.as_view(), name='mfy_citizen_detail_view'),
+    path('mfy-citizen/fields/', MFYCitizenFieldInfoView.as_view(), name='mfy_citizen_fields_info'),
 
     path("import-excel/", ShopExcelImportView.as_view(), name="shop-excel-import"),
     path("import-excel/status/<str:task_id>/", ShopExcelImportStatusView.as_view(), name="shop-excel-import-status"),
