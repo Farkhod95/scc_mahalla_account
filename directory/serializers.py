@@ -30,7 +30,7 @@ class RelatedPositionSerializer(serializers.ModelSerializer):
 class RegionSerializer(LocaleSerializer):
     class Meta:
         model = Region
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'center_x', 'center_y', 'zoom')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'center_x', 'center_y', 'zoom', 'is_active')
         extra_kwargs = {
             'name_en': {"required": True},
             'name_ru': {"required": True},
@@ -42,7 +42,7 @@ class RegionSerializer(LocaleSerializer):
 class RegionListSerializer(LocaleSerializer):
     class Meta:
         model = Region
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'center_x', 'center_y', 'zoom')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'center_x', 'center_y', 'zoom', 'is_active')
 
 
 class DistrictListSerializer(LocaleSerializer):
@@ -51,13 +51,13 @@ class DistrictListSerializer(LocaleSerializer):
     class Meta:
         model = District
         fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'center_x',
-                  'center_y', 'zoom')
+                  'center_y', 'zoom', 'is_active')
 
 
 class DistrictSerializer(LocaleSerializer):
     class Meta:
         model = District
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'center_x', 'center_y', 'zoom')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'center_x', 'center_y', 'zoom', 'is_active')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},
@@ -74,13 +74,13 @@ class GomListSerializer(LocaleSerializer):
     class Meta:
         model = Gom
         fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
-                  'district_detail')
+                  'district_detail', 'is_active')
 
 
 class GomSerializer(LocaleSerializer):
     class Meta:
         model = Gom
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'is_active')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},
@@ -98,13 +98,13 @@ class MahallaListSerializer(LocaleSerializer):
     class Meta:
         model = Mahalla
         fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
-                  'district_detail', 'gom', 'gom_detail', 'center_x', 'center_y', 'zoom')
+                  'district_detail', 'gom', 'gom_detail', 'center_x', 'center_y', 'zoom', 'is_active')
 
 
 class MahallaSerializer(LocaleSerializer):
     class Meta:
         model = Mahalla
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'gom', 'center_x', 'center_y', 'zoom')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'gom', 'center_x', 'center_y', 'zoom', 'is_active')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},

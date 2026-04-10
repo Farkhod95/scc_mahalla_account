@@ -11,6 +11,7 @@ class Region(BaseModel):
     center_x = models.FloatField(blank=True, null=True)
     center_y = models.FloatField(blank=True, null=True)
     zoom = models.FloatField(blank=True, null=True)
+    is_active = models.BooleanField(_('Active'), default=True)
 
     class Meta:
         verbose_name = _('region')
@@ -28,6 +29,7 @@ class District(BaseModel):
     center_x = models.FloatField(blank=True, null=True)
     center_y = models.FloatField(blank=True, null=True)
     zoom = models.FloatField(blank=True, null=True)
+    is_active = models.BooleanField(_('Active'), default=True)
 
     class Meta:
         verbose_name = _('district')
@@ -42,6 +44,7 @@ class Gom(BaseModel):
     name = models.CharField(max_length=255, null=True, blank=True)
     region = models.ForeignKey(Region, related_name='gom_region', on_delete=models.SET_NULL, null=True, blank=True)
     district = models.ForeignKey(District, related_name='gom_district', on_delete=models.SET_NULL, null=True, blank=True)
+    is_active = models.BooleanField(_('Active'), default=True)
 
     class Meta:
         verbose_name = _('Gom')
@@ -61,6 +64,7 @@ class Mahalla(BaseModel):
     center_x = models.FloatField(blank=True, null=True)
     center_y = models.FloatField(blank=True, null=True)
     zoom = models.FloatField(blank=True, null=True)
+    is_active = models.BooleanField(_('Active'), default=True)
 
     class Meta:
         verbose_name = _('Mahalla')

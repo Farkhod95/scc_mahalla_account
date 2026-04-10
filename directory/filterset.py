@@ -10,6 +10,7 @@ class DistrictFilter(FilterSet):
         fields = {
             'code': ['exact'],
             'region': ['exact'],
+            'is_active': ['exact'],
         }
 
 
@@ -20,6 +21,7 @@ class RegionssFilter(FilterSet):
         fields = {
             'name': ['exact'],
             'code': ['exact'],
+            'is_active': ['exact'],
         }
 
 
@@ -31,6 +33,7 @@ class MahallaFilter(FilterSet):
             'code': ['exact'],
             'region': ['exact'],
             'district': ['exact'],
+            'is_active': ['exact'],
         }
 
 
@@ -42,6 +45,7 @@ class GomFilter(FilterSet):
             'code': ['exact'],
             'region': ['exact'],
             'district': ['exact'],
+            'is_active': ['exact'],
         }
 
 

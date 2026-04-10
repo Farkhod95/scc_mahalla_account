@@ -5,41 +5,62 @@ from directory.models import District, Region, Mahalla, Organization, Department
 
 @admin.register(Region)
 class RegionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code',)
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'center_x', 'center_y', 'zoom', 'geo_json',)
-    search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
+    list_display = ('name', 'code', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'center_x', 'center_y', 'zoom', 'geo_json', 'is_active')
+    search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'is_active')
 
 
 @admin.register(District)
 class DistrictAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'region')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'geo_json', 'center_x', 'center_y', 'zoom')
+    list_display = ('name', 'code', 'region', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'geo_json', 'center_x', 'center_y', 'zoom', 'is_active')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
-    list_filter = ('region',)
+    list_filter = ('region', 'is_active',)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "region":
+            kwargs["queryset"] = Region.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(Mahalla)
 class MahallaAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'get_district_code', 'region', 'district', 'gom')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'gom', 'geo_json', 'center_x', 'center_y', 'zoom')
+    list_display = ('name', 'code', 'get_district_code', 'region', 'district', 'gom', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'gom', 'geo_json', 'center_x', 'center_y', 'zoom', 'is_active')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
-    list_filter = ('region', 'district', 'gom')
+    list_filter = ('region', 'district', 'gom', 'is_active')
 
     @admin.display(description="District code")  # Django 3.2+
     def get_district_code(self, obj):
         return obj.district.code if obj.district else "-"
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "region":
+            kwargs["queryset"] = Region.objects.filter(is_active=True)
+        elif db_field.name == "district":
+            kwargs["queryset"] = District.objects.filter(is_active=True)
+        elif db_field.name == "gom":
+            kwargs["queryset"] = Gom.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(Gom)
 class GomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'get_district_code', 'region', 'district')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district')
+    list_display = ('name', 'code', 'get_district_code', 'region', 'district', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'is_active')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
-    list_filter = ('region', 'district')
+    list_filter = ('region', 'district', 'is_active')
 
     @admin.display(description="District code")  # Django 3.2+
     def get_district_code(self, obj):
         return obj.district.code if obj.district else "-"
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "region":
+            kwargs["queryset"] = Region.objects.filter(is_active=True)
+        elif db_field.name == "district":
+            kwargs["queryset"] = District.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(Organization)
