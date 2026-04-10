@@ -131,7 +131,6 @@ class OrganizationSerializer(LocaleSerializer):
 class OrganizationListSerializer(LocaleSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
-    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:

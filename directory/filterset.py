@@ -54,6 +54,7 @@ class OrganizationFilter(FilterSet):
             'code': ['exact'],
             'region': ['exact'],
             'district': ['exact'],
+            'gom': ['exact'],
             'mahalla': ['exact'],
         }
 

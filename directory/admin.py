@@ -44,10 +44,10 @@ class GomAdmin(admin.ModelAdmin):
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'region', 'district', 'mahalla')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'mahalla')
+    list_display = ('name', 'code', 'region', 'district', 'mahalla', 'gom')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'mahalla', 'gom')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz')
-    autocomplete_fields = ('region', 'district', 'mahalla')
+    autocomplete_fields = ('region', 'district', 'mahalla', 'gom')
 
 
 @admin.register(Department)
