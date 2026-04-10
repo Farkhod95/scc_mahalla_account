@@ -1,6 +1,6 @@
 from django_filters.rest_framework import FilterSet
 
-from directory.models import District, Region, Mahalla, Organization, Position, Department
+from directory.models import District, Region, Mahalla, Organization, Position, Department, Gom
 
 
 class DistrictFilter(FilterSet):
@@ -27,6 +27,17 @@ class MahallaFilter(FilterSet):
 
     class Meta:
         model = Mahalla
+        fields = {
+            'code': ['exact'],
+            'region': ['exact'],
+            'district': ['exact'],
+        }
+
+
+class GomFilter(FilterSet):
+
+    class Meta:
+        model = Gom
         fields = {
             'code': ['exact'],
             'region': ['exact'],

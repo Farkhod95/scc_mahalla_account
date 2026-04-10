@@ -2,6 +2,7 @@ from django.urls import re_path, path
 from .views.department import DepartmentView, DepartmentDetailView, DepartmentFieldInfoView
 
 from .views.district import DistrictView, DistrictDetailView, DistrictViewList
+from .views.gom import GomView, GomDetailView
 from .views.import_mahalla import MahallaImportAPIView
 from .views.mahalla import MahallaView, MahallaDetailView
 from .views.organization import OrganizationView, OrganizationDetailView, OrganizationFieldInfoView
@@ -16,6 +17,9 @@ urlpatterns = [
     re_path(r'^district/$', DistrictView.as_view(), name='districts_view'),
     path('district/<int:pk>', DistrictDetailView.as_view(), name='districts_detail_view'),
     # path('district/list', DistrictViewList.as_view(), name='district_list'),
+
+    re_path(r'^gom/$', GomView.as_view(), name='gom_view'),
+    path('gom/<int:pk>', GomDetailView.as_view(), name='gom_detail_view'),
 
     re_path(r'^mahalla/$', MahallaView.as_view(), name='mahalla_view'),
     path('mahalla/<int:pk>', MahallaDetailView.as_view(), name='mahalla_detail_view'),

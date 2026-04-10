@@ -25,6 +25,8 @@ class Employee(BaseModel):
                                blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='employees', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='employees', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='employees', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Mahalla"))
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
@@ -60,6 +62,8 @@ class MahallaInformation(BaseModel):
                                blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='mahalla_informations', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='gom_informations', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='mahalla_informations', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
 
@@ -98,6 +102,14 @@ class Object(BaseModel):
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
     coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
     coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
+    region = models.ForeignKey("directory.Region", related_name='mahalla_objects', on_delete=models.SET_NULL, null=True,
+                               blank=True, help_text=_("Viloyat"))
+    district = models.ForeignKey("directory.District", related_name='mahalla_objects', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='gom_objects', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
+    mahalla = models.ForeignKey("directory.Mahalla", related_name='mahalla_objects', on_delete=models.SET_NULL,
+                                null=True, blank=True, help_text=_("Mahalla"))
 
     class Meta:
         verbose_name = _('Object')
@@ -133,6 +145,8 @@ class MahallaCrime(BaseModel):
                                blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='mahalla_crimes', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='gom_crimes', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='mahalla_crimes', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
 
@@ -182,6 +196,8 @@ class CameraInformation(BaseModel):
                                blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='cameras', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='cameras', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='cameras', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))
@@ -208,6 +224,8 @@ class OfficeCamera(BaseModel):
                                blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='office_cameras', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='office_cameras', on_delete=models.SET_NULL,
+                                 null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='office_cameras', on_delete=models.SET_NULL,
                                 null=True, blank=True, help_text=_("Mahalla"))
     address = models.TextField(_("Address"), null=True, blank=True, help_text=_("Yashash manzili"))

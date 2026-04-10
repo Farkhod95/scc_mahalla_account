@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Region, District, Mahalla, Organization, Department, Position
+from .models import Region, District, Mahalla, Organization, Department, Position, Gom
 
 
 class LocaleSerializer(serializers.ModelSerializer):
@@ -63,6 +63,29 @@ class DistrictSerializer(LocaleSerializer):
             'name_ru': {"required": True},
             'name_en': {"required": True},
             'region': {"required": True},
+            'code': {"required": True},
+        }
+
+
+class GomListSerializer(LocaleSerializer):
+    region_detail = RegionListSerializer(source='region', read_only=True)
+    district_detail = DistrictListSerializer(source='district', read_only=True)
+
+    class Meta:
+        model = Gom
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
+                  'district_detail')
+
+
+class GomSerializer(LocaleSerializer):
+    class Meta:
+        model = Gom
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district')
+        extra_kwargs = {
+            'name_uz': {"required": True},
+            'name_ru': {"required": True},
+            'name_en': {"required": True},
+            'district': {"required": True},
             'code': {"required": True},
         }
 

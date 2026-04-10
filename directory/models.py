@@ -37,11 +37,26 @@ class District(BaseModel):
         return self.name
 
 
+class Gom(BaseModel):
+    code = models.CharField(_('Gom code'), max_length=50, null=True, blank=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    region = models.ForeignKey(Region, related_name='gom_region', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey(District, related_name='gom_district', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Gom')
+        verbose_name_plural = _('Goms')
+
+    def __str__(self):
+        return self.name
+
+
 class Mahalla(BaseModel):
     code = models.CharField(_('Mahalla code'), max_length=50, null=True, blank=True)
     name = models.CharField(_('Mahalla name'), max_length=255, null=True, blank=True)
     region = models.ForeignKey(Region, related_name='mahalla_region', on_delete=models.SET_NULL, null=True, blank=True)
     district = models.ForeignKey(District, related_name='mahalla_district', on_delete=models.SET_NULL, null=True, blank=True)
+    gom = models.ForeignKey(Gom, related_name='mahalla_gom', on_delete=models.SET_NULL, null=True, blank=True)
     geo_json = models.TextField(_('GeoJson'), blank=True)
     center_x = models.FloatField(blank=True, null=True)
     center_y = models.FloatField(blank=True, null=True)
