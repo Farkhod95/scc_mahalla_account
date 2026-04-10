@@ -145,7 +145,7 @@ class MFYCitizenAdmin(admin.ModelAdmin):
     list_filter = ('category', 'region', 'district', 'is_active')
     search_fields = ('full_name', 'avatar', 'address')
     fields = (
-        'full_name', 'category', 'address', 'avatar', 'image',
+        'full_name', 'category', 'address', 'avatar', 'phone',
         'degree', 'type', 'location',
         'region', 'district', 'mahalla',
         'is_active'
