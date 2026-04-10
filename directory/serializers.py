@@ -92,18 +92,19 @@ class GomSerializer(LocaleSerializer):
 
 class MahallaListSerializer(LocaleSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
-    district_detail = DistrictListSerializer(source='district', read_only=True)
+    district_detail = DistrictSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
 
     class Meta:
         model = Mahalla
         fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
-                  'district_detail', 'center_x', 'center_y', 'zoom')
+                  'district_detail', 'gom', 'gom_detail', 'center_x', 'center_y', 'zoom')
 
 
 class MahallaSerializer(LocaleSerializer):
     class Meta:
         model = Mahalla
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'center_x', 'center_y', 'zoom')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'gom', 'center_x', 'center_y', 'zoom')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},
@@ -118,7 +119,7 @@ class OrganizationSerializer(LocaleSerializer):
     class Meta:
         model = Organization
         fields = ('id', 'number', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region',
-                  'district')
+                  'district', 'gom', 'mahalla')
         extra_kwargs = {
             'code': {"required": True},
             'name_uz': {"required": True},
@@ -130,12 +131,13 @@ class OrganizationSerializer(LocaleSerializer):
 class OrganizationListSerializer(LocaleSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = Organization
         fields = ('id', 'number', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail',
-                  'district', 'district_detail', 'mahalla', 'mahalla_detail')
+                  'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail')
 
 
 class OrganizationListPublicSerializer(LocaleSerializer):

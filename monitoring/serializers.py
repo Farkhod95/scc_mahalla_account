@@ -3,7 +3,8 @@ from monitoring.models import Employee, MahallaInformation, ObjectCategory, Obje
 from rest_framework import serializers
 
 from directory.serializers import RegionListSerializer, DistrictSerializer, OrganizationListPublicSerializer, \
-    DepartmentListPublicSerializer, PositionListPublicSerializer, DistrictListSerializer, MahallaListSerializer
+    DepartmentListPublicSerializer, PositionListPublicSerializer, DistrictListSerializer, MahallaListSerializer, \
+    GomSerializer
 
 
 class LocaleSerializer(serializers.ModelSerializer):
@@ -16,7 +17,7 @@ class LocaleSerializer(serializers.ModelSerializer):
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
-        fields = ('id', 'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'district', 'mahalla', 'address', 'avatar')
+        fields = ('id', 'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'gom', 'district', 'mahalla', 'address', 'avatar')
         extra_kwargs = {
             'full_name': {"required": True},
             'phone_number': {"required": True},
@@ -29,13 +30,14 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     position_detail = PositionListPublicSerializer(source='position', read_only=True)
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
         fields = ('id', 'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail',
-                  'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
+                  'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
 
     def get_avatar(self, obj):
         if not obj.avatar:
@@ -71,7 +73,7 @@ class MahallaInformationCategoryListSerializer(serializers.ModelSerializer):
 class MahallaInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = MahallaInformation
-        fields = ('id', 'count', 'category', 'region', 'district', 'mahalla')
+        fields = ('id', 'count', 'category', 'region', 'district', 'gom', 'mahalla')
         extra_kwargs = {
             'count': {"required": False},
         }
@@ -81,11 +83,12 @@ class MahallaInformationListSerializer(serializers.ModelSerializer):
     category_detail = MahallaInformationCategoryListSerializer(source='category', read_only=True)
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = MahallaInformation
-        fields = ('id', 'count', 'category', 'category_detail', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail')
+        fields = ('id', 'count', 'category', 'category_detail', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail')
 
 
 class ObjectCategorySerializer(LocaleSerializer):
@@ -200,7 +203,7 @@ class CrimeCategoryListSerializer(LocaleSerializer):
 class MahallaCrimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MahallaCrime
-        fields = ('id', 'category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'district', 'mahalla')
+        fields = ('id', 'category', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'district', 'gom', 'mahalla')
         extra_kwargs = {
             'article': {"required": True},
         }
@@ -217,11 +220,12 @@ class MahallaCrimeListSerializer(serializers.ModelSerializer):
     category_detail = ObjectCategoryListSerializer(source='category', read_only=True)
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = MahallaCrime
-        fields = ('id', 'category', 'category_detail', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail')
+        fields = ('id', 'category', 'category_detail', 'date', 'article', 'description', 'coordinate_x', 'coordinate_y', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail')
 
 
 class PatrolCarSerializer(serializers.ModelSerializer):
@@ -256,7 +260,7 @@ class PatrolCarListSerializer(serializers.ModelSerializer):
 class CameraInformationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CameraInformation
-        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'district', 'gom', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
         extra_kwargs = {
             'status': {"required": True},
         }
@@ -272,11 +276,12 @@ class CameraInformationMapSerializer(serializers.ModelSerializer):
 class CameraInformationListSerializer(serializers.ModelSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = CameraInformation
-        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
+        fields = ('id', 'object_name', 'direction', 'status', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type')
 
 
 class CameraInformationImportSerializer(serializers.Serializer):
@@ -293,17 +298,18 @@ class CameraInformationImportSerializer(serializers.Serializer):
 class OfficeCameraSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficeCamera
-        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'district', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'district', 'gom', 'mahalla', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
 
 
 class OfficeCameraListSerializer(serializers.ModelSerializer):
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictListSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
 
     class Meta:
         model = OfficeCamera
-        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
+        fields = ('id', 'object_name', 'direction', 'ip_address', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail', 'address', 'coordinate_x', 'coordinate_y', 'login', 'parol', 'camera_type', 'camera_url')
 
 
 class ShopExcelImportSerializer(serializers.Serializer):
