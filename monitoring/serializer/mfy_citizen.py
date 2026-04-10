@@ -9,7 +9,7 @@ class MFYCitizenSerializer(serializers.ModelSerializer):
         model = MFYCitizen
         fields = (
             'id', 'full_name', 'category', 'address', 'phone', 'avatar',
-            'degree', 'type', 'location',
+            'degree', 'type', 'coordinate_x', 'coordinate_y',
             'region', 'district', 'mahalla',
             'is_active'
         )
@@ -24,7 +24,7 @@ class MFYCitizenListSerializer(serializers.ModelSerializer):
         model = MFYCitizen
         fields = (
             'id', 'full_name', 'category', 'address', 'phone', 'avatar',
-            'degree', 'type', 'location',
+            'degree', 'type', 'coordinate_x', 'coordinate_y',
             'region', 'region_detail',
             'district', 'district_detail',
             'mahalla', 'mahalla_detail',

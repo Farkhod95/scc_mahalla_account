@@ -484,7 +484,8 @@ class MFYCitizen(BaseModel):
     degree = models.CharField(max_length=100, null=True, blank=True, help_text=_("Darajasi (ruhiy uchun)"))
     type = models.CharField(max_length=100, null=True, blank=True, help_text=_("Turi (narko uchun)"))
 
-    location = models.CharField(max_length=255, null=True, blank=True, help_text=_("Lokatsiya"))
+    coordinate_x = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata X"))
+    coordinate_y = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kordinata y"))
 
     region = models.ForeignKey("directory.Region", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Tuman"))
