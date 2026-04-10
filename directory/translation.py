@@ -1,5 +1,5 @@
 from modeltranslation.translator import register, TranslationOptions
-from .models import Region, District, Mahalla, Organization, Department, Position
+from .models import Region, District, Mahalla, Organization, Department, Position, Gom
 
 
 @register(Region)
@@ -9,6 +9,11 @@ class RegionTranslationOptions(TranslationOptions):
 
 @register(District)
 class DistrictTranslationOptions(TranslationOptions):
+    fields = ('name',)
+
+
+@register(Gom)
+class GomTranslationOptions(TranslationOptions):
     fields = ('name',)
 
 
