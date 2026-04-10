@@ -10,7 +10,7 @@ class EmployeeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Employee
-        fields = ('organization', 'department', 'position', 'region', 'district', 'mahalla', 'gender', 'full_name', 'phone_number', 'sorting')
+        fields = ('organization', 'department', 'position', 'region', 'district', 'gom', 'mahalla', 'gender', 'full_name', 'phone_number', 'sorting')
 
 
 class MahallaInformationCategoryFilter(django_filters.FilterSet):
@@ -53,7 +53,7 @@ class ObjectFilter(django_filters.FilterSet):
 
     class Meta:
         model = Object
-        fields = ('name', 'category', 'organization', 'organization_name', 'full_name', 'phone_number', 'region', 'district', 'mahalla')
+        fields = ('name', 'category', 'organization', 'organization_name', 'full_name', 'phone_number', 'region', 'district', 'gom', 'mahalla')
 
 
 class CrimeCategoryFilter(django_filters.FilterSet):
@@ -70,7 +70,7 @@ class MahallaCrimeFilter(django_filters.FilterSet):
 
     class Meta:
         model = MahallaCrime
-        fields = ('category', 'date', 'article', 'description', 'region', 'district', 'mahalla')
+        fields = ('category', 'date', 'article', 'description', 'region', 'district', 'gom', 'mahalla')
 
 
 class PatrolCarFilter(django_filters.FilterSet):
@@ -100,7 +100,7 @@ class CameraInformationFilter(django_filters.FilterSet):
 
     class Meta:
         model = CameraInformation
-        fields = ('status', 'camera_type', 'region', 'district', 'mahalla', 'object_name', 'direction', 'ip_address', 'address', 'login')
+        fields = ('status', 'camera_type', 'region', 'district', 'gom', 'mahalla', 'object_name', 'direction', 'ip_address', 'address', 'login')
 
 
 class OfficeCameraFilter(django_filters.FilterSet):
