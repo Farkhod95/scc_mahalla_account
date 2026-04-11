@@ -255,12 +255,12 @@ class CenterOfCivilizationAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin)
 
 @admin.register(MFYCitizen)
 class MFYCitizenAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
-    list_display = ('full_name', 'category', 'avatar', 'region', 'district', 'mahalla', 'is_active')
-    list_filter = ('category', 'region', 'district', 'mahalla', 'is_active')
+    list_display = ('full_name', 'category', 'avatar', 'region', 'district', 'gom', 'mahalla', 'is_active')
+    list_filter = ('category', 'region', 'district', 'gom', 'mahalla', 'is_active')
     search_fields = ('full_name', 'address', 'phone')
     fields = (
         'full_name', 'category', 'address', 'avatar', 'phone',
         'degree', 'type', 'coordinate_x', 'coordinate_y',
-        'region', 'district', 'mahalla',
+        'region', 'district', 'gom', 'mahalla',
         'is_active'
     )

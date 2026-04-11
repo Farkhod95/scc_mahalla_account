@@ -489,6 +489,8 @@ class MFYCitizen(BaseModel):
 
     region = models.ForeignKey("directory.Region", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='mfy_citizens', on_delete=models.SET_NULL,
+                            null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='mfy_citizens', on_delete=models.SET_NULL, null=True, blank=True, help_text=_("Mahalla"))
 
     is_active = models.BooleanField(default=True, help_text=_("Is active"))

@@ -226,6 +226,7 @@ class MFYCitizenFilter(django_filters.FilterSet):
             'category',
             'region',
             'district',
+            'gom',
             'mahalla',
             'full_name',
             'is_active',
