@@ -90,7 +90,7 @@ class ObjectAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
     list_display = (
         'name', 'category', 'organization', 'full_name', 'phone_number',
         'region', 'district', 'gom', 'mahalla',
-        'coordinate_x', 'coordinate_y', 'avatar'
+        'coordinate_x', 'coordinate_y', 'created_time', 'avatar'
     )
     list_select_related = (
         'category', 'organization', 'region', 'district', 'gom', 'mahalla'
