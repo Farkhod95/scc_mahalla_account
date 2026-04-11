@@ -74,13 +74,13 @@ class GomListSerializer(LocaleSerializer):
     class Meta:
         model = Gom
         fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
-                  'district_detail', 'is_active')
+                  'district_detail', 'center_x', 'center_y', 'zoom', 'is_active')
 
 
 class GomSerializer(LocaleSerializer):
     class Meta:
         model = Gom
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'is_active')
+        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'center_x', 'center_y', 'zoom', 'is_active')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},

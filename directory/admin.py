@@ -47,7 +47,7 @@ class MahallaAdmin(admin.ModelAdmin):
 @admin.register(Gom)
 class GomAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'get_district_code', 'region', 'district', 'is_active')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'center_x', 'center_y', 'zoom', 'is_active')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
     list_filter = ('region', 'district', 'is_active')
 
