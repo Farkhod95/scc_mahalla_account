@@ -20,6 +20,7 @@ class MFYCitizenListSerializer(serializers.ModelSerializer):
     district_detail = DistrictListSerializer(source='district', read_only=True)
     gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaListSerializer(source='mahalla', read_only=True)
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = MFYCitizen
@@ -32,3 +33,18 @@ class MFYCitizenListSerializer(serializers.ModelSerializer):
             'mahalla', 'mahalla_detail',
             'is_active'
         )
+
+    def get_avatar(self, obj):
+        if not obj.avatar:
+            return None
+
+        request = self.context.get('request')
+        if not request:
+            # request bo'lmasa ham kamida fayl url qaytadi
+            return obj.avatar.url
+
+        url = request.build_absolute_uri(obj.avatar.url)
+
+        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
+        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
+        return url.replace('http://', 'https://', 1)
