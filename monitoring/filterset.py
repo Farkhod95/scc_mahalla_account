@@ -28,7 +28,7 @@ class MahallaInformationFilter(django_filters.FilterSet):
 
     class Meta:
         model = MahallaInformation
-        fields = ('category', 'region', 'district', 'mahalla', 'count')
+        fields = ('category', 'region', 'district', 'gom', 'mahalla', 'count')
 
 
 class ObjectCategoryFilter(django_filters.FilterSet):
