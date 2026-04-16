@@ -61,7 +61,7 @@ class Mahalla(BaseModel):
     class STATUS(models.TextChoices):
         NORMAL = 'normal', _('Normal')
         YELLOW = 'yellow', _('Yellow')
-        RED = 'red', _('red')
+        RED = 'red', _('Red')
 
     status = models.CharField(max_length=50, default='yellow', choices=STATUS.choices,
                               verbose_name=_('Camera status'), help_text=_("Mahalla holati"))
