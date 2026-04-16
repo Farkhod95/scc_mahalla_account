@@ -63,7 +63,7 @@ class Mahalla(BaseModel):
         YELLOW = 'yellow', _('Yellow')
         RED = 'red', _('red')
 
-    status = models.CharField(max_length=30, choices=STATUS.choices,
+    status = models.CharField(max_length=50, default='yellow', choices=STATUS.choices,
                               verbose_name=_('Camera status'), help_text=_("Mahalla holati"))
     code = models.CharField(_('Mahalla code'), max_length=50, null=True, blank=True)
     name = models.CharField(_('Mahalla name'), max_length=255, null=True, blank=True)
