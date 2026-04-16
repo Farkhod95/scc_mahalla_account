@@ -96,6 +96,7 @@ class CameraInformationImportInfoView(APIView):
         expected = {
             "no": ["no", "№", "#"],
             "object_name": ["object_name", "obyekt", "object", "name"],
+            "address": ["address", "Address"],
             "ip_address": ["ip_address", "ip", "ip address"],
             "login": ["login"],
             "parol": ["parol", "password", "пароль"],
@@ -170,6 +171,7 @@ class CameraInformationImportInfoView(APIView):
                     return ws.cell(row=r, column=col).value
 
                 object_name = _norm_str(cell("object_name"))
+                address = _norm_str(cell("address"))
                 ip_address = _norm_str(cell("ip_address"))
                 login = _norm_str(cell("login"))
                 parol = _norm_str(cell("parol"))
@@ -178,7 +180,7 @@ class CameraInformationImportInfoView(APIView):
                 location = cell("location")
 
                 # bo‘sh qatorlarni tashlab ketish
-                if not any([object_name, ip_address, _norm_str(location), direction, login, parol, camera_type]):
+                if not any([object_name, ip_address, address, _norm_str(location), direction, login, parol, camera_type]):
                     skipped += 1
                     continue
 
@@ -193,6 +195,7 @@ class CameraInformationImportInfoView(APIView):
 
                 defaults = {
                     "object_name": object_name or None,
+                    "address": address or None,
                     "direction": direction or None,
                     "ip_address": ip_address,
                     "mahalla": mahalla,
