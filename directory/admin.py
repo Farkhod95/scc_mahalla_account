@@ -25,10 +25,10 @@ class DistrictAdmin(admin.ModelAdmin):
 
 @admin.register(Mahalla)
 class MahallaAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'get_district_code', 'region', 'district', 'gom', 'is_active')
-    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'region', 'district', 'gom', 'geo_json', 'center_x', 'center_y', 'zoom', 'is_active')
+    list_display = ('name', 'code', 'status', 'get_district_code', 'region', 'district', 'gom', 'is_active')
+    fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code', 'status', 'region', 'district', 'gom', 'geo_json', 'center_x', 'center_y', 'zoom', 'is_active')
     search_fields = ('name', 'name_en', 'name_ru', 'name_uz', 'code')
-    list_filter = ('region', 'district', 'gom', 'is_active')
+    list_filter = ('status', 'region', 'district', 'gom', 'is_active')
 
     @admin.display(description="District code")  # Django 3.2+
     def get_district_code(self, obj):

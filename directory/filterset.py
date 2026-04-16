@@ -33,6 +33,7 @@ class MahallaFilter(FilterSet):
             'code': ['exact'],
             'region': ['exact'],
             'district': ['exact'],
+            'status': ['exact'],
             'gom': ['exact'],
             'is_active': ['exact'],
         }

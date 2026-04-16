@@ -97,14 +97,14 @@ class MahallaListSerializer(LocaleSerializer):
 
     class Meta:
         model = Mahalla
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
+        fields = ('id', 'code', 'status', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'region_detail', 'district',
                   'district_detail', 'gom', 'gom_detail', 'center_x', 'center_y', 'zoom', 'is_active')
 
 
 class MahallaSerializer(LocaleSerializer):
     class Meta:
         model = Mahalla
-        fields = ('id', 'code', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'gom', 'center_x', 'center_y', 'zoom', 'is_active')
+        fields = ('id', 'code', 'status', 'name', 'name_uz', 'name_ru', 'name_en', 'region', 'district', 'gom', 'center_x', 'center_y', 'zoom', 'is_active')
         extra_kwargs = {
             'name_uz': {"required": True},
             'name_ru': {"required": True},
@@ -112,7 +112,6 @@ class MahallaSerializer(LocaleSerializer):
             'district': {"required": True},
             'code': {"required": True},
         }
-        
         
 
 class OrganizationSerializer(LocaleSerializer):

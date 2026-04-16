@@ -58,6 +58,13 @@ class Gom(BaseModel):
 
 
 class Mahalla(BaseModel):
+    class STATUS(models.TextChoices):
+        NORMAL = 'normal', _('Normal')
+        YELLOW = 'yellow', _('Yellow')
+        RED = 'red', _('red')
+
+    status = models.CharField(max_length=30, choices=STATUS.choices,
+                              verbose_name=_('Camera status'), help_text=_("Mahalla holati"))
     code = models.CharField(_('Mahalla code'), max_length=50, null=True, blank=True)
     name = models.CharField(_('Mahalla name'), max_length=255, null=True, blank=True)
     region = models.ForeignKey(Region, related_name='mahalla_region', on_delete=models.SET_NULL, null=True, blank=True)
