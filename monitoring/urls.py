@@ -8,6 +8,7 @@ from monitoring.views.center_of_civilization import CenterOfCivilizationView, Ce
     CenterOfCivilizationFieldInfoView
 from monitoring.views.crime_category import CrimeCategoryView, CrimeCategoryDetailView, CrimeCategoryFieldInfoView
 from monitoring.views.employee import EmployeeView, EmployeeDetailView, EmployeeFieldInfoView
+from monitoring.views.gps_inspector import GPSInspectorDistrictListView, GPSInspectorMFYListView, GPSInspectorByMFYView
 from monitoring.views.import_by_mahalla_id import CameraInformationImportInfoView
 from monitoring.views.import_excel_shop import ShopExcelImportView, ShopExcelImportStatusView
 from monitoring.views.mahalla_crime import MahallaCrimeView, MahallaCrimeDetailView, MahallaCrimeFieldInfoView, \
@@ -127,5 +128,7 @@ urlpatterns = [
     path("import-excel/", ShopExcelImportView.as_view(), name="shop-excel-import"),
     path("import-excel/status/<str:task_id>/", ShopExcelImportStatusView.as_view(), name="shop-excel-import-status"),
 
-
+    path("gps-inspector/districts/", GPSInspectorDistrictListView.as_view(), name="gps-inspector-districts"),
+    path("gps-inspector/mfys/", GPSInspectorMFYListView.as_view(), name="gps-inspector-mfys"),
+    path("gps-inspector/inspectors/<str:mfy_id>/", GPSInspectorByMFYView.as_view(), name="gps-inspector-by-mfy"),
 ]
