@@ -47,9 +47,9 @@ class ObjectFilter(django_filters.FilterSet):
     full_name = django_filters.CharFilter(field_name='full_name', lookup_expr='icontains')
     phone_number = django_filters.CharFilter(field_name='phone_number', lookup_expr='icontains')
 
-    region = django_filters.NumberFilter(field_name='organization__region_id')
-    district = django_filters.NumberFilter(field_name='organization__district_id')
-    mahalla = django_filters.NumberFilter(field_name='organization__mahalla_id')
+    # region = django_filters.NumberFilter(field_name='organization__region_id')
+    # district = django_filters.NumberFilter(field_name='organization__district_id')
+    # mahalla = django_filters.NumberFilter(field_name='organization__mahalla_id')
 
     class Meta:
         model = Object
@@ -113,7 +113,7 @@ class OfficeCameraFilter(django_filters.FilterSet):
 
     class Meta:
         model = OfficeCamera
-        fields = ('region', 'district', 'mahalla', 'camera_type', 'object_name', 'direction', 'ip_address', 'address', 'login')
+        fields = ('region', 'district', 'gom', 'mahalla', 'camera_type', 'object_name', 'direction', 'ip_address', 'address', 'login')
 
 
 class ShopFilter(django_filters.FilterSet):
