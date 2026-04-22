@@ -4,7 +4,7 @@ from requests import RequestException
 
 class GPSInspectorService:
     BASE_URL = "http://172.20.20.9:7900"
-    TOKEN = "a584a7cb0d02100d6dac07fe7ea2b4fd"
+    TOKEN = "87da45bef050487d75a3c787828c9104"
     TIMEOUT = 20
 
     @classmethod
