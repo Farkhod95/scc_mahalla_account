@@ -53,6 +53,8 @@ class User(AbstractUser):
                                help_text=_("Viloyat"))
     district = models.ForeignKey("directory.District", related_name='user_district', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Tuman"))
+    gom = models.ForeignKey("directory.Gom", related_name='gom_user', on_delete=models.SET_NULL,
+                            null=True, blank=True, help_text=_("Gom"))
     mahalla = models.ForeignKey("directory.Mahalla", related_name='user_mahalla', on_delete=models.SET_NULL,
                                  null=True, blank=True, help_text=_("Mahalla"))
     role = models.ForeignKey(Role, related_name='role_user', null=True, on_delete=models.SET_NULL)

@@ -30,7 +30,7 @@ class CustomUserAdmin(UserAdmin):
         (_("Work info"), {"fields": (
             ("organization", "department"),
             ("position", "role"),
-            ("region", "district", "mahalla"),
+            ("region", "district", "gom", "mahalla"),
         )}),
 
         (_("Permissions"), {"fields": (
@@ -57,7 +57,7 @@ class CustomUserAdmin(UserAdmin):
                 ("pinfl",),
                 ("organization", "department"),
                 ("position", "role"),
-                ("region", "district", "mahalla"),
+                ("region", "district", "gom", "mahalla"),
                 ("address", "avatar"),
                 ("is_active", "is_staff", "is_superuser"),
                 ("password1", "password2"),

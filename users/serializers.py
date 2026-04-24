@@ -5,7 +5,7 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from directory.serializers import RegionListSerializer, DistrictSerializer, MahallaSerializer
+from directory.serializers import RegionListSerializer, DistrictSerializer, MahallaSerializer, GomSerializer
 
 from .models import User, Role, AppModule
 from .utils.permissions import get_user_permissions
@@ -52,7 +52,7 @@ class UserSerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active', 'date_joined',
             'organization', 'department', 'position',
-            'region', 'district', 'mahalla',
+            'region', 'district', 'gom', 'mahalla',
             'role', 'roles',
             'address', 'avatar',
             'pinfl', 'passport_series', 'passport_number',
@@ -130,6 +130,7 @@ class UserListPublicSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(source='role', read_only=True)
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:
@@ -139,7 +140,7 @@ class UserListPublicSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'second_name',
             'phone_number', 'email',
             'role', 'roles',
-            'region', 'district', 'mahalla',
+            'region', 'district', 'gom', 'gom_detail', 'mahalla',
             'region_detail', 'district_detail', 'mahalla_detail',
             'avatar',
         )
@@ -150,6 +151,7 @@ class UserListSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     region_detail = RegionListSerializer(source='region', read_only=True)
     district_detail = DistrictSerializer(source='district', read_only=True)
+    gom_detail = GomSerializer(source='gom', read_only=True)
     mahalla_detail = MahallaSerializer(source='mahalla', read_only=True)
 
     class Meta:
@@ -161,7 +163,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active', 'date_joined',
             'role', 'roles',
-            'region', 'region_detail', 'district', 'district_detail', 'mahalla', 'mahalla_detail',
+            'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail',
             'organization', 'department', 'position',
             'avatar',
             'pinfl', 'passport_series', 'passport_number',
@@ -190,7 +192,7 @@ class UserUpdateBySerializer(serializers.ModelSerializer):
             'phone_number', 'email',
             'is_active',
             'role', 'roles',
-            'region', 'district', 'mahalla',
+            'region', 'district', 'gom', 'mahalla',
             'organization', 'department', 'position',
             'address', 'avatar',
             'pinfl', 'passport_series', 'passport_number',
