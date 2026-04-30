@@ -59,6 +59,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
     "http://10.6.189.50",
+    "http://192.168.168.149:3000",
+    "http://192.168.168.149",
 ]
 
 CORS_ORIGIN_ALLOW_ALL = False
