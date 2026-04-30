@@ -48,7 +48,7 @@ class ShopListSerializer(serializers.ModelSerializer):
 
         # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
         # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
-        return url.replace('http://', 'https://', 1)
+        return url.replace('http://', 'http://', 1)
 
     def get_is_red_category(self, obj):
         return obj.tenants.filter(is_red_category=True).exists()

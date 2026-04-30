@@ -175,7 +175,7 @@ class UserListSerializer(serializers.ModelSerializer):
             if request is not None:
                 url = request.build_absolute_uri(obj.avatar.url)
                 # HTTP ni HTTPS ga o'zgartirish
-                return url.replace('http://', 'https://')
+                return url.replace('http://', 'http://')
             return obj.avatar.url
         return None
 

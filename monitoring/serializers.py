@@ -52,7 +52,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
 
         # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
         # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
-        return url.replace('http://', 'https://', 1)
+        return url.replace('http://', 'http://', 1)
 
 class MahallaInformationCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -166,7 +166,7 @@ class ObjectListSerializer(serializers.ModelSerializer):
 
         # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
         # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
-        return url.replace('http://', 'https://', 1)
+        return url.replace('http://', 'http://', 1)
 
 
 class ObjectExcelImportSerializer(serializers.Serializer):
