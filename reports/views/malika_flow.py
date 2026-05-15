@@ -1,4 +1,4 @@
-# reports/views.py
+﻿# reports/views.py
 import requests
 from collections import defaultdict
 from django.db.models import Count
@@ -20,7 +20,7 @@ from reports.serializers import MalikaFlowQuerySerializer
 FACE_UPSTREAM_BASE_URL = "https://172.20.20.9"
 FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
 FACE_TIMEOUT = 10
-FACE_VERIFY_SSL = False  # self-signed bo’lsa False
+FACE_VERIFY_SSL = False  # self-signed bo'lsa False
 
 
 # =========================
@@ -104,7 +104,7 @@ class MalikaFlowReportView(APIView):
         # B) FACE kameralarni topish
         # ------------------------
         face_cams = (
-            BazarCamera.objects.filter(is_active=True, location_type=’malika’, camera_type=BazarCamera.CAMERA_TYPE.FACE)
+            BazarCamera.objects.filter(is_active=True, location_type='malika', camera_type=BazarCamera.CAMERA_TYPE.FACE)
             .exclude(ip_address__isnull=True)
             .exclude(ip_address="")
         )
@@ -125,22 +125,22 @@ class MalikaFlowReportView(APIView):
                 recorded_at__gte=from_dt,
                 recorded_at__lte=to_dt,
             )
-            .values(‘region_soato’, ‘type’)
-            .annotate(count=Count(‘id’))
+            .values('region_soato', 'type')
+            .annotate(count=Count('id'))
         )
 
         for row in car_flows:
-            soato = row[‘region_soato’] or region_soato
-            cnt = row[‘count’]
-            if row[‘type’] == CarFlow.TYPE.IN:
+            soato = row['region_soato'] or region_soato
+            cnt = row['count']
+            if row['type'] == CarFlow.TYPE.IN:
                 cars_in_by_region[soato] += cnt
                 cars_in_total += cnt
-            elif row[‘type’] == CarFlow.TYPE.OUT:
+            elif row['type'] == CarFlow.TYPE.OUT:
                 cars_out_by_region[soato] += cnt
                 cars_out_total += cnt
 
         # ------------------------
-        # D) PEOPLE (FACE) - TYPE bo‘yicha
+        # D) PEOPLE (FACE) - TYPE bo'yicha
         # ------------------------
         people_in_total = 0
         people_out_total = 0
