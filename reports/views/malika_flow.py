@@ -121,7 +121,6 @@ class MalikaFlowReportView(APIView):
             CarFlow.objects
             .filter(
                 location_type=CarFlow.LOCATION_TYPE.MALIKA,
-                region_soato=region_soato,
                 recorded_at__gte=from_dt,
                 recorded_at__lte=to_dt,
             )
