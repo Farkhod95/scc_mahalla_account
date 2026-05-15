@@ -4,6 +4,7 @@ from monitoring.models import CarFlow, BazarCamera
 
 
 class CarFlowCreateSerializer(serializers.ModelSerializer):
+    region_soato = serializers.IntegerField(required=True)
     recorded_at = serializers.DateTimeField(required=False)
 
     class Meta:
