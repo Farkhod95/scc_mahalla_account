@@ -1,13 +1,14 @@
 # reports/views.py
 import requests
 from collections import defaultdict
+from django.db.models import Count
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from directory.models import Region
-from monitoring.models import BazarCamera
+from monitoring.models import BazarCamera, CarFlow
 from reports.serializers import MalikaFlowQuerySerializer
 
 
@@ -15,17 +16,11 @@ from reports.serializers import MalikaFlowQuerySerializer
 # UPSTREAM CONFIG
 # =========================
 
-# DRB upstream (Basic Auth)
-DRB_UPSTREAM_BASE_URL = "http://172.20.20.9:8853"
-DRB_UPSTREAM_USERNAME = "safecity@2026"
-DRB_UPSTREAM_PASSWORD = ">3LP391)KUa7"
-DRB_TIMEOUT = 10
-
 # FACE upstream (Token)
 FACE_UPSTREAM_BASE_URL = "https://172.20.20.9"
 FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
 FACE_TIMEOUT = 10
-FACE_VERIFY_SSL = False  # self-signed bo‘lsa False
+FACE_VERIFY_SSL = False  # self-signed bo’lsa False
 
 
 # =========================
@@ -36,12 +31,6 @@ def _safe_json(resp):
         return resp.json()
     except ValueError:
         return {"raw": resp.text}
-
-
-def _clip(text: str, n: int = 1200) -> str:
-    if text is None:
-        return ""
-    return str(text)[:n]
 
 
 def _get_client_ip(request):
@@ -112,129 +101,43 @@ class MalikaFlowReportView(APIView):
         to_str = to_dt.strftime("%d.%m.%Y %H:%M:%S")
 
         # ------------------------
-        # B) Kameralarni topish (logika o‘zgarmaydi)
+        # B) FACE kameralarni topish
         # ------------------------
-        cameras = (
-            BazarCamera.objects.filter(is_active=True, location_type='malika')
+        face_cams = (
+            BazarCamera.objects.filter(is_active=True, location_type=’malika’, camera_type=BazarCamera.CAMERA_TYPE.FACE)
             .exclude(ip_address__isnull=True)
             .exclude(ip_address="")
         )
 
-        total_cams = cameras.count()
-        drb_cams = cameras.filter(camera_type=BazarCamera.CAMERA_TYPE.DRB)
-        face_cams = cameras.filter(camera_type=BazarCamera.CAMERA_TYPE.FACE)
-
-        if total_cams == 0:
-            errors.append(
-                {
-                    "source": "db",
-                    "error": "No active cameras found for this region_soato",
-                    "region_soato": region_soato,
-                    "hint": "BazarCamera.region (code yoki id) region_soato ga mosligini tekshiring, is_active=True bo‘lsin",
-                }
-            )
-
         # ------------------------
-        # C) CARS (DRB) - TYPE bo‘yicha QAT’IY:
-        #    INPUT -> entry
-        #    OUTPUT -> exit
-        #    (fallback yo‘q)
+        # C) CARS — CarFlow modelidan
         # ------------------------
         cars_in_by_region = defaultdict(int)
         cars_out_by_region = defaultdict(int)
         cars_in_total = 0
         cars_out_total = 0
 
-        drb_url = f"{DRB_UPSTREAM_BASE_URL.rstrip('/')}/detection-count"
+        car_flows = (
+            CarFlow.objects
+            .filter(
+                location_type=CarFlow.LOCATION_TYPE.MALIKA,
+                region_soato=region_soato,
+                recorded_at__gte=from_dt,
+                recorded_at__lte=to_dt,
+            )
+            .values(‘region_soato’, ‘type’)
+            .annotate(count=Count(‘id’))
+        )
 
-        for cam in drb_cams:
-            params = {
-                "ip_address": str(cam.ip_address),
-                "region_soato": region_soato,
-                "from": from_str,
-                "to": to_str,
-            }
-
-            try:
-                resp = requests.get(
-                    drb_url,
-                    params=params,
-                    auth=(DRB_UPSTREAM_USERNAME, DRB_UPSTREAM_PASSWORD),
-                    timeout=DRB_TIMEOUT,
-                )
-            except requests.RequestException as e:
-                errors.append(
-                    {
-                        "source": "drb",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "drb",
-                        "type": cam.type,
-                        "error": "Upstream connection error",
-                        "message": str(e),
-                    }
-                )
-                continue
-
-            if resp.status_code >= 400:
-                errors.append(
-                    {
-                        "source": "drb",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "drb",
-                        "type": cam.type,
-                        "status_code": resp.status_code,
-                        "body": _clip(resp.text),
-                    }
-                )
-                continue
-
-            data = _safe_json(resp)
-            region_block = data.get("region")
-
-            # DRB response:
-            # {"total":..., "entry":..., "exit":..., "region": {"1726":{"entry":313,"exit":0}, ...}}
-            if isinstance(region_block, dict):
-                for soato_key, val in region_block.items():
-                    try:
-                        soato_int = int(soato_key)
-                    except Exception:
-                        continue
-
-                    entry = 0
-                    exit_ = 0
-                    if isinstance(val, dict):
-                        try:
-                            entry = int(val.get("entry") or 0)
-                        except Exception:
-                            entry = 0
-                        try:
-                            exit_ = int(val.get("exit") or 0)
-                        except Exception:
-                            exit_ = 0
-
-                    # ✅ QAT’IY taqsim:
-                    if cam.type == BazarCamera.TYPE.INPUT:
-                        cars_in_by_region[soato_int] += entry
-                        cars_in_total += entry
-                    elif cam.type == BazarCamera.TYPE.OUTPUT:
-                        cars_out_by_region[soato_int] += exit_
-                        cars_out_total += exit_
-
-                continue
-
-            # fallback: agar region yo‘q bo‘lsa (bu holda ham TYPE bo‘yicha bitta tomonga qo‘shamiz)
-            count_val = data.get("count", data.get("total", 0))
-            try:
-                count_val = int(count_val or 0)
-            except Exception:
-                count_val = 0
-
-            if cam.type == BazarCamera.TYPE.INPUT:
-                cars_in_total += count_val
-                cars_in_by_region[region_soato] += count_val
-            elif cam.type == BazarCamera.TYPE.OUTPUT:
-                cars_out_total += count_val
-                cars_out_by_region[region_soato] += count_val
+        for row in car_flows:
+            soato = row[‘region_soato’] or region_soato
+            cnt = row[‘count’]
+            if row[‘type’] == CarFlow.TYPE.IN:
+                cars_in_by_region[soato] += cnt
+                cars_in_total += cnt
+            elif row[‘type’] == CarFlow.TYPE.OUT:
+                cars_out_by_region[soato] += cnt
+                cars_out_total += cnt
 
         # ------------------------
         # D) PEOPLE (FACE) - TYPE bo‘yicha
@@ -352,8 +255,6 @@ class MalikaFlowReportView(APIView):
             },
             "meta": {
                 "requested_region_soato": region_soato,
-                "cameras_found": total_cams,
-                "drb_cameras_found": drb_cams.count(),
                 "face_cameras_found": face_cams.count(),
             },
         }

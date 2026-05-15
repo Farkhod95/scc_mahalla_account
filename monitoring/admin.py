@@ -19,6 +19,7 @@ from .models import (
     BazarCamera,
     CenterOfCivilization,
     MFYCitizen,
+    CarFlow,
 )
 
 
@@ -264,3 +265,12 @@ class MFYCitizenAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
         'region', 'district', 'gom', 'mahalla',
         'is_active'
     )
+
+
+@admin.register(CarFlow)
+class CarFlowAdmin(admin.ModelAdmin):
+    list_display = ('ip_address', 'location_type', 'type', 'region_soato', 'recorded_at', 'created_time')
+    list_filter = ('location_type', 'type')
+    search_fields = ('ip_address',)
+    readonly_fields = ('created_time',)
+    fields = ('camera', 'ip_address', 'location_type', 'region_soato', 'type', 'recorded_at', 'created_time')
