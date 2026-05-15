@@ -284,6 +284,38 @@ class BazarCamera(BaseModel):
         return f"{self.object_name}" or f"Bazar Camera #{self.pk}"
 
 
+class CarFlow(models.Model):
+    class LOCATION_TYPE(models.TextChoices):
+        MALIKA = "malika", _("Malika")
+        CIVILIZATION = "civilization", _("Civilization")
+
+    class TYPE(models.TextChoices):
+        IN = "in", _("Kirdi")
+        OUT = "out", _("Chiqdi")
+
+    camera = models.ForeignKey(
+        BazarCamera, related_name='car_flows',
+        on_delete=models.SET_NULL, null=True, blank=True
+    )
+    ip_address = models.CharField(max_length=255, help_text=_("Kamera IP"))
+    location_type = models.CharField(
+        max_length=100, choices=LOCATION_TYPE.choices,
+        null=True, blank=True, help_text=_("Lokatsiya")
+    )
+    region_soato = models.IntegerField(null=True, blank=True, help_text=_("Viloyat SOATO"))
+    type = models.CharField(max_length=10, choices=TYPE.choices, help_text=_("Kirdi/Chiqdi"))
+    recorded_at = models.DateTimeField(help_text=_("Qayd etilgan vaqt"))
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Car Flow")
+        verbose_name_plural = _("Car Flows")
+        ordering = ['-recorded_at']
+
+    def __str__(self):
+        return f"{self.ip_address} | {self.type} | {self.recorded_at}"
+
+
 class Shop(BaseModel):
     """
     Do'kon: "Blok A - 1-do'kon"

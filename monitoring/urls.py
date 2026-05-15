@@ -1,6 +1,7 @@
 from django.urls import re_path, path
 
 from monitoring.views.all_count_by_mahalla import AllCountByMahallaView
+from monitoring.views.car_flow import CarFlowView
 from monitoring.views.bazar_camera import BazarCameraView, BazarCameraDetailView, BazarCameraFieldInfoView
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
     CameraInformationFieldInfoView, CameraInformationForMapView
@@ -131,4 +132,6 @@ urlpatterns = [
     path("gps-inspector/districts/", GPSInspectorDistrictListView.as_view(), name="gps-inspector-districts"),
     path("gps-inspector/mfys/", GPSInspectorMFYListView.as_view(), name="gps-inspector-mfys"),
     path("gps-inspector/inspectors/<str:mfy_id>/", GPSInspectorByMFYView.as_view(), name="gps-inspector-by-mfy"),
+
+    path('car-flow/', CarFlowView.as_view(), name='car_flow'),
 ]
