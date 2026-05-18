@@ -325,7 +325,9 @@ class Shop(BaseModel):
         BLOK_A = "A", _("Blok A")
         BLOK_B = "B", _("Blok B")
         BLOK_J = "J", _("Blok J")
-        SAVDO_MARKAZ = "SM", _("Savdo Markazi")
+        SAVDO_MARKAZ = "SM", _("Merkato")
+        SKLAD = "SK", _("Sklad")
+        OFIS = "OF", _("Ofis")
         PARKOVKA = "P", _("Avtoturargoh")
 
     block_type = models.CharField(max_length=100, choices=BlockType.choices, null=True, blank=True, help_text=_("Blok turi (A/B)"))
@@ -383,7 +385,7 @@ class ShopTenant(BaseModel):
 
     class TaxType(models.TextChoices):
         VAT = "vat", _("QQS")
-        MONTHLY_INCOME = "monthly_income", _("Oylik daromad solig'i")
+        MONTHLY_INCOME = "monthly_income", _("Aylanmadan olinadigan soliq")
         OTHER = "other", _("Boshqa")
 
     class ActivityStatus(models.TextChoices):
@@ -411,18 +413,15 @@ class ShopTenant(BaseModel):
     certificate_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Guvohnoma raqami"))
     employees_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Subyektda ishlaydigan xodimlar soni"))
     cash_register_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kassa apparat raqami"))
-    # Yil boshidan savdo tushumi (3 kanal)
+    # Yil boshidan savdo tushumi
     ytd_okkm = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (OKKM)"))
-    ytd_e_invoice = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (EHF)"))
-    ytd_qr = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (QR)"))
+    ytd_e_payment = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Yil boshidan tushum (Elektron to'lov)"))
     # Oy boshidan savdo tushumi
     mtd_okkm = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Oy boshidan tushum (OKKM)"))
-    mtd_e_invoice = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Oy boshidan tushum (EHF)"))
-    mtd_qr = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Oy boshidan tushum (QR)"))
+    mtd_e_payment = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Oy boshidan tushum (Elektron to'lov)"))
     # Kun boshidan savdo tushumi
     dtd_okkm = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Kun boshidan tushum (OKKM)"))
-    dtd_e_invoice = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Kun boshidan tushum (EHF)"))
-    dtd_qr = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Kun boshidan tushum (QR)"))
+    dtd_e_payment = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Kun boshidan tushum (Elektron to'lov)"))
     # Cheklar
     monthly_checks_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Berilgan oylik cheklar soni"))
     daily_checks_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Berilgan kunlik cheklar soni"))

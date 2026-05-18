@@ -8,8 +8,8 @@ class ShopTenantSerializer(serializers.ModelSerializer):
         model = ShopTenant
         fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'activity_status', 'name', 'leader_fio',
                   'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count',
-                  'cash_register_number', 'ytd_okkm', 'ytd_e_invoice', 'ytd_qr', 'mtd_okkm', 'mtd_e_invoice', 'mtd_qr',
-                  'dtd_okkm', 'dtd_e_invoice', 'dtd_qr', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors',
+                  'cash_register_number', 'ytd_okkm', 'ytd_e_payment', 'mtd_okkm', 'mtd_e_payment',
+                  'dtd_okkm', 'dtd_e_payment', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors',
                   'daily_visitors', 'fire_safety_level', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
         # extra_kwargs = {
         #     'shop': {'required': False, 'allow_null': True},
@@ -61,8 +61,8 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
                   'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'activity_status',
                   'activity_status_label', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir',
-                  'certificate_number', 'employees_count', 'cash_register_number', 'ytd_okkm', 'ytd_e_invoice', 'ytd_qr',
-                  'mtd_okkm', 'mtd_e_invoice', 'mtd_qr', 'dtd_okkm', 'dtd_e_invoice', 'dtd_qr', 'monthly_checks_count',
+                  'certificate_number', 'employees_count', 'cash_register_number', 'ytd_okkm', 'ytd_e_payment',
+                  'mtd_okkm', 'mtd_e_payment', 'dtd_okkm', 'dtd_e_payment', 'monthly_checks_count',
                   'daily_checks_count', 'monthly_visitors', 'daily_visitors', 'fire_safety_level',
                   'fire_safety_level_label', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
 

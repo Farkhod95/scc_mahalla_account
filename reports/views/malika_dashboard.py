@@ -41,24 +41,20 @@ class MalikaDashboardReportView(APIView):
             s = s[:-3]
         return s
 
+    def _format_money_mln(self, value):
+        value = self._d(value)
+        mln = value / Decimal("1000000")
+        s = f"{mln:,.2f}".replace(",", " ")
+        if s.endswith(".00"):
+            s = s[:-3]
+        return s
+
     def _get_period_fields(self, period):
         if period == "daily":
-            return {
-                "okkm": "dtd_okkm",
-                "e_invoice": "dtd_e_invoice",
-                "qr": "dtd_qr",
-            }
+            return {"okkm": "dtd_okkm", "e_payment": "dtd_e_payment"}
         elif period == "monthly":
-            return {
-                "okkm": "mtd_okkm",
-                "e_invoice": "mtd_e_invoice",
-                "qr": "mtd_qr",
-            }
-        return {
-            "okkm": "ytd_okkm",
-            "e_invoice": "ytd_e_invoice",
-            "qr": "ytd_qr",
-        }
+            return {"okkm": "mtd_okkm", "e_payment": "mtd_e_payment"}
+        return {"okkm": "ytd_okkm", "e_payment": "ytd_e_payment"}
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
@@ -71,6 +67,16 @@ class MalikaDashboardReportView(APIView):
         tenants_qs = ShopTenant.objects.all()
         employees_qs = TenantEmployee.objects.all()
 
+        area_agg = shops_qs.aggregate(
+            total=Coalesce(Sum("total_area"), Decimal("0")),
+            a=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_A)), Decimal("0")),
+            b=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_B)), Decimal("0")),
+            j=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_J)), Decimal("0")),
+            merkato=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.SAVDO_MARKAZ)), Decimal("0")),
+            sklad=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.SKLAD)), Decimal("0")),
+            ofis=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.OFIS)), Decimal("0")),
+        )
+
         # =========================
         # 1. DO'KONLAR
         # =========================
@@ -79,50 +85,17 @@ class MalikaDashboardReportView(APIView):
         a_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_A).count()
         b_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_B).count()
         j_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_J).count()
-        merkalo_count = shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count()
-
-        # Sizning modelda OFFICE va SKLAD yo'q.
-        # Hozircha 0 qaytaryapmiz.
-        office_count = 0
-        sklad_count = 0
+        merkato_count = shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count()
+        sklad_count = shops_qs.filter(block_type=Shop.BlockType.SKLAD).count()
+        ofis_count = shops_qs.filter(block_type=Shop.BlockType.OFIS).count()
 
         shops_items = [
-            {
-                "key": "A",
-                "name": "A blok",
-                "count": a_count,
-                "formatted": self._format_int(a_count),
-            },
-            {
-                "key": "B",
-                "name": "B blok",
-                "count": b_count,
-                "formatted": self._format_int(b_count),
-            },
-            {
-                "key": "J",
-                "name": "J blok",
-                "count": j_count,
-                "formatted": self._format_int(j_count),
-            },
-            {
-                "key": "SM",
-                "name": 'TЦ "Merkalo"',
-                "count": merkalo_count,
-                "formatted": self._format_int(merkalo_count),
-            },
-            {
-                "key": "OFFICE",
-                "name": "Ofis",
-                "count": office_count,
-                "formatted": self._format_int(office_count),
-            },
-            {
-                "key": "SKLAD",
-                "name": "Sklad",
-                "count": sklad_count,
-                "formatted": self._format_int(sklad_count),
-            },
+            {"key": "A",  "name": "A blok",  "count": a_count,      "formatted": self._format_int(a_count)},
+            {"key": "B",  "name": "B blok",  "count": b_count,      "formatted": self._format_int(b_count)},
+            {"key": "J",  "name": "J blok",  "count": j_count,      "formatted": self._format_int(j_count)},
+            {"key": "SM", "name": "Merkato", "count": merkato_count, "formatted": self._format_int(merkato_count)},
+            {"key": "SK", "name": "Sklad",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
+            {"key": "OF", "name": "Ofis",    "count": ofis_count,   "formatted": self._format_int(ofis_count)},
         ]
 
         shops_chart = [
@@ -136,15 +109,18 @@ class MalikaDashboardReportView(APIView):
         employees_total = employees_qs.count()
 
         # =========================
-        # 3. TERMINALLAR
-        # Screenshotdagi terminal soni uchun sizda alohida model yo'q.
-        # cash_register_number bo'sh bo'lmagan tenantlarni terminal deb olyapmiz.
+        # 3. TERMINALLAR — cash_register_number vergul bilan ajratilgan
         # =========================
-        terminals_total = tenants_qs.exclude(
+        cash_numbers = tenants_qs.exclude(
             cash_register_number__isnull=True
         ).exclude(
             cash_register_number__exact=""
-        ).count()
+        ).values_list("cash_register_number", flat=True)
+
+        terminals_total = sum(
+            len([x for x in cn.split(",") if x.strip()])
+            for cn in cash_numbers
+        )
 
         # =========================
         # 4. SOLIQ TUSHUMLARI
@@ -154,9 +130,7 @@ class MalikaDashboardReportView(APIView):
         # =========================
         tax_revenue_agg = tenants_qs.aggregate(
             total=Coalesce(
-                Sum(revenue_fields["okkm"]) +
-                Sum(revenue_fields["e_invoice"]) +
-                Sum(revenue_fields["qr"]),
+                Sum(revenue_fields["okkm"]) + Sum(revenue_fields["e_payment"]),
                 Decimal("0")
             )
         )
@@ -167,24 +141,17 @@ class MalikaDashboardReportView(APIView):
         # =========================
         sales_agg = tenants_qs.aggregate(
             okkm=Coalesce(Sum(revenue_fields["okkm"]), Decimal("0")),
-            e_invoice=Coalesce(Sum(revenue_fields["e_invoice"]), Decimal("0")),
-            qr=Coalesce(Sum(revenue_fields["qr"]), Decimal("0")),
+            e_payment=Coalesce(Sum(revenue_fields["e_payment"]), Decimal("0")),
         )
 
         sales_okkm = self._d(sales_agg["okkm"])
-        sales_e_invoice = self._d(sales_agg["e_invoice"])
-        sales_qr = self._d(sales_agg["qr"])
-        sales_total = sales_okkm + sales_e_invoice + sales_qr
+        sales_e_payment = self._d(sales_agg["e_payment"])
+        sales_total = sales_okkm + sales_e_payment
 
         # =========================
-        # 6. KASSA APPARATLARI
-        # distinct cash_register_number
+        # 6. KASSA APPARATLARI — terminallar bilan bir xil hisob
         # =========================
-        cash_registers_total = tenants_qs.exclude(
-            cash_register_number__isnull=True
-        ).exclude(
-            cash_register_number__exact=""
-        ).values("cash_register_number").distinct().count()
+        cash_registers_total = terminals_total
 
         # =========================
         # 7. TADBIRKORLIK SUBYEKTLARI
@@ -244,30 +211,24 @@ class MalikaDashboardReportView(APIView):
                 "tax_revenue": {
                     "title": "Soliq tushumlari",
                     "count": float(tax_revenue_total),
-                    "formatted": f"{self._format_money(tax_revenue_total)} so'm",
+                    "formatted": f"{self._format_money_mln(tax_revenue_total)} mln so'm",
                 },
                 "sales_revenue": {
                     "title": "Savdo tushumlari",
                     "count": float(sales_total),
-                    "formatted": f"{self._format_money(sales_total)} so'm",
+                    "formatted": f"{self._format_money_mln(sales_total)} mln so'm",
                     "items": [
                         {
                             "key": "OKKM",
                             "name": "OKKM",
                             "count": float(sales_okkm),
-                            "formatted": self._format_money(sales_okkm),
+                            "formatted": f"{self._format_money_mln(sales_okkm)} mln so'm",
                         },
                         {
-                            "key": "E_INVOICE",
-                            "name": "EHF",
-                            "count": float(sales_e_invoice),
-                            "formatted": self._format_money(sales_e_invoice),
-                        },
-                        {
-                            "key": "QR",
-                            "name": "QR",
-                            "count": float(sales_qr),
-                            "formatted": self._format_money(sales_qr),
+                            "key": "E_PAYMENT",
+                            "name": "Elektron to'lov",
+                            "count": float(sales_e_payment),
+                            "formatted": f"{self._format_money_mln(sales_e_payment)} mln so'm",
                         },
                     ],
                 },
@@ -275,6 +236,18 @@ class MalikaDashboardReportView(APIView):
                     "title": "Kassa apparatlari",
                     "count": cash_registers_total,
                     "formatted": self._format_int(cash_registers_total),
+                },
+                "area": {
+                    "title": "Savdo kompleks umumiy maydoni",
+                    "total_kv": float(area_agg["total"]),
+                    "items": [
+                        {"key": "A",  "name": "A blok",  "kv": float(area_agg["a"])},
+                        {"key": "B",  "name": "B blok",  "kv": float(area_agg["b"])},
+                        {"key": "J",  "name": "J blok",  "kv": float(area_agg["j"])},
+                        {"key": "SM", "name": "Merkato", "kv": float(area_agg["merkato"])},
+                        {"key": "OF", "name": "Ofis",    "kv": float(area_agg["ofis"])},
+                        {"key": "SK", "name": "Sklad",   "kv": float(area_agg["sklad"])},
+                    ],
                 },
                 "business_entities": {
                     "title": "Tadbirkorlik subyekti",
