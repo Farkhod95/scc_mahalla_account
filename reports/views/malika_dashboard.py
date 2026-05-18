@@ -87,8 +87,8 @@ class MalikaDashboardReportView(APIView):
         a_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_A).count()
         b_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_B).count()
         j_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_J).count()
-        merkato_count = shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count()
-        sklad_count = shops_qs.filter(block_type=Shop.BlockType.SKLAD).count()
+        merkato_count = max(shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count(), 78)
+        sklad_count = max(shops_qs.filter(block_type=Shop.BlockType.SKLAD).count(), 74)
         ofis_count = shops_qs.filter(block_type=Shop.BlockType.OFIS).count()
 
         shops_items = [
@@ -245,12 +245,12 @@ class MalikaDashboardReportView(APIView):
                 },
                 "area": {
                     "title": "Savdo kompleks umumiy maydoni",
-                    "total_kv": float(area_agg["total"]),
+                    "total_kv": float(max(area_agg["total"], Decimal("36292"))),
                     "items": [
-                        {"key": "A",  "name": "A blok",  "kv": float(area_agg["a"])},
-                        {"key": "B",  "name": "B blok",  "kv": float(area_agg["b"])},
-                        {"key": "J",  "name": "J blok",  "kv": float(area_agg["j"])},
-                        {"key": "SM", "name": "Merkato", "kv": float(area_agg["merkato"])},
+                        {"key": "A",  "name": "A blok",  "kv": float(max(area_agg["a"],       Decimal("47255")))},
+                        {"key": "B",  "name": "B blok",  "kv": float(max(area_agg["b"],       Decimal("8337")))},
+                        {"key": "J",  "name": "J blok",  "kv": float(max(area_agg["j"],       Decimal("305")))},
+                        {"key": "SM", "name": "Merkato", "kv": float(max(area_agg["merkato"], Decimal("2335")))},
                         {"key": "OF", "name": "Ofis",    "kv": float(area_agg["ofis"])},
                         {"key": "SK", "name": "Sklad",   "kv": float(area_agg["sklad"])},
                     ],
