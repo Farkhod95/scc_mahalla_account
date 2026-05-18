@@ -72,7 +72,8 @@ MODEL_FIELD_MAX_LENGTHS = {
     "ShopTenant.leader_phone": 30,
     "ShopTenant.stir": 30,
     "ShopTenant.certificate_number": 80,
-    "ShopTenant.cash_register_number": 80,
+    "ShopTenant.cash_register_number_vat": 80,
+    "ShopTenant.cash_register_number_turnover": 80,
     "ShopTenant.extinguisher_info": 255,
     "ShopTenant.red_reason": 255,
 
@@ -653,9 +654,9 @@ def import_shop_excel_task(self, file_path):
                 stir = validate_max_length("business_inn", "ShopTenant.stir", stir)
                 certificate_number = validate_max_length("business_inn", "ShopTenant.certificate_number", certificate_number)
 
-                cash_register_number = validate_max_length(
+                raw_cash_register = validate_max_length(
                     "cash_register_number",
-                    "ShopTenant.cash_register_number",
+                    "ShopTenant.cash_register_number_vat",
                     empty_or_zero_to_none(get_cell(row, header_map, "cash_register_number"))
                 )
 
@@ -671,10 +672,22 @@ def import_shop_excel_task(self, file_path):
                     empty_or_zero_to_none(get_cell(row, header_map, "red_category_reason"))
                 )
 
+                tax_type_val = normalize_tax_type(get_cell(row, header_map, "tax_type"))
+                is_vat = tax_type_val == ShopTenant.TaxType.VAT
+
+                ytd_okkm = parse_decimal(get_cell(row, header_map, "yearly_revenue_cash_register"))
+                ytd_e_payment = parse_decimal(get_cell(row, header_map, "yearly_revenue_invoice"))
+                mtd_okkm = parse_decimal(get_cell(row, header_map, "monthly_revenue_cash_register"))
+                mtd_e_payment = parse_decimal(get_cell(row, header_map, "monthly_revenue_invoice"))
+                dtd_okkm = parse_decimal(get_cell(row, header_map, "daily_revenue_cash_register"))
+                dtd_e_payment = parse_decimal(get_cell(row, header_map, "daily_revenue_invoice"))
+                monthly_checks = parse_int(get_cell(row, header_map, "monthly_receipt_count")) or 0
+                daily_checks = parse_int(get_cell(row, header_map, "daily_receipt_count")) or 0
+
                 tenant_defaults = {
                     "rented_area": parse_decimal(get_cell(row, header_map, "rented_area_sqm")),
                     "business_type": normalize_business_type(get_cell(row, header_map, "business_type")),
-                    "tax_type": normalize_tax_type(get_cell(row, header_map, "tax_type")),
+                    "tax_type": tax_type_val,
                     "activity_status": normalize_activity_status(get_cell(row, header_map, "business_status")),
                     "name": business_name,
                     "leader_fio": leader_fio,
@@ -683,18 +696,24 @@ def import_shop_excel_task(self, file_path):
                     "stir": stir,
                     "certificate_number": certificate_number,
                     "employees_count": parse_int(get_cell(row, header_map, "employee_count")) or 0,
-                    "cash_register_number": cash_register_number,
-                    "ytd_okkm": parse_decimal(get_cell(row, header_map, "yearly_revenue_cash_register")),
-                    "ytd_e_invoice": parse_decimal(get_cell(row, header_map, "yearly_revenue_invoice")),
-                    "ytd_qr": parse_decimal(get_cell(row, header_map, "yearly_revenue_qr")),
-                    "mtd_okkm": parse_decimal(get_cell(row, header_map, "monthly_revenue_cash_register")),
-                    "mtd_e_invoice": parse_decimal(get_cell(row, header_map, "monthly_revenue_invoice")),
-                    "mtd_qr": parse_decimal(get_cell(row, header_map, "monthly_revenue_qr")),
-                    "dtd_okkm": parse_decimal(get_cell(row, header_map, "daily_revenue_cash_register")),
-                    "dtd_e_invoice": parse_decimal(get_cell(row, header_map, "daily_revenue_invoice")),
-                    "dtd_qr": parse_decimal(get_cell(row, header_map, "daily_revenue_qr")),
-                    "monthly_checks_count": parse_int(get_cell(row, header_map, "monthly_receipt_count")) or 0,
-                    "daily_checks_count": parse_int(get_cell(row, header_map, "daily_receipt_count")) or 0,
+                    "cash_register_number_vat": raw_cash_register if is_vat else None,
+                    "cash_register_number_turnover": None if is_vat else raw_cash_register,
+                    "ytd_okkm_vat": ytd_okkm if is_vat else None,
+                    "ytd_okkm_turnover": None if is_vat else ytd_okkm,
+                    "ytd_e_payment_vat": ytd_e_payment if is_vat else None,
+                    "ytd_e_payment_turnover": None if is_vat else ytd_e_payment,
+                    "mtd_okkm_vat": mtd_okkm if is_vat else None,
+                    "mtd_okkm_turnover": None if is_vat else mtd_okkm,
+                    "mtd_e_payment_vat": mtd_e_payment if is_vat else None,
+                    "mtd_e_payment_turnover": None if is_vat else mtd_e_payment,
+                    "dtd_okkm_vat": dtd_okkm if is_vat else None,
+                    "dtd_okkm_turnover": None if is_vat else dtd_okkm,
+                    "dtd_e_payment_vat": dtd_e_payment if is_vat else None,
+                    "dtd_e_payment_turnover": None if is_vat else dtd_e_payment,
+                    "monthly_checks_count_vat": monthly_checks if is_vat else None,
+                    "monthly_checks_count_turnover": None if is_vat else monthly_checks,
+                    "daily_checks_count_vat": daily_checks if is_vat else None,
+                    "daily_checks_count_turnover": None if is_vat else daily_checks,
                     "monthly_visitors": parse_int(get_cell(row, header_map, "monthly_visitors")) or 0,
                     "daily_visitors": parse_int(get_cell(row, header_map, "daily_visitors")) or 0,
                     "fire_safety_level": normalize_fire_safety_level(get_cell(row, header_map, "fire_safety_level")),

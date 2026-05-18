@@ -8,9 +8,14 @@ class ShopTenantSerializer(serializers.ModelSerializer):
         model = ShopTenant
         fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'activity_status', 'name', 'leader_fio',
                   'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count',
-                  'cash_register_number', 'ytd_okkm', 'ytd_e_payment', 'mtd_okkm', 'mtd_e_payment',
-                  'dtd_okkm', 'dtd_e_payment', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors',
-                  'daily_visitors', 'fire_safety_level', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
+                  'cash_register_number_vat', 'cash_register_number_turnover',
+                  'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
+                  'mtd_okkm_vat', 'mtd_okkm_turnover', 'mtd_e_payment_vat', 'mtd_e_payment_turnover',
+                  'dtd_okkm_vat', 'dtd_okkm_turnover', 'dtd_e_payment_vat', 'dtd_e_payment_turnover',
+                  'monthly_checks_count_vat', 'monthly_checks_count_turnover',
+                  'daily_checks_count_vat', 'daily_checks_count_turnover',
+                  'monthly_visitors', 'daily_visitors', 'fire_safety_level', 'has_fire_alarm', 'extinguisher_info',
+                  'is_red_category', 'red_reason')
         # extra_kwargs = {
         #     'shop': {'required': False, 'allow_null': True},
         #     'rented_area': {'required': False, 'allow_null': True},
@@ -61,9 +66,14 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
                   'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'activity_status',
                   'activity_status_label', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir',
-                  'certificate_number', 'employees_count', 'cash_register_number', 'ytd_okkm', 'ytd_e_payment',
-                  'mtd_okkm', 'mtd_e_payment', 'dtd_okkm', 'dtd_e_payment', 'monthly_checks_count',
-                  'daily_checks_count', 'monthly_visitors', 'daily_visitors', 'fire_safety_level',
+                  'certificate_number', 'employees_count',
+                  'cash_register_number_vat', 'cash_register_number_turnover',
+                  'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
+                  'mtd_okkm_vat', 'mtd_okkm_turnover', 'mtd_e_payment_vat', 'mtd_e_payment_turnover',
+                  'dtd_okkm_vat', 'dtd_okkm_turnover', 'dtd_e_payment_vat', 'dtd_e_payment_turnover',
+                  'monthly_checks_count_vat', 'monthly_checks_count_turnover',
+                  'daily_checks_count_vat', 'daily_checks_count_turnover',
+                  'monthly_visitors', 'daily_visitors', 'fire_safety_level',
                   'fire_safety_level_label', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
 
     def get_avatar(self, obj):

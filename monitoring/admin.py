@@ -197,16 +197,18 @@ class ShopTenantAdmin(admin.ModelAdmin):
         'employees_count', 'rented_area', 'is_red_category'
     )
     list_filter = ('business_type', 'tax_type', 'activity_status', 'fire_safety_level', 'has_fire_alarm', 'is_red_category')
-    search_fields = ('name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'cash_register_number')
+    search_fields = ('name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'cash_register_number_vat', 'cash_register_number_turnover')
     ordering = ('-id',)
     fields = (
         'shop', 'rented_area', 'business_type', 'tax_type', 'activity_status',
         'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar',
-        'stir', 'certificate_number', 'employees_count', 'cash_register_number',
-        'ytd_okkm', 'ytd_e_invoice', 'ytd_qr',
-        'mtd_okkm', 'mtd_e_invoice', 'mtd_qr',
-        'dtd_okkm', 'dtd_e_invoice', 'dtd_qr',
-        'monthly_checks_count', 'daily_checks_count',
+        'stir', 'certificate_number', 'employees_count',
+        'cash_register_number_vat', 'cash_register_number_turnover',
+        'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
+        'mtd_okkm_vat', 'mtd_okkm_turnover', 'mtd_e_payment_vat', 'mtd_e_payment_turnover',
+        'dtd_okkm_vat', 'dtd_okkm_turnover', 'dtd_e_payment_vat', 'dtd_e_payment_turnover',
+        'monthly_checks_count_vat', 'monthly_checks_count_turnover',
+        'daily_checks_count_vat', 'daily_checks_count_turnover',
         'monthly_visitors', 'daily_visitors',
         'fire_safety_level', 'has_fire_alarm', 'extinguisher_info',
         'is_red_category', 'red_reason'

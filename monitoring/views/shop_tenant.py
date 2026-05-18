@@ -33,7 +33,7 @@ class ShopTenantView(ListCreateAPIView):
     pagination_class = ResultsSetPagination
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = ShopTenantFilter
-    search_fields = ('name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'cash_register_number')
+    search_fields = ('name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'stir', 'certificate_number', 'cash_register_number_vat', 'cash_register_number_turnover')
     ordering_fields = ('pk', 'shop', 'rented_area', 'employees_count', 'monthly_checks_count', 'daily_checks_count', 'monthly_visitors', 'daily_visitors')
     ordering = ('-pk',)
     permission_classes = [IsAuthenticated]

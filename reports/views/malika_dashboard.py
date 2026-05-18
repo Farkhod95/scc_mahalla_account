@@ -50,11 +50,13 @@ class MalikaDashboardReportView(APIView):
         return s
 
     def _get_period_fields(self, period):
-        if period == "daily":
-            return {"okkm": "dtd_okkm", "e_payment": "dtd_e_payment"}
-        elif period == "monthly":
-            return {"okkm": "mtd_okkm", "e_payment": "mtd_e_payment"}
-        return {"okkm": "ytd_okkm", "e_payment": "ytd_e_payment"}
+        prefix = {"daily": "dtd", "monthly": "mtd"}.get(period, "ytd")
+        return {
+            "okkm_vat": f"{prefix}_okkm_vat",
+            "okkm_turnover": f"{prefix}_okkm_turnover",
+            "e_payment_vat": f"{prefix}_e_payment_vat",
+            "e_payment_turnover": f"{prefix}_e_payment_turnover",
+        }
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
@@ -111,15 +113,21 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 3. TERMINALLAR — cash_register_number vergul bilan ajratilgan
         # =========================
-        cash_numbers = tenants_qs.exclude(
-            cash_register_number__isnull=True
+        cash_numbers_vat = tenants_qs.exclude(
+            cash_register_number_vat__isnull=True
         ).exclude(
-            cash_register_number__exact=""
-        ).values_list("cash_register_number", flat=True)
+            cash_register_number_vat__exact=""
+        ).values_list("cash_register_number_vat", flat=True)
+
+        cash_numbers_turnover = tenants_qs.exclude(
+            cash_register_number_turnover__isnull=True
+        ).exclude(
+            cash_register_number_turnover__exact=""
+        ).values_list("cash_register_number_turnover", flat=True)
 
         terminals_total = sum(
             len([x for x in cn.split(",") if x.strip()])
-            for cn in cash_numbers
+            for cn in list(cash_numbers_vat) + list(cash_numbers_turnover)
         )
 
         # =========================
@@ -129,23 +137,21 @@ class MalikaDashboardReportView(APIView):
         # Agar real soliq summasi bo'lsa, alohida field qo'shiladi.
         # =========================
         tax_revenue_agg = tenants_qs.aggregate(
-            total=Coalesce(
-                Sum(revenue_fields["okkm"]) + Sum(revenue_fields["e_payment"]),
-                Decimal("0")
-            )
+            okkm_vat=Coalesce(Sum(revenue_fields["okkm_vat"]), Decimal("0")),
+            okkm_turnover=Coalesce(Sum(revenue_fields["okkm_turnover"]), Decimal("0")),
+            e_payment_vat=Coalesce(Sum(revenue_fields["e_payment_vat"]), Decimal("0")),
+            e_payment_turnover=Coalesce(Sum(revenue_fields["e_payment_turnover"]), Decimal("0")),
         )
-        tax_revenue_total = self._d(tax_revenue_agg["total"])
+        tax_revenue_total = self._d(
+            tax_revenue_agg["okkm_vat"] + tax_revenue_agg["okkm_turnover"] +
+            tax_revenue_agg["e_payment_vat"] + tax_revenue_agg["e_payment_turnover"]
+        )
 
         # =========================
         # 5. SAVDO TUSHUMLARI
         # =========================
-        sales_agg = tenants_qs.aggregate(
-            okkm=Coalesce(Sum(revenue_fields["okkm"]), Decimal("0")),
-            e_payment=Coalesce(Sum(revenue_fields["e_payment"]), Decimal("0")),
-        )
-
-        sales_okkm = self._d(sales_agg["okkm"])
-        sales_e_payment = self._d(sales_agg["e_payment"])
+        sales_okkm = self._d(tax_revenue_agg["okkm_vat"] + tax_revenue_agg["okkm_turnover"])
+        sales_e_payment = self._d(tax_revenue_agg["e_payment_vat"] + tax_revenue_agg["e_payment_turnover"])
         sales_total = sales_okkm + sales_e_payment
 
         # =========================
