@@ -44,3 +44,4 @@ class Command(BaseCommand):
             updated += len(batch)
 
         self.stdout.write(self.style.SUCCESS(f"{updated} ta CarFlow yangilandi."))
+  

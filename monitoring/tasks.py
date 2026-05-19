@@ -300,6 +300,8 @@ def normalize_block_type(value):
         return Shop.BlockType.BLOK_A
     if "blok b" in v or v == "b":
         return Shop.BlockType.BLOK_B
+    if "blok g" in v or v == "g":
+        return Shop.BlockType.BLOK_G
     if "blok j" in v or v == "j":
         return Shop.BlockType.BLOK_J
     if "savdo markaz" in v or v == "sm":

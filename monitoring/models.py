@@ -324,6 +324,7 @@ class Shop(BaseModel):
     class BlockType(models.TextChoices):
         BLOK_A = "A", _("Blok A")
         BLOK_B = "B", _("Blok B")
+        BLOK_G = "G", _("Blok G")
         BLOK_J = "J", _("Blok J")
         SAVDO_MARKAZ = "SM", _("Merkato")
         SKLAD = "SK", _("Sklad")
