@@ -42,9 +42,9 @@ class MalikaDashboardReportView(APIView):
         return s
 
     def _format_money_mln(self, value):
+        # DB da qiymatlar million so'mda saqlanadi (masalan: 2230.9 = 2 230 900 000 so'm)
         value = self._d(value)
-        mln = value / Decimal("1000000")
-        s = f"{mln:,.2f}".replace(",", " ")
+        s = f"{value:,.2f}".replace(",", " ")
         if s.endswith(".00"):
             s = s[:-3]
         return s
@@ -131,31 +131,31 @@ class MalikaDashboardReportView(APIView):
         )
 
         # =========================
-        # 4. SOLIQ TUSHUMLARI
-        # Sizning modelda alohida soliq summasi yo'q.
-        # Frontend kartani to'ldirish uchun vaqtincha savdo tushum totalini ishlatamiz.
-        # Agar real soliq summasi bo'lsa, alohida field qo'shiladi.
+        # 4 & 5. SAVDO va SOLIQ TUSHUMLARI
         # =========================
-        tax_revenue_agg = tenants_qs.aggregate(
+        revenue_agg = tenants_qs.aggregate(
             okkm_vat=Coalesce(Sum(revenue_fields["okkm_vat"]), Decimal("0")),
             okkm_turnover=Coalesce(Sum(revenue_fields["okkm_turnover"]), Decimal("0")),
             e_payment_vat=Coalesce(Sum(revenue_fields["e_payment_vat"]), Decimal("0")),
             e_payment_turnover=Coalesce(Sum(revenue_fields["e_payment_turnover"]), Decimal("0")),
         )
-        tax_revenue_total = self._d(
-            tax_revenue_agg["okkm_vat"] + tax_revenue_agg["okkm_turnover"] +
-            tax_revenue_agg["e_payment_vat"] + tax_revenue_agg["e_payment_turnover"]
-        )
 
-        # =========================
-        # 5. SAVDO TUSHUMLARI
-        # =========================
-        sales_okkm = self._d(tax_revenue_agg["okkm_vat"] + tax_revenue_agg["okkm_turnover"])
-        sales_e_payment = self._d(tax_revenue_agg["e_payment_vat"] + tax_revenue_agg["e_payment_turnover"])
+        # SAVDO TUSHUMLARI: barcha savdo tushumlari (OKKM + elektron to'lov)
+        sales_okkm = self._d(revenue_agg["okkm_vat"] + revenue_agg["okkm_turnover"])
+        sales_e_payment = self._d(revenue_agg["e_payment_vat"] + revenue_agg["e_payment_turnover"])
         sales_total = sales_okkm + sales_e_payment
 
+        # SOLIQ TUSHUMLARI: QQS 12% + Aylanmadan olinadigan soliq 4%
+        QQS_RATE = Decimal("0.12")
+        AOS_RATE = Decimal("0.01")
+        vat_base = self._d(revenue_agg["okkm_vat"] + revenue_agg["e_payment_vat"])
+        turnover_base = self._d(revenue_agg["okkm_turnover"] + revenue_agg["e_payment_turnover"])
+        tax_from_vat = vat_base * QQS_RATE
+        tax_from_turnover = turnover_base * AOS_RATE
+        tax_revenue_total = tax_from_vat + tax_from_turnover
+
         # =========================
-        # 6. KASSA APPARATLARI — terminallar bilan bir xil hisob
+        # 6. KASSA APPARATLARI
         # =========================
         cash_registers_total = terminals_total
 
@@ -218,6 +218,20 @@ class MalikaDashboardReportView(APIView):
                     "title": "Soliq tushumlari",
                     "count": float(tax_revenue_total),
                     "formatted": f"{self._format_money_mln(tax_revenue_total)} mln so'm",
+                    "items": [
+                        {
+                            "key": "QQS",
+                            "name": "QQS (12%)",
+                            "count": float(tax_from_vat),
+                            "formatted": f"{self._format_money_mln(tax_from_vat)} mln so'm",
+                        },
+                        {
+                            "key": "AOS",
+                            "name": "Aylanma soliq (4%)",
+                            "count": float(tax_from_turnover),
+                            "formatted": f"{self._format_money_mln(tax_from_turnover)} mln so'm",
+                        },
+                    ],
                 },
                 "sales_revenue": {
                     "title": "Savdo tushumlari",
