@@ -145,7 +145,7 @@ class MalikaDashboardReportView(APIView):
         sales_e_payment = self._d(revenue_agg["e_payment_vat"] + revenue_agg["e_payment_turnover"])
         sales_total = sales_okkm + sales_e_payment
 
-        # SOLIQ TUSHUMLARI: QQS 12% + Aylanmadan olinadigan soliq 4%
+        # SOLIQ TUSHUMLARI: QQS 12% + Aylanmadan olinadigan soliq 1%
         QQS_RATE = Decimal("0.12")
         AOS_RATE = Decimal("0.01")
         vat_base = self._d(revenue_agg["okkm_vat"] + revenue_agg["e_payment_vat"])
@@ -227,7 +227,7 @@ class MalikaDashboardReportView(APIView):
                         },
                         {
                             "key": "AOS",
-                            "name": "Aylanma soliq (4%)",
+                            "name": "Aylanma soliq (1%)",
                             "count": float(tax_from_turnover),
                             "formatted": f"{self._format_money_mln(tax_from_turnover)} mln so'm",
                         },
