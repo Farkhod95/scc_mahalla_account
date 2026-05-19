@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import Count, Sum, Q
+from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -68,16 +68,6 @@ class MalikaDashboardReportView(APIView):
         shops_qs = Shop.objects.all()
         tenants_qs = ShopTenant.objects.all()
         employees_qs = TenantEmployee.objects.all()
-
-        area_agg = shops_qs.aggregate(
-            total=Coalesce(Sum("total_area"), Decimal("0")),
-            a=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_A)), Decimal("0")),
-            b=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_B)), Decimal("0")),
-            j=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.BLOK_J)), Decimal("0")),
-            merkato=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.SAVDO_MARKAZ)), Decimal("0")),
-            sklad=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.SKLAD)), Decimal("0")),
-            ofis=Coalesce(Sum("total_area", filter=Q(block_type=Shop.BlockType.OFIS)), Decimal("0")),
-        )
 
         # =========================
         # 1. DO'KONLAR
@@ -259,14 +249,13 @@ class MalikaDashboardReportView(APIView):
                 },
                 "area": {
                     "title": "Savdo kompleks umumiy maydoni",
-                    "total_kv": float(max(area_agg["total"], Decimal("36292"))),
+                    "total_kv": 48421,
                     "items": [
-                        {"key": "A",  "name": "A blok",  "kv": float(max(area_agg["a"],       Decimal("47255")))},
-                        {"key": "B",  "name": "B blok",  "kv": float(max(area_agg["b"],       Decimal("8337")))},
-                        {"key": "J",  "name": "J blok",  "kv": float(max(area_agg["j"],       Decimal("305")))},
-                        {"key": "SM", "name": "Merkato", "kv": float(max(area_agg["merkato"], Decimal("2335")))},
-                        {"key": "OF", "name": "Ofis",    "kv": float(area_agg["ofis"])},
-                        {"key": "SK", "name": "Sklad",   "kv": float(area_agg["sklad"])},
+                        {"key": "A",  "name": "A blok",  "kv": 14012},
+                        {"key": "B",  "name": "B blok",  "kv": 5533},
+                        {"key": "J",  "name": "J blok",  "kv": 675},
+                        {"key": "SM", "name": "Merkato", "kv": 1107},
+                        {"key": "SK", "name": "Sklad",   "kv": 2400},
                     ],
                 },
                 "business_entities": {
