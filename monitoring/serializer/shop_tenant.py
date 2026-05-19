@@ -6,7 +6,7 @@ from monitoring.models import ShopTenant
 class ShopTenantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopTenant
-        fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'activity_status', 'name', 'leader_fio',
+        fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'trade_type', 'activity_status', 'name', 'leader_fio',
                   'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count',
                   'cash_register_number_vat', 'cash_register_number_turnover',
                   'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
@@ -64,7 +64,7 @@ class ShopTenantListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShopTenant
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
-                  'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'activity_status',
+                  'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'trade_type', 'activity_status',
                   'activity_status_label', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir',
                   'certificate_number', 'employees_count',
                   'cash_register_number_vat', 'cash_register_number_turnover',

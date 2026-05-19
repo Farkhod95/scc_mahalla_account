@@ -30,10 +30,12 @@ class ShopListSerializer(serializers.ModelSerializer):
     shop_cameras = ShopCameraInlineSerializer(many=True, read_only=True)
     is_red_category = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    actual_tenants_count = serializers.SerializerMethodField()
+    cameras_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Shop
-        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'shop_cameras', 'is_red_category')
+        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'actual_tenants_count', 'cameras_count', 'shop_cameras', 'is_red_category')
 
     def get_avatar(self, obj):
         if not obj.avatar:
@@ -52,3 +54,9 @@ class ShopListSerializer(serializers.ModelSerializer):
 
     def get_is_red_category(self, obj):
         return obj.tenants.filter(is_red_category=True).exists()
+
+    def get_actual_tenants_count(self, obj):
+        return obj.tenants.count()
+
+    def get_cameras_count(self, obj):
+        return obj.shop_cameras.count()

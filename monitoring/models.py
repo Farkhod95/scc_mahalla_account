@@ -412,6 +412,7 @@ class ShopTenant(BaseModel):
     stir = models.CharField(max_length=255, null=True, blank=True, help_text=_("STIR (INN)"))
     certificate_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Guvohnoma raqami"))
     employees_count = models.PositiveIntegerField(null=True, blank=True, help_text=_("Subyektda ishlaydigan xodimlar soni"))
+    trade_type = models.CharField(max_length=255, null=True, blank=True, help_text=_("Savdo turi"))
     cash_register_number_vat = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kassa apparat raqami (QQS)"))
     cash_register_number_turnover = models.CharField(max_length=255, null=True, blank=True, help_text=_("Kassa apparat raqami (Aylanma soliq)"))
     # Yil boshidan savdo tushumi
