@@ -510,6 +510,27 @@ class CenterOfCivilization(BaseModel):
         return f"{self.object_name}" or f"Center of civilization #{self.pk}"
 
 
+class ShopCrime(BaseModel):
+    """
+    Do'konga biriktirilgan jinoyat/huquqbuzarlik yozuvi (HTML matn).
+    """
+    shop = models.ForeignKey(
+        Shop, related_name="crimes", on_delete=models.CASCADE, help_text=_("Do'kon")
+    )
+    malika_bozor = models.CharField(
+        max_length=255, null=True, blank=True, help_text=_("Malika bozor (bo'lim/joy)")
+    )
+    content = models.TextField(help_text=_("Jinoyat tavsifi (HTML)"))
+
+    class Meta:
+        verbose_name = _("Shop Crime")
+        verbose_name_plural = _("Shop Crimes")
+        ordering = ["-created_time"]
+
+    def __str__(self):
+        return f"Crime #{self.pk} — {self.shop}"
+
+
 class MFYCitizen(BaseModel):
     class CATEGORY(models.TextChoices):
         RUHIY = "ruhiy", _("Ruhiy kasallar")

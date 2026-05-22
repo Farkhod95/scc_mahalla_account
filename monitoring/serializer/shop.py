@@ -29,13 +29,19 @@ class ShopListSerializer(serializers.ModelSerializer):
     block_type_label = serializers.CharField(source='get_block_type_display', read_only=True)
     shop_cameras = ShopCameraInlineSerializer(many=True, read_only=True)
     is_red_category = serializers.SerializerMethodField()
+    is_crime = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     actual_tenants_count = serializers.SerializerMethodField()
     cameras_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Shop
-        fields = ('id', 'block_type', 'block_type_label', 'code', 'shop_number', 'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone', 'avatar', 'total_area', 'tenants_count', 'actual_tenants_count', 'cameras_count', 'shop_cameras', 'is_red_category')
+        fields = (
+            'id', 'block_type', 'block_type_label', 'code', 'shop_number',
+            'owner_company_name', 'owner_fio', 'owner_jshshir', 'owner_phone',
+            'avatar', 'total_area', 'tenants_count', 'actual_tenants_count',
+            'cameras_count', 'shop_cameras', 'is_red_category', 'is_crime',
+        )
 
     def get_avatar(self, obj):
         if not obj.avatar:
@@ -43,17 +49,16 @@ class ShopListSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
         if not request:
-            # request bo'lmasa ham kamida fayl url qaytadi
             return obj.avatar.url
 
         url = request.build_absolute_uri(obj.avatar.url)
-
-        # Agar build_absolute_uri http qilib bersa, majburan https ga o'tkazamiz
-        # (Ko'p holatda reverse proxy/ssl terminator sabab bo'ladi)
         return url.replace('http://', 'http://', 1)
 
     def get_is_red_category(self, obj):
         return obj.tenants.filter(is_red_category=True).exists()
+
+    def get_is_crime(self, obj):
+        return obj.crimes.exists()
 
     def get_actual_tenants_count(self, obj):
         return obj.tenants.count()

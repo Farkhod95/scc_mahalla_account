@@ -39,7 +39,7 @@ class ShopView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Shop.objects.prefetch_related('shop_cameras', 'tenants').order_by('block_type', 'shop_number')
+        return Shop.objects.prefetch_related('shop_cameras', 'tenants', 'crimes').order_by('block_type', 'shop_number')
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -58,7 +58,7 @@ class ShopDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Shop.objects.prefetch_related('shop_cameras', 'tenants').all()
+        return Shop.objects.prefetch_related('shop_cameras', 'tenants', 'crimes').all()
 
     def get(self, request, pk, *args, **kwargs):
         obj = get_object_or_404(self.get_queryset(), id=pk)

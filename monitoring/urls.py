@@ -26,6 +26,7 @@ from monitoring.views.object_category_dashboard import ObjectCategoryForDashboar
 from monitoring.views.office_camera import OfficeCameraView, OfficeCameraDetailView, OfficeCameraFieldInfoView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 from monitoring.views.shop import ShopView, ShopDetailView, ShopFieldInfoView
+from monitoring.views.shop_crime import ShopCrimeListCreateView, ShopCrimeDetailView
 from monitoring.views.shop_and_tenant_avatars import SyncShopOwnerAvatarAPIView, SyncShopOwnerAvatarStatusAPIView, \
     SyncShopTenantLeaderAvatarAPIView, SyncShopTenantLeaderAvatarStatusAPIView
 from monitoring.views.shop_camera import ShopCameraView, ShopCameraDetailView, ShopCameraFieldInfoView
@@ -134,4 +135,7 @@ urlpatterns = [
     path("gps-inspector/inspectors/<str:mfy_id>/", GPSInspectorByMFYView.as_view(), name="gps-inspector-by-mfy"),
 
     path('car-flow/', CarFlowView.as_view(), name='car_flow'),
+
+    re_path(r'^shop-crime/$', ShopCrimeListCreateView.as_view(), name='shop_crime_list_create'),
+    path('shop-crime/<int:pk>', ShopCrimeDetailView.as_view(), name='shop_crime_detail'),
 ]

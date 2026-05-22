@@ -14,6 +14,7 @@ from .models import (
     OfficeCamera,
     ShopCamera,
     Shop,
+    ShopCrime,
     ShopTenant,
     TenantEmployee,
     BazarCamera,
@@ -187,6 +188,15 @@ class ShopCameraAdmin(admin.ModelAdmin):
     list_filter = ('shop',)
     search_fields = ('url', 'shop__owner_fio')
     fields = ('shop', 'title', 'url')
+
+
+@admin.register(ShopCrime)
+class ShopCrimeAdmin(admin.ModelAdmin):
+    list_display = ('shop', 'malika_bozor', 'created_time')
+    list_select_related = ('shop',)
+    list_filter = ('shop__block_type',)
+    search_fields = ('shop__shop_number', 'shop__owner_fio', 'malika_bozor')
+    fields = ('shop', 'malika_bozor', 'content')
 
 
 @admin.register(ShopTenant)
