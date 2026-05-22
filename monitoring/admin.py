@@ -193,11 +193,16 @@ class ShopCameraAdmin(admin.ModelAdmin):
 
 
 class ShopCrimeAdminForm(forms.ModelForm):
-    content = forms.CharField(widget=CKEditorWidget())
+    content = forms.CharField(widget=CKEditorWidget(), required=False)
 
     class Meta:
         model = ShopCrime
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['shop'].required = False
+        self.fields['date'].required = False
 
 
 @admin.register(ShopCrime)

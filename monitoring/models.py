@@ -515,7 +515,8 @@ class ShopCrime(BaseModel):
     Do'konga biriktirilgan jinoyat/huquqbuzarlik yozuvi (HTML matn).
     """
     shop = models.ForeignKey(
-        Shop, related_name="crimes", on_delete=models.CASCADE, help_text=_("Do'kon")
+        Shop, related_name="crimes", on_delete=models.CASCADE,
+        null=True, blank=True, help_text=_("Do'kon")
     )
     malika_bozor = models.CharField(
         max_length=255, null=True, blank=True, help_text=_("Malika bozor (bo'lim/joy)")
