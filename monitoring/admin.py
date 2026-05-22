@@ -1,3 +1,5 @@
+from ckeditor.widgets import CKEditorWidget
+from django import forms
 from django.contrib import admin
 
 from directory.models import Region, District, Gom, Mahalla
@@ -190,13 +192,22 @@ class ShopCameraAdmin(admin.ModelAdmin):
     fields = ('shop', 'title', 'url')
 
 
+class ShopCrimeAdminForm(forms.ModelForm):
+    content = forms.CharField(widget=CKEditorWidget())
+
+    class Meta:
+        model = ShopCrime
+        fields = '__all__'
+
+
 @admin.register(ShopCrime)
 class ShopCrimeAdmin(admin.ModelAdmin):
-    list_display = ('shop', 'malika_bozor', 'created_time')
+    form = ShopCrimeAdminForm
+    list_display = ('shop', 'malika_bozor', 'date', 'created_time')
     list_select_related = ('shop',)
     list_filter = ('shop__block_type',)
     search_fields = ('shop__shop_number', 'shop__owner_fio', 'malika_bozor')
-    fields = ('shop', 'malika_bozor', 'content')
+    fields = ('shop', 'malika_bozor', 'date', 'content')
 
 
 @admin.register(ShopTenant)

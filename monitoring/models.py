@@ -520,6 +520,7 @@ class ShopCrime(BaseModel):
     malika_bozor = models.CharField(
         max_length=255, null=True, blank=True, help_text=_("Malika bozor (bo'lim/joy)")
     )
+    date = models.DateTimeField(null=True, blank=True, help_text=_("Jinoyat sodir etilgan sana va vaqt"))
     content = models.TextField(help_text=_("Jinoyat tavsifi (HTML)"))
 
     class Meta:

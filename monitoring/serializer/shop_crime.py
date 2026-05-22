@@ -8,7 +8,7 @@ class ShopCrimeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShopCrime
-        fields = ('id', 'shop', 'shop_display', 'malika_bozor', 'content', 'created_time', 'updated_time')
+        fields = ('id', 'shop', 'shop_display', 'malika_bozor', 'date', 'content', 'created_time', 'updated_time')
         extra_kwargs = {
             'shop': {'required': True},
             'content': {'required': True},
