@@ -16,18 +16,46 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
 # --- Config (shu faylning ichida) ------------------------------------------
 BASE_URL    = "https://mspd-api.soliq.uz/akt/egovernment"
 AUTH_HEADER = "Basic ZWdvdmVybm1lbnQ6RWdvdmVybm1lbnQtYS5wLmk="
-TIMEOUT     = 30
+# (connect, read) timeout — soliq sekin javob bersa ham ulanish tez tekshiriladi.
+TIMEOUT     = (10, 30)
+RETRIES     = 3
 # ---------------------------------------------------------------------------
 
 
 class SoliqError(Exception):
     """Soliq API muvaffaqiyatsiz javob qaytarganda (success=false yoki HTTP xato)."""
+
+
+_session: Optional[requests.Session] = None
+
+
+def _get_session() -> requests.Session:
+    """Vaqtincha timeout/5xx bo'lsa avtomatik qayta uradigan session."""
+    global _session
+    if _session is None:
+        sess = requests.Session()
+        retry = Retry(
+            total=RETRIES,
+            connect=RETRIES,
+            read=RETRIES,
+            backoff_factor=1,  # 0s, 1s, 2s, 4s ...
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset(["GET", "POST"]),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        sess.mount("https://", adapter)
+        sess.mount("http://", adapter)
+        _session = sess
+    return _session
 
 
 def _headers() -> Dict[str, str]:
@@ -50,7 +78,7 @@ def _request(
       - get-factura-data: success, message  (data — list)
     """
     url = f"{BASE_URL}/{path}"
-    resp = requests.request(
+    resp = _get_session().request(
         method, url, params=params, json=json_body, headers=_headers(), timeout=TIMEOUT,
     )
     resp.raise_for_status()
