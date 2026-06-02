@@ -127,9 +127,11 @@ class MalikaDashboardReportView(APIView):
         if period not in ["daily", "monthly", "yearly"]:
             period = "yearly"
 
-        chart_range = request.query_params.get("range", "week").lower()
+        # Grafik granularligi period'dan kelib chiqadi (kun→hafta, oy→oylar, yil→yillar).
+        # Xohlasa ?range= bilan alohida ham boshqarish mumkin.
+        chart_range = request.query_params.get("range", "").lower()
         if chart_range not in ["week", "month", "year"]:
-            chart_range = "week"
+            chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
 
         revenue_fields = self._get_period_fields(period)
 
