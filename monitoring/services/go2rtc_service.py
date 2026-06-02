@@ -12,7 +12,8 @@ from django.conf import settings
 
 GO2RTC_URL         = getattr(settings, "GO2RTC_URL",         "http://mahalla_go2rtc:1984")
 GO2RTC_PUBLIC_HOST = getattr(settings, "GO2RTC_PUBLIC_HOST", "localhost")
-GO2RTC_STREAM_BASE = getattr(settings, "GO2RTC_STREAM_BASE", f"http://{GO2RTC_PUBLIC_HOST}:1984")
+# Frontend go2rtc ga nginx /go2rtc/ proxy orqali ulanadi (1984 portsiz).
+GO2RTC_STREAM_BASE = getattr(settings, "GO2RTC_STREAM_BASE", f"http://{GO2RTC_PUBLIC_HOST}:8080/go2rtc")
 TIMEOUT = 5
 
 
@@ -21,7 +22,7 @@ def stream_name(camera) -> str:
 
 
 def get_webrtc_url(camera) -> str | None:
-    """Frontend WebRTC stream URL si. None — agar kamerada URL yo'q bo'lsa."""
+    """Frontend WebRTC stream URL si (nginx /go2rtc/ orqali). None — kamerada URL yo'q bo'lsa."""
     if not camera.url:
         return None
     return f"{GO2RTC_STREAM_BASE}/api/ws?src={stream_name(camera)}"

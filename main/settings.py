@@ -102,7 +102,8 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 # go2rtc
 GO2RTC_URL         = "http://mahalla_go2rtc:1984"
 GO2RTC_PUBLIC_HOST = "192.168.168.149"          # serverning tashqi IP si
-GO2RTC_STREAM_BASE = f"http://{GO2RTC_PUBLIC_HOST}:1984"
+# Frontend stream URL — nginx /go2rtc/ proxy orqali (1984 portsiz).
+GO2RTC_STREAM_BASE = f"http://{GO2RTC_PUBLIC_HOST}:8080/go2rtc"
 
 ROOT_URLCONF = 'main.urls'
 

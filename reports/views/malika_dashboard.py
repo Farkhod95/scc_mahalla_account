@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -6,7 +7,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from monitoring.models import Shop, ShopTenant, TenantEmployee
+from monitoring.models import Shop, ShopTenant, TenantEmployee, FacturaRevenueDaily
+
+WEEKDAY_LABELS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"]  # Mon..Sun
+MONTH_LABELS = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn",
+                "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"]
+MLN = Decimal("1000000")
 
 
 class MalikaDashboardReportView(APIView):
@@ -58,12 +64,76 @@ class MalikaDashboardReportView(APIView):
             "e_payment_turnover": f"{prefix}_e_payment_turnover",
         }
 
+    # =========================
+    # REVENUE CHART (FacturaRevenueDaily dan, mln so'mda)
+    # =========================
+    def _chart_to_mln(self, value):
+        return float((Decimal(value or 0) / MLN).quantize(Decimal("0.01")))
+
+    def _chart_sum_by_date(self, start, end):
+        rows = (
+            FacturaRevenueDaily.objects
+            .filter(date__gte=start, date__lte=end)
+            .values("date")
+            .annotate(s=Sum("sales"), t=Sum("tax"))
+        )
+        return {r["date"]: (r["s"] or 0, r["t"] or 0) for r in rows}
+
+    def _revenue_charts(self, rng, today):
+        """(sales_chart, tax_chart) — rng: week|month|year."""
+        if rng == "month":
+            keys, labels = [], []
+            y, m = today.year, today.month
+            for _ in range(7):
+                keys.append((y, m))
+                labels.append(MONTH_LABELS[m - 1])
+                m -= 1
+                if m == 0:
+                    m, y = 12, y - 1
+            keys.reverse(); labels.reverse()
+            start = date(keys[0][0], keys[0][1], 1)
+            by_date = self._chart_sum_by_date(start, today)
+            buckets = {k: [Decimal(0), Decimal(0)] for k in keys}
+            for d, (s, t) in by_date.items():
+                k = (d.year, d.month)
+                if k in buckets:
+                    buckets[k][0] += Decimal(s); buckets[k][1] += Decimal(t)
+            order = keys
+            label_of = dict(zip(keys, labels))
+        elif rng == "year":
+            years = [today.year - i for i in range(6, -1, -1)]
+            start = date(years[0], 1, 1)
+            by_date = self._chart_sum_by_date(start, today)
+            buckets = {y: [Decimal(0), Decimal(0)] for y in years}
+            for d, (s, t) in by_date.items():
+                if d.year in buckets:
+                    buckets[d.year][0] += Decimal(s); buckets[d.year][1] += Decimal(t)
+            order = years
+            label_of = {y: str(y) for y in years}
+        else:  # week
+            monday = today - timedelta(days=today.weekday())
+            days = [monday + timedelta(days=i) for i in range(7)]
+            by_date = self._chart_sum_by_date(days[0], days[-1])
+            buckets = {d: list(by_date.get(d, (0, 0))) for d in days}
+            order = days
+            label_of = {d: WEEKDAY_LABELS[i] for i, d in enumerate(days)}
+
+        sales = [{"label": label_of[k], "value": self._chart_to_mln(buckets[k][0])} for k in order]
+        tax = [{"label": label_of[k], "value": self._chart_to_mln(buckets[k][1])} for k in order]
+        return sales, tax
+
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
         if period not in ["daily", "monthly", "yearly"]:
             period = "yearly"
 
+        chart_range = request.query_params.get("range", "week").lower()
+        if chart_range not in ["week", "month", "year"]:
+            chart_range = "week"
+
         revenue_fields = self._get_period_fields(period)
+
+        sales_chart, tax_chart = self._revenue_charts(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
         tenants_qs = ShopTenant.objects.all()
@@ -185,6 +255,7 @@ class MalikaDashboardReportView(APIView):
 
         response_data = {
             "period": period,
+            "range": chart_range,
             "dashboard": {
                 "shops": {
                     "title": "Do'konlar",
@@ -208,6 +279,7 @@ class MalikaDashboardReportView(APIView):
                     "title": "Soliq tushumlari",
                     "count": float(tax_revenue_total),
                     "formatted": f"{self._format_money_mln(tax_revenue_total)} mln so'm",
+                    "chart": tax_chart,
                     "items": [
                         {
                             "key": "QQS",
@@ -227,6 +299,7 @@ class MalikaDashboardReportView(APIView):
                     "title": "Savdo tushumlari",
                     "count": float(sales_total),
                     "formatted": f"{self._format_money_mln(sales_total)} mln so'm",
+                    "chart": sales_chart,
                     "items": [
                         {
                             "key": "OKKM",
