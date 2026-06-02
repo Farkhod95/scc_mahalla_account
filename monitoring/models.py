@@ -566,3 +566,29 @@ class MFYCitizen(BaseModel):
 
     def __str__(self):
         return f"{self.full_name}" or f"Citizen #{self.pk}"
+
+
+class FacturaRevenueDaily(models.Model):
+    """
+    Soliq faktura integratsiyasidan yig'ilgan kunlik savdo/soliq tarixi.
+    Dashboard grafigi (xafta/oy/yil) shu jadvaldan o'qiydi.
+
+    Davriy (cron) sync har bir sellerTin bo'yicha faktura'larni olib,
+    kun bo'yicha yig'adi va shu yerga yozadi (upsert).
+    """
+    date = models.DateField(help_text=_("Faktura sanasi (facturaDate)"), db_index=True)
+    seller_tin = models.CharField(max_length=20, help_text=_("Sotuvchi STIR"))
+    sales = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                help_text=_("Kunlik savdo (deliverySumWithVat yig'indisi)"))
+    tax = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                              help_text=_("Kunlik QQS (vatSum yig'indisi)"))
+    factura_count = models.PositiveIntegerField(default=0, help_text=_("Faktura soni"))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("Factura Revenue Daily")
+        verbose_name_plural = _("Factura Revenue Daily")
+        unique_together = ("date", "seller_tin")
+
+    def __str__(self):
+        return f"{self.date} | {self.seller_tin} | {self.sales}"

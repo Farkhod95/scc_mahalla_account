@@ -62,7 +62,7 @@ class ShopTenantDetailView(RetrieveUpdateDestroyAPIView):
 
     def get(self, request, pk, *args, **kwargs):
         obj = get_object_or_404(self.get_queryset(), id=pk)
-        serializer = ShopTenantListSerializer(obj, context={'request': request})
+        serializer = ShopTenantListSerializer(obj, context={'request': request, 'include_factura': True})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk, *args, **kwargs):

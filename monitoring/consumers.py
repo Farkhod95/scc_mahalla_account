@@ -1,6 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+
 class WSConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.channel_layer.group_add("metrics_group", self.channel_name)

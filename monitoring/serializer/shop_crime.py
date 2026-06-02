@@ -10,7 +10,7 @@ class ShopCrimeSerializer(serializers.ModelSerializer):
         model = ShopCrime
         fields = ('id', 'shop', 'shop_display', 'malika_bozor', 'date', 'content', 'created_time', 'updated_time')
         extra_kwargs = {
-            'shop': {'required': True},
+            'shop': {'required': False, 'allow_null': True},
             'content': {'required': True},
             'malika_bozor': {'required': False, 'allow_null': True, 'allow_blank': True},
         }

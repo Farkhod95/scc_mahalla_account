@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from celery.schedules import crontab
 from django.utils.translation import gettext_lazy as _
 from corsheaders.defaults import default_headers
 
@@ -98,6 +99,11 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'language-code',
 ]
 
+# go2rtc
+GO2RTC_URL         = "http://mahalla_go2rtc:1984"
+GO2RTC_PUBLIC_HOST = "192.168.168.149"          # serverning tashqi IP si
+GO2RTC_STREAM_BASE = f"http://{GO2RTC_PUBLIC_HOST}:1984"
+
 ROOT_URLCONF = 'main.urls'
 
 TEMPLATES = [
@@ -128,6 +134,15 @@ CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'default'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+
+# Davriy vazifalar. DatabaseScheduler bu jadvalni o'qib DB ga sinxronlaydi.
+CELERY_BEAT_SCHEDULE = {
+    # Har kuni 02:00 da faktura tushumini FacturaRevenueDaily ga yig'adi.
+    'sync-factura-revenue-daily': {
+        'task': 'celery_task.sync_factura_revenue_task',
+        'schedule': crontab(hour=2, minute=0),
+    },
+}
 
 ### Local Host uchun
 

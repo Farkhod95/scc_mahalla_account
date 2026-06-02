@@ -1,0 +1,15 @@
+api:
+  listen: ":1984"
+  origin: "*"
+
+rtsp:
+  listen: ":8554"
+
+webrtc:
+  listen: ":8555"
+  candidates:
+    - 192.168.168.149   # serverning tashqi IP si — frontdan ko'rinadigan manzil
+
+streams:
+  # Kameralar Django orqali dinamik qo'shiladi (PUT /api/streams)
+  # Misol: rtsp://login:password@192.168.x.x:554/stream

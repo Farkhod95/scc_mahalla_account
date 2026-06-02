@@ -1,9 +1,40 @@
 from rest_framework import serializers
 
 from monitoring.models import ShopTenant
+from monitoring.services import soliq_service
 
 
-class ShopTenantSerializer(serializers.ModelSerializer):
+class SoliqEnrichMixin:
+    """
+    Serializer chiqishini (representation) soliq integratsiyasidan kelgan
+    qiymatlar bilan to'ldiradi. Maydon nomlari o'zgarmaydi — frontend o'zgarmaydi.
+    Soliq ochilmasa/xato bo'lsa, bazadagi qiymat saqlanib qoladi.
+    """
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        overlay = soliq_service.soliq_fields_for(getattr(instance, "leader_jshshir", None))
+        for key, value in overlay.items():
+            if key in data:
+                data[key] = value
+        # activity_status o'zgargan bo'lsa, label ni ham yangilaymiz
+        if "activity_status" in overlay and "activity_status_label" in data:
+            data["activity_status_label"] = dict(ShopTenant.ActivityStatus.choices).get(
+                overlay["activity_status"], data["activity_status_label"]
+            )
+
+        # Faktura tushumi (e_payment) — og'ir bo'lgani uchun faqat detalda.
+        if self.context.get("include_factura"):
+            tin = overlay.get("stir") or getattr(instance, "stir", None)
+            factura = soliq_service.factura_turnover_fields(tin, getattr(instance, "tax_type", None))
+            for key, value in factura.items():
+                if key in data:
+                    data[key] = value
+
+        return data
+
+
+class ShopTenantSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
     class Meta:
         model = ShopTenant
         fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'trade_type', 'activity_status', 'name', 'leader_fio',
@@ -49,7 +80,7 @@ class ShopTenantSerializer(serializers.ModelSerializer):
         # }
 
 
-class ShopTenantListSerializer(serializers.ModelSerializer):
+class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
     business_type_label = serializers.CharField(source='get_business_type_display', read_only=True)
     tax_type_label = serializers.CharField(source='get_tax_type_display', read_only=True)
     activity_status_label = serializers.CharField(source='get_activity_status_display', read_only=True)

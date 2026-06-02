@@ -2,6 +2,7 @@ from typing import Dict, Any, List
 
 from monitoring.services.citizen_avatar import fetch_citizen_avatar_file
 from monitoring.services.patrol_car_sync import sync_patrol_cars_from_api
+from monitoring.services.revenue_sync import sync_factura_revenue
 import os
 import re
 from decimal import Decimal, InvalidOperation
@@ -780,6 +781,22 @@ def import_shop_excel_task(self, file_path):
         "created_employees": created_employees,
         "skipped_rows": skipped_rows,
         "errors": errors,
+    }
+
+
+@shared_task(bind=True, name="celery_task.sync_factura_revenue_task")
+def sync_factura_revenue_task(self, period_from=None, period_to=None):
+    """
+    Faktura tushumini FacturaRevenueDaily ga yig'adi (dashboard grafigi uchun).
+    Davriy ishlatish uchun (celery beat).
+    """
+    stats = sync_factura_revenue(period_from=period_from, period_to=period_to)
+    return {
+        "ok": True,
+        "tenants": stats.tenants,
+        "with_tin": stats.with_tin,
+        "days_written": stats.days_written,
+        "errors": stats.errors,
     }
 
 

@@ -12,6 +12,7 @@ services:
     depends_on:
       - db
       - redis
+      - go2rtc
     entrypoint: ["./wait-for-it.sh", "db:5432", "--"]
     command: >
       sh -lc "
@@ -61,6 +62,18 @@ services:
     depends_on:
       - db
       - redis
+
+  go2rtc:
+    image: alexxit/go2rtc
+    container_name: mahalla_go2rtc
+    restart: always
+    ports:
+      - "1984:1984"   # REST API + WebRTC WebSocket
+      - "8554:8554"   # RTSP
+      - "8555:8555/tcp"
+      - "8555:8555/udp"
+    volumes:
+      - ./go2rtc.yaml:/config/go2rtc.yaml
 
   nginx:
     image: nginx:alpine
