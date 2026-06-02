@@ -13,7 +13,8 @@ from django.conf import settings
 GO2RTC_URL         = getattr(settings, "GO2RTC_URL",         "http://mahalla_go2rtc:1984")
 GO2RTC_PUBLIC_HOST = getattr(settings, "GO2RTC_PUBLIC_HOST", "localhost")
 # Frontend go2rtc ga nginx /go2rtc/ proxy orqali ulanadi (1984 portsiz).
-GO2RTC_STREAM_BASE = getattr(settings, "GO2RTC_STREAM_BASE", f"http://{GO2RTC_PUBLIC_HOST}:8080/go2rtc")
+# /api/ws — WebSocket endpoint, shuning uchun ws:// (TLS bo'lsa wss://).
+GO2RTC_STREAM_BASE = getattr(settings, "GO2RTC_STREAM_BASE", f"ws://{GO2RTC_PUBLIC_HOST}:8080/go2rtc")
 TIMEOUT = 5
 
 
