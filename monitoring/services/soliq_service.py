@@ -237,15 +237,34 @@ def get_all_facturas(
     size: int = 99,
     max_pages: int = 200,
 ) -> List[Dict[str, Any]]:
-    """Barcha sahifalarni yig'ib bitta ro'yxat qaytaradi."""
+    """
+    Barcha sahifalarni yig'ib bitta ro'yxat qaytaradi.
+
+    Faktura `id` bo'yicha dublikatlar tashlanadi — agar API sahifani surmay
+    bir xil yozuvlarni qaytarsa, summa shishib ketmasligi uchun (va sahifa
+    takrorlansa to'xtaymiz).
+    """
     out: List[Dict[str, Any]] = []
+    seen_ids: set = set()
     page = 0
     while page < max_pages:
         batch = get_factura_data(seller_tin, period_from, period_to, page=page, size=size)
         if not batch:
             break
-        out.extend(batch)
+
+        new_count = 0
+        for f in batch:
+            fid = f.get("id")
+            if fid is not None:
+                if fid in seen_ids:
+                    continue
+                seen_ids.add(fid)
+            out.append(f)
+            new_count += 1
+
         if len(batch) < size:
+            break
+        if new_count == 0:  # sahifa faqat takror yozuvlar — to'xtaymiz
             break
         page += 1
     return out
