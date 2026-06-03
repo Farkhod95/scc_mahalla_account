@@ -91,13 +91,14 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
     shop_block_type_label = serializers.CharField(source='shop.get_block_type_display', read_only=True)
 
     avatar = serializers.SerializerMethodField()
+    cash_status = serializers.SerializerMethodField()
 
     class Meta:
         model = ShopTenant
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
                   'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'trade_type', 'activity_status',
                   'activity_status_label', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir',
-                  'certificate_number', 'employees_count',
+                  'cash_status', 'certificate_number', 'employees_count',
                   'cash_register_number_vat', 'cash_register_number_turnover',
                   'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
                   'mtd_okkm_vat', 'mtd_okkm_turnover', 'mtd_e_payment_vat', 'mtd_e_payment_turnover',
@@ -106,6 +107,15 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
                   'daily_checks_count_vat', 'daily_checks_count_turnover',
                   'monthly_visitors', 'daily_visitors', 'fire_safety_level',
                   'fire_safety_level_label', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
+
+    def get_cash_status(self, obj):
+        # Kassa (chek) faolligiga qarab rang: green/yellow/red.
+        # Faqat shop bo'yicha filtrlangan so'rovda (modal) hisoblanadi — og'ir bo'lmasligi uchun.
+        request = self.context.get("request")
+        if not request or not request.query_params.get("shop"):
+            return None
+        from monitoring.services.shop_status import tenant_cash_color
+        return tenant_cash_color(obj)
 
     def get_avatar(self, obj):
         if not obj.avatar:

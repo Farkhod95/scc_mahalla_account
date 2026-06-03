@@ -339,3 +339,63 @@ def aggregate_factura_by_day(
         bucket["tax"] += _to_decimal(f.get("vatSum"))
         bucket["count"] += 1
     return daily
+
+
+# --- Online NKM (onlayn nazorat-kassa / cheklar) ---------------------------
+
+def get_online_nkm(
+    tin: str,
+    period_from: str,
+    period_to: str,
+    page: int = 1,
+    size: int = 100,
+    catalog_code: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Bitta sahifa onlayn-kassa chek qatorlari (tin bo'yicha).
+    Har yozuv: checkDate, catalogCode, amount, deliverySum, vat.
+    DIQQAT: hajm juda katta — to'liq paginatsiya qilmang (faqat faollik/kunlik).
+    """
+    body: Dict[str, Any] = {
+        "tin": int(tin),
+        "page": page,
+        "size": size,
+        "periodFrom": period_from,
+        "periodTo": period_to,
+    }
+    if catalog_code:
+        body["catalogCode"] = catalog_code
+
+    data = _request("online-nkm-list", method="POST", json_body=body)
+    return data or []
+
+
+def nkm_active(tin: Optional[str]) -> bool:
+    """
+    tin joriy oyda kamida 1 ta chek urganmi (= kassa faol).
+    Yengil: 1 yozuv yetadi (page=1,size=1). 1 kun keshlanadi.
+    """
+    from django.core.cache import cache
+
+    tin = (tin or "").strip()
+    if not tin:
+        return False
+
+    cache_key = f"nkm_active:{tin}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    today = date.today()
+    period_from = f"01.{today.month:02d}.{today.year}"
+    period_to = today.strftime("%d.%m.%Y")
+    try:
+        batch = get_online_nkm(tin, period_from, period_to, page=1, size=1)
+        active = len(batch) > 0
+    except (SoliqError, requests.RequestException) as e:
+        logger.warning("soliq nkm-active xato (tin=%s): %s", tin, e)
+        cache.set(cache_key, False, 300)
+        return False
+
+    cache.set(cache_key, active, 60 * 60 * 24)
+    return active
