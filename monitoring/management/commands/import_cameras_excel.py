@@ -24,6 +24,12 @@ DEFAULT_LOGIN = "admin"
 RTSP_PORT     = "554"
 RTSP_PATH     = "/Streaming/Channels/101/"
 
+# Brand bo'yicha RTSP stream yo'li
+RTSP_PATHS = {
+    "hikvision": "/Streaming/Channels/101/",
+    "dahua":     "/cam/realmonitor?channel=1&subtype=0",
+}
+
 BLOCK_MAP = {"A": "A", "B": "B", "G": "G", "J": "J"}
 
 # "B8", "G4", "B44/2", "B43a", "B-15 oldi taraf", "A-28 ichki taraf"
@@ -82,8 +88,12 @@ class Command(BaseCommand):
             help=f"RTSP login (default: {DEFAULT_LOGIN})",
         )
         parser.add_argument(
+            "--password", default=None,
+            help="Standart parol (qatorida parol bo'lmasa ishlatiladi)",
+        )
+        parser.add_argument(
             "--rtsp-path", default=RTSP_PATH,
-            help=f"RTSP stream path (default: {RTSP_PATH})",
+            help=f"RTSP stream path (brand topilmasa, default: {RTSP_PATH})",
         )
 
     def handle(self, *args, **options):
@@ -96,6 +106,7 @@ class Command(BaseCommand):
         dry_run   = options["dry_run"]
         login     = options["login"]
         rtsp_path = options["rtsp_path"]
+        default_pwd = options["password"]
 
         wb = load_workbook(file_path, data_only=True)
         self.stdout.write(f"Fayl  : {file_path}\nSheets: {wb.sheetnames}\n")
@@ -109,11 +120,14 @@ class Command(BaseCommand):
             self.stdout.write(f"\n--- Sheet {sheet_idx}: \"{sheet_name}\" "
                               f"({ws.max_row - 1} qator) ---")
 
+            last_pwd = default_pwd  # parol faqat 1-qatorda bo'lsa, keyingilarga tashiymiz
+
             for row in ws.iter_rows(min_row=2, values_only=True):
                 num = row[0] if len(row) > 0 else None
                 ip  = str(row[1]).strip() if len(row) > 1 and row[1] else None
                 loc = str(row[2]).strip() if len(row) > 2 and row[2] else ""
                 pwd = str(row[3]).strip() if len(row) > 3 and row[3] else None
+                brand = str(row[5]).strip().lower() if len(row) > 5 and row[5] else None
 
                 # Bo'sh, sarlavha va NVR qatorlarini o'tkazish
                 if not ip:
@@ -126,7 +140,14 @@ class Command(BaseCommand):
                 except (TypeError, ValueError):
                     continue
 
-                rtsp_url   = _build_rtsp(ip, pwd, login, rtsp_path)
+                # Parol: qatorda bo'lsa o'sha, aks holda oxirgi ko'rilgan / default
+                if pwd:
+                    last_pwd = pwd
+                else:
+                    pwd = last_pwd
+
+                path = RTSP_PATHS.get(brand, rtsp_path)
+                rtsp_url   = _build_rtsp(ip, pwd, login, path)
                 block, num_str = _parse_location(loc)
                 shop = _find_shop(block, num_str) if not dry_run else None
 
