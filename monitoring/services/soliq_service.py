@@ -154,12 +154,21 @@ def soliq_fields_for(pinfl: Optional[str]) -> Dict[str, Any]:
     Serializer ichida ishlatish uchun — hech qachon exception ko'tarmaydi,
     xato bo'lsa bo'sh dict qaytaradi (API hech qachon buzilmaydi).
 
+    Natija 1 kun keshlanadi (Redis) — har so'rovda jonli soliqqa borilmaydi.
+
     Qaytaradigan kalitlar (mavjud bo'lsa):
       stir, leader_fio, name, certificate_number, activity_status (1=active)
     """
+    from django.core.cache import cache
+
     pinfl = (pinfl or "").strip()
     if not pinfl:
         return {}
+
+    cache_key = f"soliq_fields:{pinfl}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     fields: Dict[str, Any] = {}
 
@@ -188,6 +197,8 @@ def soliq_fields_for(pinfl: Optional[str]) -> Dict[str, Any]:
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq activity-rate xato (pinfl=%s): %s", pinfl, e)
 
+    # To'liq natija — 1 kun; xato/bo'sh — 5 daqiqa (soliq tiklanganda qayta urinish).
+    cache.set(cache_key, fields, 60 * 60 * 24 if fields else 300)
     return fields
 
 
@@ -262,12 +273,20 @@ def factura_turnover_fields(tin: Optional[str], tax_type: Optional[str]) -> Dict
     ShopTenant ning e_payment maydonlariga mos qiymat qaytaradi.
 
     Bir marta yil boshidan bugungacha oladi, ytd/mtd/dtd ni lokal hisoblaydi.
-    tax_type='vat' -> *_vat, aks holda -> *_turnover.
+    Natija 1 kun keshlanadi (Redis). tax_type='vat' -> *_vat, aks holda -> *_turnover.
     Xato bo'lsa bo'sh dict (API buzilmaydi).
     """
+    from django.core.cache import cache
+
     tin = (tin or "").strip()
     if not tin:
         return {}
+
+    suffix = "vat" if tax_type == "vat" else "turnover"
+    cache_key = f"factura_fields:{tin}:{suffix}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     today = date.today()
     period_from = f"01.01.{today.year}"
@@ -277,6 +296,7 @@ def factura_turnover_fields(tin: Optional[str], tax_type: Optional[str]) -> Dict
         facturas = get_all_facturas(tin, period_from, period_to)
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq faktura xato (tin=%s): %s", tin, e)
+        cache.set(cache_key, {}, 300)  # xato — 5 daqiqa, keyin qayta urinadi
         return {}
 
     ytd = mtd = dtd = Decimal(0)
@@ -289,12 +309,13 @@ def factura_turnover_fields(tin: Optional[str], tax_type: Optional[str]) -> Dict
         if fd == today:
             dtd += amount
 
-    suffix = "vat" if tax_type == "vat" else "turnover"
-    return {
+    result = {
         f"ytd_e_payment_{suffix}": f"{ytd:.2f}",
         f"mtd_e_payment_{suffix}": f"{mtd:.2f}",
         f"dtd_e_payment_{suffix}": f"{dtd:.2f}",
     }
+    cache.set(cache_key, result, 60 * 60 * 24)
+    return result
 
 
 def aggregate_factura_by_day(

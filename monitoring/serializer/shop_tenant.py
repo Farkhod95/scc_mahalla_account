@@ -23,13 +23,13 @@ class SoliqEnrichMixin:
                 overlay["activity_status"], data["activity_status_label"]
             )
 
-        # Faktura tushumi (e_payment) — og'ir bo'lgani uchun faqat detalda.
-        if self.context.get("include_factura"):
-            tin = overlay.get("stir") or getattr(instance, "stir", None)
-            factura = soliq_service.factura_turnover_fields(tin, getattr(instance, "tax_type", None))
-            for key, value in factura.items():
-                if key in data:
-                    data[key] = value
+        # Faktura tushumi (e_payment) — ro'yxatda ham, detalda ham. 1 kun keshlangani
+        # uchun har so'rovda jonli olinmaydi (birinchi marta sekin, keyin tez).
+        tin = overlay.get("stir") or getattr(instance, "stir", None)
+        factura = soliq_service.factura_turnover_fields(tin, getattr(instance, "tax_type", None))
+        for key, value in factura.items():
+            if key in data:
+                data[key] = value
 
         return data
 
