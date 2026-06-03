@@ -2,7 +2,6 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
-from django.db.models.functions import Coalesce
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -133,8 +132,6 @@ class MalikaDashboardReportView(APIView):
         if chart_range not in ["week", "month", "year"]:
             chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
 
-        revenue_fields = self._get_period_fields(period)
-
         sales_chart, tax_chart = self._revenue_charts(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
@@ -195,26 +192,17 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 4 & 5. SAVDO va SOLIQ TUSHUMLARI
         # =========================
-        revenue_agg = tenants_qs.aggregate(
-            okkm_vat=Coalesce(Sum(revenue_fields["okkm_vat"]), Decimal("0")),
-            okkm_turnover=Coalesce(Sum(revenue_fields["okkm_turnover"]), Decimal("0")),
-            e_payment_vat=Coalesce(Sum(revenue_fields["e_payment_vat"]), Decimal("0")),
-            e_payment_turnover=Coalesce(Sum(revenue_fields["e_payment_turnover"]), Decimal("0")),
-        )
+        # SAVDO / SOLIQ — grafik bilan BIR XIL manba (FacturaRevenueDaily).
+        # Karta "Jami" = grafik davrining yig'indisi (mln so'mda) — shuning uchun mos keladi.
+        sales_total = self._d(sum(item["value"] for item in sales_chart))
+        tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
 
-        # SAVDO TUSHUMLARI: barcha savdo tushumlari (OKKM + elektron to'lov)
-        sales_okkm = self._d(revenue_agg["okkm_vat"] + revenue_agg["okkm_turnover"])
-        sales_e_payment = self._d(revenue_agg["e_payment_vat"] + revenue_agg["e_payment_turnover"])
-        sales_total = sales_okkm + sales_e_payment
-
-        # SOLIQ TUSHUMLARI: QQS 12% + Aylanmadan olinadigan soliq 1%
-        QQS_RATE = Decimal("0.12")
-        AOS_RATE = Decimal("0.01")
-        vat_base = self._d(revenue_agg["okkm_vat"] + revenue_agg["e_payment_vat"])
-        turnover_base = self._d(revenue_agg["okkm_turnover"] + revenue_agg["e_payment_turnover"])
-        tax_from_vat = vat_base * QQS_RATE
-        tax_from_turnover = turnover_base * AOS_RATE
-        tax_revenue_total = tax_from_vat + tax_from_turnover
+        # Faktura = elektron to'lov (E_PAYMENT). OKKM (kassa) alohida manba (NKM) — Faza 2.
+        sales_okkm = Decimal("0")
+        sales_e_payment = sales_total
+        # Faktura vatSum = QQS. Aylanma soliq alohida manba talab qiladi.
+        tax_from_vat = tax_revenue_total
+        tax_from_turnover = Decimal("0")
 
         # =========================
         # 6. KASSA APPARATLARI
