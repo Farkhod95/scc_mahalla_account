@@ -319,6 +319,7 @@ class MalikaDashboardReportView(APIView):
                         {"key": "J",  "name": "J blok",  "kv": 675},
                         {"key": "SM", "name": "Merkato", "kv": 1107},
                         {"key": "SK", "name": "Sklad",   "kv": 2400},
+                        {"key": "PARKING", "name": "Avtoturargoh", "kv": 14965},
                     ],
                 },
                 "business_entities": {
