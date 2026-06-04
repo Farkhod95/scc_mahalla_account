@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 # --- Config (shu faylning ichida) ------------------------------------------
 BASE_URL    = "https://mspd-api.soliq.uz/akt/egovernment"
 AUTH_HEADER = "Basic ZWdvdmVybm1lbnQ6RWdvdmVybm1lbnQtYS5wLmk="
+# Ijara (justice) API — boshqa auth (mipJusticeUsername:mipJusticeUsername)
+JUSTICE_BASE_URL = "https://mspd-api.soliq.uz/license/justice-api"
+JUSTICE_AUTH_HEADER = "Basic bWlwSnVzdGljZVVzZXJuYW1lOm1pcEp1c3RpY2VVc2VybmFtZQ=="
 # (connect, read) timeout — soliq sekin javob bersa ham ulanish tez tekshiriladi.
 TIMEOUT     = (10, 30)
 RETRIES     = 3
@@ -418,3 +421,36 @@ def nkm_active(tin: Optional[str]) -> bool:
 
     cache.set(cache_key, active, 60 * 60 * 24)
     return active
+
+
+# --- Ijara (rent / justice-api) --------------------------------------------
+
+def get_rent_information(pinfl=None, tin=None, cadastr=None):
+    """
+    Ijaraga beruvchining (pinfl yoki tin) + kadastr bo'yicha ijara shartnomalari.
+    Qoida: yuridik -> tin, jismoniy -> pinfl. tin va pinfl birga yuborilmaydi.
+    Qaytaradi: list (har biri: to*=ijarachi, rentField, state, beginDate ...).
+    """
+    if not cadastr:
+        return []
+
+    body = {"objcetCode": str(cadastr)}
+    if tin:
+        body["tin"] = str(tin)
+    elif pinfl:
+        body["pinfl"] = str(pinfl)
+    else:
+        return []
+
+    url = f"{JUSTICE_BASE_URL}/api/get/rent/information/send"
+    resp = _get_session().post(
+        url, json=body,
+        headers={"Authorization": JUSTICE_AUTH_HEADER, "Accept": "application/json"},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("success", False):
+        reason = data.get("reason") or data.get("message") or "rent xato"
+        raise SoliqError(f"rent: {reason}")
+    return data.get("data") or []

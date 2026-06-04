@@ -784,6 +784,21 @@ def import_shop_excel_task(self, file_path):
     }
 
 
+@shared_task(name="celery_task.sync_tenants_rent_task")
+def sync_tenants_rent_task():
+    """Ijara (rent) integratsiyasidan ijarachilarni ShopTenant ga sync qiladi (kunlik)."""
+    from monitoring.services.rent_sync import sync_tenants_from_rent
+    stats = sync_tenants_from_rent()
+    return {
+        "ok": True,
+        "shops": stats.shops,
+        "with_owner_cadastr": stats.with_owner_cadastr,
+        "created": stats.tenants_created,
+        "updated": stats.tenants_updated,
+        "errors": stats.errors,
+    }
+
+
 @shared_task(bind=True, name="celery_task.sync_factura_revenue_task")
 def sync_factura_revenue_task(self, period_from=None, period_to=None):
     """

@@ -144,6 +144,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_factura_revenue_task',
         'schedule': crontab(hour=2, minute=0),
     },
+    # Har oyning 1-kuni 04:00 da ijara (rent) integratsiyasidan ijarachilarni sync qiladi.
+    'sync-tenants-rent-monthly': {
+        'task': 'celery_task.sync_tenants_rent_task',
+        'schedule': crontab(day_of_month=1, hour=4, minute=0),
+    },
 }
 
 ### Local Host uchun
