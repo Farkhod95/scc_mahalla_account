@@ -334,6 +334,7 @@ class Shop(BaseModel):
     block_type = models.CharField(max_length=100, choices=BlockType.choices, null=True, blank=True, help_text=_("Blok turi (A/B)"))
     shop_number = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon raqami"))
     code = models.CharField(max_length=100, null=True, blank=True, help_text=_("Do'kon kod"))
+    cadastr_number = models.CharField(max_length=100, null=True, blank=True, help_text=_("Kadastr raqami"))
     owner_company_name = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasiga tegishli MCHJ nomi"))
     owner_fio = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi F.I.Sh"))
     owner_jshshir = models.CharField(max_length=255, null=True, blank=True, help_text=_("Do'kon egasi JSHSHIR"))
