@@ -1,14 +1,15 @@
 ﻿# reports/views.py
+import re
 import requests
 from collections import defaultdict
-from django.db.models import Count
+from concurrent.futures import ThreadPoolExecutor
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from directory.models import Region
-from monitoring.models import BazarCamera, CarFlow
+from monitoring.models import CarFlow
 from reports.serializers import MalikaFlowQuerySerializer
 
 
@@ -105,13 +106,16 @@ class MalikaFlowReportView(APIView):
         to_str = to_dt.strftime("%d.%m.%Y %H:%M:%S")
 
         # ------------------------
-        # B) FACE kameralarni topish
+        # B) FACE — barcha do'kon kameralari (ShopCamera) IP lari
         # ------------------------
-        face_cams = (
-            BazarCamera.objects.filter(is_active=True, location_type='malika', camera_type=BazarCamera.CAMERA_TYPE.FACE)
-            .exclude(ip_address__isnull=True)
-            .exclude(ip_address="")
-        )
+        from monitoring.models import ShopCamera
+        face_ips = set()
+        for url in (ShopCamera.objects
+                    .exclude(url__isnull=True).exclude(url__exact="")
+                    .values_list("url", flat=True)):
+            m = re.search(r"@([0-9.]+)[:/]", url) or re.search(r"//([0-9.]+)[:/]", url)
+            if m:
+                face_ips.add(m.group(1))
 
         # ------------------------
         # C) CARS — CarFlow modelidan
@@ -158,58 +162,31 @@ class MalikaFlowReportView(APIView):
             face_headers["X-Forwarded-For"] = client_ip
             face_headers["X-Real-IP"] = client_ip
 
-        for cam in face_cams:
+        # Har bir do'kon kamerasi IP si uchun FACE chaqiramiz (parallel — sekin bo'lmasin).
+        # ShopCamera'da kirish/chiqish turi yo'q -> umumiy son.
+        def _fetch_face_count(ip):
             params = {
                 "region_soato": region_soato,
-                "ip_address": str(cam.ip_address),
+                "ip_address": ip,
                 "from": from_str,
                 "to": to_str,
             }
-
             try:
                 resp = requests.get(
-                    face_url,
-                    params=params,
-                    headers=face_headers,
-                    timeout=FACE_TIMEOUT,
-                    verify=FACE_VERIFY_SSL,
+                    face_url, params=params, headers=face_headers,
+                    timeout=FACE_TIMEOUT, verify=FACE_VERIFY_SSL,
                 )
-            except requests.RequestException as e:
-                errors.append(
-                    {
-                        "source": "face",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "face",
-                        "type": cam.type,
-                        "error": "Upstream connection error",
-                        "message": str(e),
-                    }
-                )
-                continue
+                if resp.status_code >= 400:
+                    return 0
+                data = _safe_json(resp)
+                return int(data.get("count") or 0)
+            except (requests.RequestException, ValueError, TypeError):
+                return 0
 
-            if resp.status_code >= 400:
-                errors.append(
-                    {
-                        "source": "face",
-                        "ip_address": cam.ip_address,
-                        "camera_type": "face",
-                        "type": cam.type,
-                        "status_code": resp.status_code,
-                        "body": _safe_json(resp),
-                    }
-                )
-                continue
-
-            data = _safe_json(resp)
-            try:
-                count_val = int(data.get("count") or 0)
-            except Exception:
-                count_val = 0
-
-            if cam.type == BazarCamera.TYPE.INPUT:
-                people_in_total += count_val
-            elif cam.type == BazarCamera.TYPE.OUTPUT:
-                people_out_total += count_val
+        if face_ips:
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                counts = list(executor.map(_fetch_face_count, face_ips))
+            people_in_total = sum(counts)  # umumiy tashrif (kirish/chiqish ajralmaydi)
 
         # ------------------------
         # E) Region nomlari (3 tilda)
