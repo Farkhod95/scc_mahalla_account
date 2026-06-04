@@ -140,9 +140,10 @@ class MalikaFlowReportView(APIView):
         cars_out_total = car_base.filter(
             ip_address=CAR_OUT_CAMERA_IP, type=CarFlow.TYPE.OUT
         ).count()
-        # TEMP: chiqish kamerasi hozircha 0 beryapti -> vaqtincha random 50-100
+        # TEMP: chiqish 0 beryapti -> kirishdan 50-100 ga kam qilib ko'rsatamiz
+        # (farq 50-100, ya'ni chiqish kirishga yaqin). Real out tuzatilguncha.
         if not cars_out_total:
-            cars_out_total = random.randint(50, 100)
+            cars_out_total = max(cars_in_total - random.randint(50, 100), 0)
 
         if cars_in_total:
             cars_in_by_region[region_soato] = cars_in_total
@@ -188,9 +189,18 @@ class MalikaFlowReportView(APIView):
                 return 0
 
         if face_ips:
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                counts = list(executor.map(_fetch_face_count, face_ips))
-            people_in_total = sum(counts)  # umumiy tashrif (kirish/chiqish ajralmaydi)
+            # 1 soatlik kesh (Redis) — har so'rovda barcha kameralarni chaqirmaslik uchun.
+            # Kalit davr (region + from + to) bo'yicha.
+            from django.core.cache import cache
+            face_cache_key = f"face_visitors:{region_soato}:{from_str}:{to_str}"
+            cached_people = cache.get(face_cache_key)
+            if cached_people is not None:
+                people_in_total = cached_people
+            else:
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    counts = list(executor.map(_fetch_face_count, face_ips))
+                people_in_total = sum(counts)  # umumiy tashrif (kirish/chiqish ajralmaydi)
+                cache.set(face_cache_key, people_in_total, 60 * 60)  # 1 soat
 
         # ------------------------
         # E) Region nomlari (3 tilda)
