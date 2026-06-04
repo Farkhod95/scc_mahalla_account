@@ -22,6 +22,10 @@ FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
 FACE_TIMEOUT = 10
 FACE_VERIFY_SSL = False  # self-signed bo'lsa False
 
+# Avtotransport — faqat shu 2 kamera hisoblanadi (qolgani hisobga olinmaydi)
+CAR_IN_CAMERA_IP = "10.6.204.79"
+CAR_OUT_CAMERA_IP = "10.6.204.76"
+
 
 # =========================
 # HELPERS
@@ -114,30 +118,28 @@ class MalikaFlowReportView(APIView):
         # ------------------------
         cars_in_by_region = defaultdict(int)
         cars_out_by_region = defaultdict(int)
-        cars_in_total = 0
-        cars_out_total = 0
 
-        car_flows = (
-            CarFlow.objects
-            .filter(
-                location_type=CarFlow.LOCATION_TYPE.MALIKA,
-                region_soato=region_soato,
-                recorded_at__gte=from_dt,
-                recorded_at__lte=to_dt,
-            )
-            .values('region_soato', 'type')
-            .annotate(count=Count('id'))
+        # Faqat belgilangan kirish va chiqish kameralari hisoblanadi:
+        #   kirish  -> CAR_IN_CAMERA_IP  (type=in)
+        #   chiqish -> CAR_OUT_CAMERA_IP (type=out)
+        car_base = CarFlow.objects.filter(
+            location_type=CarFlow.LOCATION_TYPE.MALIKA,
+            region_soato=region_soato,
+            recorded_at__gte=from_dt,
+            recorded_at__lte=to_dt,
         )
 
-        for row in car_flows:
-            soato = row['region_soato'] or region_soato
-            cnt = row['count']
-            if row['type'] == CarFlow.TYPE.IN:
-                cars_in_by_region[soato] += cnt
-                cars_in_total += cnt
-            elif row['type'] == CarFlow.TYPE.OUT:
-                cars_out_by_region[soato] += cnt
-                cars_out_total += cnt
+        cars_in_total = car_base.filter(
+            ip_address=CAR_IN_CAMERA_IP, type=CarFlow.TYPE.IN
+        ).count()
+        cars_out_total = car_base.filter(
+            ip_address=CAR_OUT_CAMERA_IP, type=CarFlow.TYPE.OUT
+        ).count()
+
+        if cars_in_total:
+            cars_in_by_region[region_soato] = cars_in_total
+        if cars_out_total:
+            cars_out_by_region[region_soato] = cars_out_total
 
         # ------------------------
         # D) PEOPLE (FACE) - TYPE bo'yicha
