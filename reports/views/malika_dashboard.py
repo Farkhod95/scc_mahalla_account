@@ -148,15 +148,13 @@ class MalikaDashboardReportView(APIView):
         j_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_J).count()
         merkato_count = max(shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count(), 78)
         sklad_count = max(shops_qs.filter(block_type=Shop.BlockType.SKLAD).count(), 74)
-        ofis_count = shops_qs.filter(block_type=Shop.BlockType.OFIS).count()
 
         shops_items = [
             {"key": "A",  "name": "A blok",  "count": a_count,      "formatted": self._format_int(a_count)},
             {"key": "B",  "name": "B blok",  "count": b_count,      "formatted": self._format_int(b_count)},
             {"key": "J",  "name": "J blok",  "count": j_count,      "formatted": self._format_int(j_count)},
-            {"key": "SM", "name": "Merkato", "count": merkato_count, "formatted": self._format_int(merkato_count)},
-            {"key": "SK", "name": "Sklad",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
-            {"key": "OF", "name": "Ofis",    "count": ofis_count,   "formatted": self._format_int(ofis_count)},
+            {"key": "SM", "name": "Merkato savdo komplkesi", "count": merkato_count, "formatted": self._format_int(merkato_count)},
+            {"key": "SK", "name": "Ombor",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
         ]
 
         shops_chart = [
@@ -317,8 +315,8 @@ class MalikaDashboardReportView(APIView):
                         {"key": "A",  "name": "A blok",  "kv": 14012},
                         {"key": "B",  "name": "B blok",  "kv": 5533},
                         {"key": "J",  "name": "J blok",  "kv": 675},
-                        {"key": "SM", "name": "Merkato", "kv": 1107},
-                        {"key": "SK", "name": "Sklad",   "kv": 2400},
+                        {"key": "SM", "name": "Merkato savdo komplkesi", "kv": 1107},
+                        {"key": "SK", "name": "Ombor",   "kv": 2400},
                         {"key": "PARKING", "name": "Avtoturargoh", "kv": 14965},
                     ],
                 },
