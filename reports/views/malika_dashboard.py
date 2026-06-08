@@ -152,7 +152,7 @@ class MalikaDashboardReportView(APIView):
         shops_items = [
             {"key": "A",  "name": "A blok",  "count": a_count,      "formatted": self._format_int(a_count)},
             {"key": "B",  "name": "B blok",  "count": b_count,      "formatted": self._format_int(b_count)},
-            {"key": "J",  "name": "J blok",  "countMer": j_count,      "formatted": self._format_int(j_count)},
+            {"key": "J",  "name": "J blok",  "count": j_count,      "formatted": self._format_int(j_count)},
             {"key": "SM", "name": "Merkato savdo markazi", "count": merkato_count, "formatted": self._format_int(merkato_count)},
             {"key": "SK", "name": "Ombor",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
         ]
