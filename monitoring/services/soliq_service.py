@@ -394,8 +394,8 @@ def get_online_nkm(
 
 def nkm_active(tin: Optional[str]) -> bool:
     """
-    tin joriy oyda kamida 1 ta chek urganmi (= kassa faol).
-    Yengil: 1 yozuv yetadi (page=1,size=1). 1 kun keshlanadi.
+    tin BUGUN kamida 1 ta chek urganmi (= kassa faol).
+    Yengil: 1 yozuv yetadi (page=1,size=1). Bugun davomida yangilanishi uchun 1 soat keshlanadi.
     """
     from django.core.cache import cache
 
@@ -408,18 +408,17 @@ def nkm_active(tin: Optional[str]) -> bool:
     if cached is not None:
         return cached
 
-    today = date.today()
-    period_from = f"01.{today.month:02d}.{today.year}"
-    period_to = today.strftime("%d.%m.%Y")
+    today = date.today().strftime("%d.%m.%Y")
     try:
-        batch = get_online_nkm(tin, period_from, period_to, page=1, size=1)
+        batch = get_online_nkm(tin, today, today, page=1, size=1)
         active = len(batch) > 0
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq nkm-active xato (tin=%s): %s", tin, e)
         cache.set(cache_key, False, 300)
         return False
 
-    cache.set(cache_key, active, 60 * 60 * 24)
+    # Faol bo'lsa kun oxirigacha, faol emas bo'lsa qisqa (chek kelishi mumkin) keshlaymiz
+    cache.set(cache_key, active, 60 * 60 if active else 60 * 15)
     return active
 
 

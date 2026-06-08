@@ -152,8 +152,8 @@ class MalikaDashboardReportView(APIView):
         shops_items = [
             {"key": "A",  "name": "A blok",  "count": a_count,      "formatted": self._format_int(a_count)},
             {"key": "B",  "name": "B blok",  "count": b_count,      "formatted": self._format_int(b_count)},
-            {"key": "J",  "name": "J blok",  "count": j_count,      "formatted": self._format_int(j_count)},
-            {"key": "SM", "name": "Merkato savdo komplkesi", "count": merkato_count, "formatted": self._format_int(merkato_count)},
+            {"key": "J",  "name": "J blok",  "countMer": j_count,      "formatted": self._format_int(j_count)},
+            {"key": "SM", "name": "Merkato savdo markazi", "count": merkato_count, "formatted": self._format_int(merkato_count)},
             {"key": "SK", "name": "Ombor",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
         ]
 
@@ -315,7 +315,7 @@ class MalikaDashboardReportView(APIView):
                         {"key": "A",  "name": "A blok",  "kv": 14012},
                         {"key": "B",  "name": "B blok",  "kv": 5533},
                         {"key": "J",  "name": "J blok",  "kv": 675},
-                        {"key": "SM", "name": "Merkato savdo komplkesi", "kv": 1107},
+                        {"key": "SM", "name": "Merkato savdo markazi", "kv": 1107},
                         {"key": "SK", "name": "Ombor",   "kv": 2400},
                         {"key": "PARKING", "name": "Avtoturargoh", "kv": 14965},
                     ],
