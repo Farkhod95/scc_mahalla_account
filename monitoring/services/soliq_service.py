@@ -151,13 +151,18 @@ def _full_name(data: Dict[str, Any]) -> Optional[str]:
     return name or None
 
 
-def soliq_fields_for(pinfl: Optional[str]) -> Dict[str, Any]:
+def soliq_fields_for(pinfl: Optional[str], cache_only: bool = False) -> Optional[Dict[str, Any]]:
     """
     pinfl bo'yicha soliqdan ShopTenant maydonlariga mos qiymatlarni oladi.
     Serializer ichida ishlatish uchun — hech qachon exception ko'tarmaydi,
     xato bo'lsa bo'sh dict qaytaradi (API hech qachon buzilmaydi).
 
     Natija 1 kun keshlanadi (Redis) — har so'rovda jonli soliqqa borilmaydi.
+
+    cache_only=True bo'lsa: faqat keshdan o'qiydi, hech qachon soliqqa bormaydi.
+      - keshda bor   -> dict
+      - pinfl yo'q   -> {} (aniq: tin yo'q)
+      - keshda yo'q  -> None (noma'lum, hali warm qilinmagan)
 
     Qaytaradigan kalitlar (mavjud bo'lsa):
       stir, leader_fio, name, certificate_number, activity_status (1=active)
@@ -172,6 +177,9 @@ def soliq_fields_for(pinfl: Optional[str]) -> Dict[str, Any]:
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+
+    if cache_only:
+        return None
 
     fields: Dict[str, Any] = {}
 
@@ -392,10 +400,15 @@ def get_online_nkm(
     return data or []
 
 
-def nkm_active(tin: Optional[str]) -> bool:
+def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
     """
     tin BUGUN kamida 1 ta chek urganmi (= kassa faol).
     Yengil: 1 yozuv yetadi (page=1,size=1). Bugun davomida yangilanishi uchun 1 soat keshlanadi.
+
+    cache_only=True bo'lsa: faqat keshdan o'qiydi, hech qachon soliqqa bormaydi.
+      - keshda bor   -> bool
+      - tin yo'q     -> False (aniq)
+      - keshda yo'q  -> None (noma'lum, hali warm qilinmagan)
     """
     from django.core.cache import cache
 
@@ -407,6 +420,9 @@ def nkm_active(tin: Optional[str]) -> bool:
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+
+    if cache_only:
+        return None
 
     today = date.today().strftime("%d.%m.%Y")
     try:

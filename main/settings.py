@@ -149,6 +149,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_tenants_rent_task',
         'schedule': crontab(day_of_month=1, hour=4, minute=0),
     },
+    # Har 15 daqiqada do'kon kassa (NKM) rangi keshini to'ldiradi, shunda
+    # /shop/cash-status/ endpoint i jonli soliqqa bormay tez javob beradi.
+    'warm-shop-cash-status': {
+        'task': 'celery_task.warm_shop_cash_status_task',
+        'schedule': crontab(minute='*/15'),
+    },
 }
 
 ### Local Host uchun

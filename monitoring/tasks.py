@@ -815,6 +815,25 @@ def sync_factura_revenue_task(self, period_from=None, period_to=None):
     }
 
 
+@shared_task(name="celery_task.warm_shop_cash_status_task")
+def warm_shop_cash_status_task():
+    """
+    Do'kon kassa (NKM) rangi keshini oldindan to'ldiradi (jonli soliqqa boradi).
+
+    /shop/cash-status/ endpoint i FAQAT keshdan o'qiydi (request thread ni
+    bloklamaslik uchun) — shu task kesh hali bo'sh do'konlarni "pending" dan
+    yashil/qizilga o'tkazadi. Celery beat orqali davriy ishlaydi.
+    """
+    from monitoring.services.shop_status import shop_cash_status
+
+    shops = Shop.objects.prefetch_related("tenants").all()
+    counts = {"green": 0, "yellow": 0, "red": 0, "none": 0, "pending": 0}
+    for shop in shops:
+        st = shop_cash_status(shop)  # cache_only=False -> jonli, keshni to'ldiradi
+        counts[st["color"] or "none"] += 1
+    return {"ok": True, **counts}
+
+
 @shared_task
 def sync_patrol_cars_task():
     api_url = "http://25.1.1.217:80/api/mobject/lastData"

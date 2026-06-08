@@ -16,7 +16,7 @@ MLN = Decimal("1000000")
 
 class MalikaDashboardReportView(APIView):
     """
-    Dashboard uchun 1:1 response.
+    1:1 response for the dashboard.
 
     Query params:
         ?period=daily
@@ -39,32 +39,17 @@ class MalikaDashboardReportView(APIView):
         except Exception:
             return "0"
 
-    def _format_money(self, value):
-        value = self._d(value)
-        s = f"{value:,.2f}".replace(",", " ")
-        if s.endswith(".00"):
-            s = s[:-3]
-        return s
-
     def _format_money_mln(self, value):
-        # DB da qiymatlar million so'mda saqlanadi (masalan: 2230.9 = 2 230 900 000 so'm)
+        # Values are stored in millions of so'm in the DB
+        # (e.g. 2230.9 = 2 230 900 000 so'm)
         value = self._d(value)
         s = f"{value:,.2f}".replace(",", " ")
         if s.endswith(".00"):
             s = s[:-3]
         return s
-
-    def _get_period_fields(self, period):
-        prefix = {"daily": "dtd", "monthly": "mtd"}.get(period, "ytd")
-        return {
-            "okkm_vat": f"{prefix}_okkm_vat",
-            "okkm_turnover": f"{prefix}_okkm_turnover",
-            "e_payment_vat": f"{prefix}_e_payment_vat",
-            "e_payment_turnover": f"{prefix}_e_payment_turnover",
-        }
 
     # =========================
-    # REVENUE CHART (FacturaRevenueDaily dan, mln so'mda)
+    # REVENUE CHART (from FacturaRevenueDaily, in millions of so'm)
     # =========================
     def _chart_to_mln(self, value):
         return float((Decimal(value or 0) / MLN).quantize(Decimal("0.01")))
@@ -126,8 +111,8 @@ class MalikaDashboardReportView(APIView):
         if period not in ["daily", "monthly", "yearly"]:
             period = "yearly"
 
-        # Grafik granularligi period'dan kelib chiqadi (kun→hafta, oy→oylar, yil→yillar).
-        # Xohlasa ?range= bilan alohida ham boshqarish mumkin.
+        # Chart granularity derives from the period (day->week, month->months, year->years).
+        # Optionally it can be controlled separately via ?range=.
         chart_range = request.query_params.get("range", "").lower()
         if chart_range not in ["week", "month", "year"]:
             chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
@@ -139,7 +124,7 @@ class MalikaDashboardReportView(APIView):
         employees_qs = TenantEmployee.objects.all()
 
         # =========================
-        # 1. DO'KONLAR
+        # 1. SHOPS
         # =========================
         total_shops = shops_qs.count()
 
@@ -163,12 +148,12 @@ class MalikaDashboardReportView(APIView):
         ]
 
         # =========================
-        # 2. ISHCHILAR
+        # 2. EMPLOYEES
         # =========================
         employees_total = employees_qs.count()
 
         # =========================
-        # 3. TERMINALLAR — cash_register_number vergul bilan ajratilgan
+        # 3. TERMINALS — cash_register_number is comma-separated
         # =========================
         cash_numbers_vat = tenants_qs.exclude(
             cash_register_number_vat__isnull=True
@@ -188,27 +173,28 @@ class MalikaDashboardReportView(APIView):
         )
 
         # =========================
-        # 4 & 5. SAVDO va SOLIQ TUSHUMLARI
+        # 4 & 5. SALES and TAX REVENUE
         # =========================
-        # SAVDO / SOLIQ — grafik bilan BIR XIL manba (FacturaRevenueDaily).
-        # Karta "Jami" = grafik davrining yig'indisi (mln so'mda) — shuning uchun mos keladi.
+        # SALES / TAX share the SAME source as the chart (FacturaRevenueDaily).
+        # Card "Total" = sum of the chart period (in millions of so'm) — so they match.
         sales_total = self._d(sum(item["value"] for item in sales_chart))
         tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
 
-        # Faktura = elektron to'lov (E_PAYMENT). OKKM (kassa) alohida manba (NKM) — Faza 2.
+        # Factura = electronic payment (E_PAYMENT). OKKM (cash register) is a
+        # separate source (NKM) — Phase 2.
         sales_okkm = Decimal("0")
         sales_e_payment = sales_total
-        # Faktura vatSum = QQS. Aylanma soliq alohida manba talab qiladi.
+        # Factura vatSum = VAT. Turnover tax requires a separate source.
         tax_from_vat = tax_revenue_total
         tax_from_turnover = Decimal("0")
 
         # =========================
-        # 6. KASSA APPARATLARI
+        # 6. CASH REGISTERS
         # =========================
         cash_registers_total = terminals_total
 
         # =========================
-        # 7. TADBIRKORLIK SUBYEKTLARI
+        # 7. BUSINESS ENTITIES
         # =========================
         mchj_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.LEGAL).count()
         ytt_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.YTT).count()

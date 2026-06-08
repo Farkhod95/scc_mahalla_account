@@ -8,21 +8,15 @@ bo'lmasligi uchun (yoki cron). nkm_active 1 kun keshlanadi.
 """
 from django.core.management.base import BaseCommand
 
-from monitoring.models import Shop
-from monitoring.services.shop_status import shop_cash_status
+from monitoring.tasks import warm_shop_cash_status_task
 
 
 class Command(BaseCommand):
     help = "Do'kon kassa (NKM) rangi keshini oldindan to'ldiradi."
 
     def handle(self, *args, **opts):
-        shops = Shop.objects.prefetch_related("tenants").all()
-        total = shops.count()
-        self.stdout.write(f"Jami {total} ta do'kon...")
-        counts = {"green": 0, "yellow": 0, "red": 0, "none": 0}
-        for shop in shops:
-            st = shop_cash_status(shop)
-            counts[st["color"] or "none"] += 1
+        self.stdout.write("Kesh to'ldirilmoqda...")
+        counts = warm_shop_cash_status_task()  # sinxron chaqiramiz (celery emas)
         self.stdout.write(self.style.SUCCESS(
             f"Tugadi: yashil={counts['green']}, sariq={counts['yellow']}, "
             f"qizil={counts['red']}, rangsiz={counts['none']}"
