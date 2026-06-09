@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -38,6 +38,25 @@ class MalikaDashboardReportView(APIView):
             return f"{int(value):,}".replace(",", " ")
         except Exception:
             return "0"
+
+    @staticmethod
+    def _count_distinct_pinfl(qs):
+        """
+        Tadbirkorlar sonini pinfl (leader_jshshir) bo'yicha UNIKAL hisoblaydi:
+        bitta YTT/MCHJ bir nechta do'kondan joy olsa ham 1 marta sanaladi.
+        pinfl bo'sh/yo'q qatorlar alohida sanaladi (ularni birlashtirib bo'lmaydi).
+        """
+        with_pinfl = (
+            qs.exclude(leader_jshshir__isnull=True)
+              .exclude(leader_jshshir="")
+              .values("leader_jshshir")
+              .distinct()
+              .count()
+        )
+        without_pinfl = qs.filter(
+            Q(leader_jshshir__isnull=True) | Q(leader_jshshir="")
+        ).count()
+        return with_pinfl + without_pinfl
 
     def _format_money_mln(self, value):
         # Values are stored in millions of so'm in the DB
@@ -175,15 +194,34 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 4 & 5. SALES and TAX REVENUE
         # =========================
-        # SALES / TAX share the SAME source as the chart (FacturaRevenueDaily).
-        # Card "Total" = sum of the chart period (in millions of so'm) — so they match.
-        sales_total = self._d(sum(item["value"] for item in sales_chart))
+        # Elektron to'lov (faktura) — grafik bilan bir manba (FacturaRevenueDaily),
+        # mln so'm da. Card "Total" = grafik davri yig'indisi.
+        sales_e_payment = self._d(sum(item["value"] for item in sales_chart))
         tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
 
-        # Factura = electronic payment (E_PAYMENT). OKKM (cash register) is a
-        # separate source (NKM) — Phase 2.
-        sales_okkm = Decimal("0")
-        sales_e_payment = sales_total
+        # OKKM (NKM cheklar) tushumi — celery beat sync qilgan DB maydonlaridan,
+        # tanlangan davrga mos ustun (yearly->ytd, monthly->mtd, daily->dtd).
+        okkm_prefix = {"yearly": "ytd", "monthly": "mtd", "daily": "dtd"}.get(period, "ytd")
+        okkm_agg = tenants_qs.aggregate(
+            v=Sum(f"{okkm_prefix}_okkm_vat"),
+            t=Sum(f"{okkm_prefix}_okkm_turnover"),
+        )
+        sales_okkm = ((self._d(okkm_agg["v"]) + self._d(okkm_agg["t"])) / MLN).quantize(Decimal("0.01"))
+
+        # Umumiy savdo tushumi = elektron to'lov + OKKM.
+        sales_total = sales_e_payment + sales_okkm
+
+        # Cheklar soni — oylik/kunlik davr uchun saqlangan (yillik maydon yo'q).
+        checks_field = {"monthly": "monthly_checks_count", "daily": "daily_checks_count"}.get(period)
+        if checks_field:
+            c_agg = tenants_qs.aggregate(
+                v=Sum(f"{checks_field}_vat"),
+                t=Sum(f"{checks_field}_turnover"),
+            )
+            cheque_count_total = int(self._d(c_agg["v"]) + self._d(c_agg["t"]))
+        else:
+            cheque_count_total = None
+
         # Factura vatSum = VAT. Turnover tax requires a separate source.
         tax_from_vat = tax_revenue_total
         tax_from_turnover = Decimal("0")
@@ -196,10 +234,12 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 7. BUSINESS ENTITIES
         # =========================
-        mchj_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.LEGAL).count()
-        ytt_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.YTT).count()
-        other_count = tenants_qs.filter(business_type=ShopTenant.BusinessType.OTHER).count()
-        business_total = tenants_qs.count()
+        # pinfl (leader_jshshir) bo'yicha unikal — bitta tadbirkor bir nechta
+        # do'kondan joy olsa ham 1 marta sanaladi.
+        mchj_count = self._count_distinct_pinfl(tenants_qs.filter(business_type=ShopTenant.BusinessType.LEGAL))
+        ytt_count = self._count_distinct_pinfl(tenants_qs.filter(business_type=ShopTenant.BusinessType.YTT))
+        other_count = self._count_distinct_pinfl(tenants_qs.filter(business_type=ShopTenant.BusinessType.OTHER))
+        business_total = self._count_distinct_pinfl(tenants_qs)
 
         business_items = [
             {
@@ -273,6 +313,10 @@ class MalikaDashboardReportView(APIView):
                     "title": "Savdo tushumlari",
                     "count": float(sales_total),
                     "formatted": f"{self._format_money_mln(sales_total)} mln so'm",
+                    "cheque_count": cheque_count_total,
+                    "cheque_count_formatted": (
+                        self._format_int(cheque_count_total) if cheque_count_total is not None else None
+                    ),
                     "chart": sales_chart,
                     "items": [
                         {

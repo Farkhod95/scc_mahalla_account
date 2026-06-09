@@ -11,7 +11,7 @@ DIQQAT: API faqat ruxsat etilgan server IP sidan ochiladi (localda DNS yo'q).
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -402,8 +402,9 @@ def get_online_nkm(
 
 def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
     """
-    tin BUGUN kamida 1 ta chek urganmi (= kassa faol).
-    Yengil: 1 yozuv yetadi (page=1,size=1). Bugun davomida yangilanishi uchun 1 soat keshlanadi.
+    tin OXIRGI 7 KUNDA (shu hafta) kamida 1 ta chek urganmi (= kassa faol).
+    Yengil: 1 yozuv yetadi (page=1,size=1). Natija ~1 kun keshlanadi —
+    keshni har kuni warm task (celery beat) yangilab turadi.
 
     cache_only=True bo'lsa: faqat keshdan o'qiydi, hech qachon soliqqa bormaydi.
       - keshda bor   -> bool
@@ -416,7 +417,8 @@ def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
     if not tin:
         return False
 
-    cache_key = f"nkm_active:{tin}"
+    # Kalitda 7d — kunlik (eski) keshlangan qiymatlar bilan aralashmasligi uchun.
+    cache_key = f"nkm_active_7d:{tin}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
@@ -424,18 +426,53 @@ def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
     if cache_only:
         return None
 
-    today = date.today().strftime("%d.%m.%Y")
+    today = date.today()
+    period_to = today.strftime("%d.%m.%Y")
+    period_from = (today - timedelta(days=7)).strftime("%d.%m.%Y")
     try:
-        batch = get_online_nkm(tin, today, today, page=1, size=1)
+        batch = get_online_nkm(tin, period_from, period_to, page=1, size=1)
         active = len(batch) > 0
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq nkm-active xato (tin=%s): %s", tin, e)
         cache.set(cache_key, False, 300)
         return False
 
-    # Faol bo'lsa kun oxirigacha, faol emas bo'lsa qisqa (chek kelishi mumkin) keshlaymiz
-    cache.set(cache_key, active, 60 * 60 if active else 60 * 15)
+    # ~1 kundan ko'proq keshlaymiz (kunlik warm task yangilaydi; expiry race bo'lmasin).
+    cache.set(cache_key, active, 60 * 60 * 26)
     return active
+
+
+# --- Marketplace dashboard (cheklar soni + tushum) -------------------------
+
+# NKM cheklar statistikasi API (alohida login/parol bilan).
+NKM_DASHBOARD_BASE_URL = "https://mspd-api.soliq.uz/nkm-landing/marketplace-dashboard-api"
+# Basic auth = base64("mArk3tpaleDashb0ard@pi:ma@k7tpalcedashboard@pi#$%")
+NKM_DASHBOARD_AUTH_HEADER = "Basic bUFyazN0cGFsZURhc2hiMGFyZEBwaTptYUBrN3RwYWxjZWRhc2hib2FyZEBwaSMkJQ=="
+
+
+def get_cheque_statistics(
+    tin: str, period_from: str, period_to: str
+) -> Optional[Dict[str, Any]]:
+    """
+    NKM cheklar statistikasi (tin bo'yicha, [from, to] davri).
+    Sana formati: dd.mm.yyyy.
+
+    Qaytaradi: dict (year, chequeCount, turnover, vat, growthRate) yoki None.
+    Bu endpoint `success` envelope ishlatmaydi — javob to'g'ridan-to'g'ri obyekt.
+    """
+    tin = (tin or "").strip()
+    if not tin:
+        return None
+
+    url = f"{NKM_DASHBOARD_BASE_URL}/cheque-statistics/current-turnover"
+    resp = _get_session().get(
+        url,
+        params={"from": period_from, "to": period_to, "tin": tin},
+        headers={"Authorization": NKM_DASHBOARD_AUTH_HEADER, "Accept": "application/json"},
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 # --- Ijara (rent / justice-api) --------------------------------------------

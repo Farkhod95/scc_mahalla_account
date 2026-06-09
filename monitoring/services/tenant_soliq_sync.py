@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
+import requests
 from django.db import transaction
 
 from monitoring.models import ShopTenant
@@ -41,6 +43,47 @@ def _to_decimal(value) -> Optional[Decimal]:
         return None
 
 
+def _cheque_fields(tin: str, tax_type) -> dict:
+    """
+    NKM cheklar statistikasidan ShopTenant OKKM/cheklar maydonlariga qiymat.
+
+    tax_type ga qarab _vat yoki _turnover ustuniga yoziladi:
+      ytd/mtd/dtd_okkm_{suffix}            <- turnover (OKKM savdo tushumi)
+      monthly/daily_checks_count_{suffix}  <- chequeCount (cheklar soni)
+
+    YTD cheklar soni uchun modelda maydon yo'q — faqat tushum yoziladi.
+    """
+    suffix = "vat" if tax_type == ShopTenant.TaxType.VAT else "turnover"
+    today = date.today()
+    today_str = today.strftime("%d.%m.%Y")
+    periods = {
+        "ytd": (f"01.01.{today.year}", today_str),
+        "mtd": (today.strftime("01.%m.%Y"), today_str),
+        "dtd": (today_str, today_str),
+    }
+
+    out: dict = {}
+    for label, (pf, pt) in periods.items():
+        try:
+            stats = soliq_service.get_cheque_statistics(tin, pf, pt) or {}
+        except (requests.RequestException, ValueError) as e:
+            logger.warning("cheque-stats xato (tin=%s, %s): %s", tin, label, e)
+            continue
+
+        turnover = _to_decimal(stats.get("turnover"))
+        if turnover is not None:
+            out[f"{label}_okkm_{suffix}"] = turnover
+
+        count = stats.get("chequeCount")
+        if count is not None:
+            if label == "mtd":
+                out[f"monthly_checks_count_{suffix}"] = int(count)
+            elif label == "dtd":
+                out[f"daily_checks_count_{suffix}"] = int(count)
+
+    return out
+
+
 def _sync_one(tenant: ShopTenant) -> bool:
     """Bitta tenant ni soliqdan yangilaydi. O'zgargan bo'lsa True qaytaradi."""
     changed = {}
@@ -60,6 +103,9 @@ def _sync_one(tenant: ShopTenant) -> bool:
             dec = _to_decimal(val)
             if dec is not None:
                 changed[key] = dec
+
+        # 3) NKM cheklar (OKKM tushum + cheklar soni) — tin bo'yicha ytd/mtd/dtd.
+        changed.update(_cheque_fields(tin, tenant.tax_type))
 
     if not changed:
         return False

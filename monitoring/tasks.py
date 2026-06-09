@@ -73,8 +73,10 @@ MODEL_FIELD_MAX_LENGTHS = {
     "ShopTenant.leader_phone": 30,
     "ShopTenant.stir": 30,
     "ShopTenant.certificate_number": 80,
-    "ShopTenant.cash_register_number_vat": 80,
-    "ShopTenant.cash_register_number_turnover": 80,
+    # Bir nechta kassa raqami vergul bilan saqlanadi (masalan parkovkada 4 ta) —
+    # modeldagi haqiqiy uzunlik (255) bilan moslashtirildi, aks holda import rad etardi.
+    "ShopTenant.cash_register_number_vat": 255,
+    "ShopTenant.cash_register_number_turnover": 255,
     "ShopTenant.extinguisher_info": 255,
     "ShopTenant.red_reason": 255,
 

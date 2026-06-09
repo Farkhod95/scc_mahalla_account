@@ -149,11 +149,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_tenants_rent_task',
         'schedule': crontab(day_of_month=1, hour=4, minute=0),
     },
-    # Har 15 daqiqada do'kon kassa (NKM) rangi keshini to'ldiradi, shunda
-    # /shop/cash-status/ endpoint i jonli soliqqa bormay tez javob beradi.
+    # Har kuni 05:00 da do'kon kassa (NKM, oxirgi 7 kun) rangi keshini
+    # to'ldiradi, shunda /shop/cash-status/ jonli soliqqa bormay tez javob beradi.
     'warm-shop-cash-status': {
         'task': 'celery_task.warm_shop_cash_status_task',
-        'schedule': crontab(minute='*/15'),
+        'schedule': crontab(hour=5, minute=0),
     },
     # Har 6 soatda soliq rekvizit + faktura tushumini ShopTenant maydonlariga
     # yozadi, shunda shop-tenant API lari request thread da soliqqa bormaydi.
