@@ -1,37 +1,21 @@
 from rest_framework import serializers
 
 from monitoring.models import ShopTenant
-from monitoring.services import soliq_service
 
 
 class SoliqEnrichMixin:
     """
-    Serializer chiqishini (representation) soliq integratsiyasidan kelgan
-    qiymatlar bilan to'ldiradi. Maydon nomlari o'zgarmaydi — frontend o'zgarmaydi.
-    Soliq ochilmasa/xato bo'lsa, bazadagi qiymat saqlanib qoladi.
+    Soliq rekvizit va faktura tushumi endi `sync_tenant_soliq_task` (celery beat)
+    orqali to'g'ridan-to'g'ri ShopTenant maydonlariga yoziladi. Shu sababli
+    serializer request thread da soliqqa BORMAYDI — bazadagi qiymatni qaytaradi.
+
+    Ilgari bu mixin har bir tenant uchun jonli soliqqa borardi (og'ir, ayniqsa
+    faktura — 200 sahifagacha). ASGI/daphne ostida sinxron view lar bitta umumiy
+    thread da ishlagani uchun bu boshqa barcha API larni "pending" qilib qo'yardi.
+
+    Mixin orqaga moslik (ro'yxat/detal serializer ulardan meros oladi) uchun
+    qoldirilgan — hozir hech qanday qo'shimcha ish bajarmaydi.
     """
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        overlay = soliq_service.soliq_fields_for(getattr(instance, "leader_jshshir", None))
-        for key, value in overlay.items():
-            if key in data:
-                data[key] = value
-        # activity_status o'zgargan bo'lsa, label ni ham yangilaymiz
-        if "activity_status" in overlay and "activity_status_label" in data:
-            data["activity_status_label"] = dict(ShopTenant.ActivityStatus.choices).get(
-                overlay["activity_status"], data["activity_status_label"]
-            )
-
-        # Faktura tushumi (e_payment) — ro'yxatda ham, detalda ham. 1 kun keshlangani
-        # uchun har so'rovda jonli olinmaydi (birinchi marta sekin, keyin tez).
-        tin = overlay.get("stir") or getattr(instance, "stir", None)
-        factura = soliq_service.factura_turnover_fields(tin, getattr(instance, "tax_type", None))
-        for key, value in factura.items():
-            if key in data:
-                data[key] = value
-
-        return data
 
 
 class ShopTenantSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
@@ -109,13 +93,15 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
                   'fire_safety_level_label', 'has_fire_alarm', 'extinguisher_info', 'is_red_category', 'red_reason')
 
     def get_cash_status(self, obj):
-        # Kassa (chek) faolligiga qarab rang: green/yellow/red.
-        # Faqat shop bo'yicha filtrlangan so'rovda (modal) hisoblanadi — og'ir bo'lmasligi uchun.
+        # Kassa (chek) faolligiga qarab rang: green/yellow/red (yoki "pending").
+        # Faqat shop bo'yicha filtrlangan so'rovda (modal) qaytariladi.
+        # cache_only=True — request thread soliqqa bormaydi (warm task keshni
+        # to'ldiradi); kesh hali bo'sh bo'lsa "pending" qaytadi.
         request = self.context.get("request")
         if not request or not request.query_params.get("shop"):
             return None
         from monitoring.services.shop_status import tenant_cash_color
-        return tenant_cash_color(obj)
+        return tenant_cash_color(obj, cache_only=True)
 
     def get_avatar(self, obj):
         if not obj.avatar:

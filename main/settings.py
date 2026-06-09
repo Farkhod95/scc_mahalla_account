@@ -155,6 +155,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.warm_shop_cash_status_task',
         'schedule': crontab(minute='*/15'),
     },
+    # Har 6 soatda soliq rekvizit + faktura tushumini ShopTenant maydonlariga
+    # yozadi, shunda shop-tenant API lari request thread da soliqqa bormaydi.
+    'sync-tenant-soliq': {
+        'task': 'celery_task.sync_tenant_soliq_task',
+        'schedule': crontab(minute=0, hour='*/6'),
+    },
 }
 
 ### Local Host uchun

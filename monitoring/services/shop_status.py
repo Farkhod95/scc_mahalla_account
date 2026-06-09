@@ -7,10 +7,11 @@ Tenant (ijarachi) rangi:
   - red     : kassa ham yo'q, chek ham yo'q
 
 Do'kon rangi (tenantlar bo'yicha):
-  - hammasi green        -> green
-  - hech biri green emas -> red
-  - qisman               -> yellow
-  - tenant yo'q          -> None
+  - hammasi green              -> green
+  - hammasi red                -> red
+  - aks holda (hammasi yellow,
+    yoki aralash)              -> yellow
+  - tenant yo'q                -> None
 """
 from __future__ import annotations
 
@@ -75,11 +76,12 @@ def shop_cash_status(shop, cache_only: bool = False) -> Dict[str, Any]:
         return {"color": PENDING, "green": 0, "total": total}
 
     green = sum(1 for c in colors if c == "green")
+    red = sum(1 for c in colors if c == "red")
     if green == total:
         color = "green"
-    elif green == 0:
+    elif red == total:  # faqat hamma tenant red bo'lsagina do'kon red
         color = "red"
-    else:
+    else:               # hammasi yellow, yoki aralash -> yellow
         color = "yellow"
 
     return {"color": color, "green": green, "total": total}

@@ -815,6 +815,25 @@ def sync_factura_revenue_task(self, period_from=None, period_to=None):
     }
 
 
+@shared_task(name="celery_task.sync_tenant_soliq_task")
+def sync_tenant_soliq_task():
+    """
+    Soliq rekvizit va faktura tushumini ShopTenant maydonlariga yozadi (FON da).
+
+    Shu task tufayli shop-tenant API lari (ro'yxat/detal) request thread da
+    soliqqa bormaydi — bazadan o'qiydi, boshqa API lar "pending" qolmaydi.
+    Source of truth = soliq.
+    """
+    from monitoring.services.tenant_soliq_sync import sync_tenant_soliq
+    stats = sync_tenant_soliq()
+    return {
+        "ok": True,
+        "tenants": stats.tenants,
+        "updated": stats.updated,
+        "errors": stats.errors,
+    }
+
+
 @shared_task(name="celery_task.warm_shop_cash_status_task")
 def warm_shop_cash_status_task():
     """
