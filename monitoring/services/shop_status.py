@@ -24,12 +24,14 @@ from monitoring.services import soliq_service
 PENDING = "pending"
 
 
-def _tenant_tin(tenant, cache_only: bool = False) -> Optional[str]:
+def _tenant_tin(tenant, cache_only: bool = False, force: bool = False) -> Optional[str]:
     """tin ni qaytaradi. cache_only va kesh bo'sh bo'lsa None (noma'lum)."""
     tin = (tenant.stir or "").strip()
     if tin:
         return tin
-    fields = soliq_service.soliq_fields_for(tenant.leader_jshshir, cache_only=cache_only)
+    fields = soliq_service.soliq_fields_for(
+        tenant.leader_jshshir, cache_only=cache_only, force=force
+    )
     if fields is None:  # cache_only: hali keshlanmagan
         return None
     return (fields.get("stir") or "").strip()
@@ -42,16 +44,17 @@ def _has_registered_kassa(tenant) -> bool:
     )
 
 
-def tenant_cash_color(tenant, cache_only: bool = False) -> str:
+def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> str:
     """
     Tenant rangi. cache_only=True bo'lsa hech qachon soliqqa bormaydi —
     kerakli ma'lumot hali keshlanmagan bo'lsa PENDING qaytaradi.
+    force=True bo'lsa keshni e'tiborsiz qoldirib jonli o'qiydi (warm task).
     """
-    tin = _tenant_tin(tenant, cache_only=cache_only)
+    tin = _tenant_tin(tenant, cache_only=cache_only, force=force)
     if tin is None:  # soliq fields hali keshlanmagan
         return PENDING
     if tin:
-        active = soliq_service.nkm_active(tin, cache_only=cache_only)
+        active = soliq_service.nkm_active(tin, cache_only=cache_only, force=force)
         if active is None:  # nkm hali keshlanmagan
             return PENDING
         if active:
@@ -59,18 +62,19 @@ def tenant_cash_color(tenant, cache_only: bool = False) -> str:
     return "yellow" if _has_registered_kassa(tenant) else "red"
 
 
-def shop_cash_status(shop, cache_only: bool = False) -> Dict[str, Any]:
+def shop_cash_status(shop, cache_only: bool = False, force: bool = False) -> Dict[str, Any]:
     """
     Do'kon kassa rangi. cache_only=True bo'lsa request thread ni bloklamaydi
     (soliqqa bormaydi); biror tenant ma'lumoti hali keshlanmagan bo'lsa
     do'kon rangi PENDING bo'ladi va warm task to'ldirgach yashil/qizil bo'ladi.
+    force=True bo'lsa keshni e'tiborsiz qoldirib jonli soliqdan qayta yozadi (warm task).
     """
     tenants = list(shop.tenants.all())
     total = len(tenants)
     if total == 0:
         return {"color": None, "green": 0, "total": 0}
 
-    colors = [tenant_cash_color(t, cache_only=cache_only) for t in tenants]
+    colors = [tenant_cash_color(t, cache_only=cache_only, force=force) for t in tenants]
 
     if PENDING in colors:
         return {"color": PENDING, "green": 0, "total": total}

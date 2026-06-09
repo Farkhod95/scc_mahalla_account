@@ -797,6 +797,7 @@ def sync_tenants_rent_task():
         "with_owner_cadastr": stats.with_owner_cadastr,
         "created": stats.tenants_created,
         "updated": stats.tenants_updated,
+        "deactivated": stats.tenants_deactivated,
         "errors": stats.errors,
     }
 
@@ -850,7 +851,9 @@ def warm_shop_cash_status_task():
     shops = Shop.objects.prefetch_related("tenants").all()
     counts = {"green": 0, "yellow": 0, "red": 0, "none": 0, "pending": 0}
     for shop in shops:
-        st = shop_cash_status(shop)  # cache_only=False -> jonli, keshni to'ldiradi
+        # force=True -> keshda bor bo'lsa ham jonli o'qib qayta yozadi, shunda
+        # muddati o'tmagan yozuvlar ham yangilanadi va kesh "rangsiz"ga tushmaydi.
+        st = shop_cash_status(shop, force=True)
         counts[st["color"] or "none"] += 1
     return {"ok": True, **counts}
 

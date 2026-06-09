@@ -18,6 +18,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Optional
 
 import requests
+from django.utils import timezone
 
 from monitoring.models import Shop, ShopTenant
 from monitoring.services import soliq_service
@@ -33,6 +34,7 @@ class RentSyncStats:
     with_owner_cadastr: int = 0
     tenants_created: int = 0
     tenants_updated: int = 0
+    tenants_deactivated: int = 0
     errors: int = 0
 
 
@@ -66,6 +68,8 @@ def _pick_best_per_tenant(agreements):
 
 
 def _upsert_tenant(shop, a, stats):
+    """Ijarachini yaratadi/yangilaydi. Tegilgan ShopTenant pk sini qaytaradi
+    (identifikatori yo'q bo'lsa None) — chaqiruvchi 'ko'rilgan'larni belgilashi uchun."""
     to_tin = (str(a.get("toTin")).strip() if a.get("toTin") else None)
     to_pinfl = (str(a.get("toPinfl")).strip() if a.get("toPinfl") else None)
 
@@ -90,7 +94,7 @@ def _upsert_tenant(shop, a, stats):
     elif to_pinfl:
         lookup = {"shop": shop, "leader_jshshir": to_pinfl}
     else:
-        return
+        return None
 
     obj = ShopTenant.objects.filter(**lookup).first()
     if obj:
@@ -102,9 +106,11 @@ def _upsert_tenant(shop, a, stats):
             setattr(obj, k, v)
         obj.save()
         stats.tenants_updated += 1
-    else:
-        ShopTenant.objects.create(**defaults)
-        stats.tenants_created += 1
+        return obj.pk
+
+    obj = ShopTenant.objects.create(**defaults)
+    stats.tenants_created += 1
+    return obj.pk
 
 
 def sync_tenants_from_rent(only_shop_id: Optional[int] = None) -> RentSyncStats:
@@ -129,11 +135,30 @@ def sync_tenants_from_rent(only_shop_id: Optional[int] = None) -> RentSyncStats:
             stats.errors += 1
             continue
 
+        seen_pks: set[int] = set()
         for a in _pick_best_per_tenant(agreements).values():
             try:
-                _upsert_tenant(shop, a, stats)
+                pk = _upsert_tenant(shop, a, stats)
+                if pk is not None:
+                    seen_pks.add(pk)
             except Exception as e:
                 logger.warning("rent tenant upsert xato (shop=%s): %s", shop.pk, e)
                 stats.errors += 1
+
+        # Rent API muvaffaqiyatli javob berdi (xato bo'lsa yuqorida `continue`).
+        # Shu do'konda javobda kelmagan, hali NOFAOL bo'lmagan ijarachilarni
+        # NOFAOL belgilaymiz — o'chirmaymiz (keyingi sync ularni qaytarsa yana
+        # ACTIVE bo'ladi).
+        deactivated = (
+            ShopTenant.objects
+            .filter(shop=shop)
+            .exclude(pk__in=seen_pks)
+            .exclude(activity_status=ShopTenant.ActivityStatus.INACTIVE)
+            .update(
+                activity_status=ShopTenant.ActivityStatus.INACTIVE,
+                updated_time=timezone.now(),
+            )
+        )
+        stats.tenants_deactivated += deactivated
 
     return stats

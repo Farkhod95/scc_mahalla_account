@@ -21,5 +21,6 @@ class Command(BaseCommand):
         stats = sync_tenants_from_rent(only_shop_id=opts.get("shop"))
         self.stdout.write(self.style.SUCCESS(
             f"Tugadi: do'konlar={stats.shops}, egasi+kadastrli={stats.with_owner_cadastr}, "
-            f"yaratildi={stats.tenants_created}, yangilandi={stats.tenants_updated}, xato={stats.errors}"
+            f"yaratildi={stats.tenants_created}, yangilandi={stats.tenants_updated}, "
+            f"nofaol_qilindi={stats.tenants_deactivated}, xato={stats.errors}"
         ))

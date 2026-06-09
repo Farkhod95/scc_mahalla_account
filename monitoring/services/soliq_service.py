@@ -151,7 +151,9 @@ def _full_name(data: Dict[str, Any]) -> Optional[str]:
     return name or None
 
 
-def soliq_fields_for(pinfl: Optional[str], cache_only: bool = False) -> Optional[Dict[str, Any]]:
+def soliq_fields_for(
+    pinfl: Optional[str], cache_only: bool = False, force: bool = False
+) -> Optional[Dict[str, Any]]:
     """
     pinfl bo'yicha soliqdan ShopTenant maydonlariga mos qiymatlarni oladi.
     Serializer ichida ishlatish uchun — hech qachon exception ko'tarmaydi,
@@ -164,6 +166,9 @@ def soliq_fields_for(pinfl: Optional[str], cache_only: bool = False) -> Optional
       - pinfl yo'q   -> {} (aniq: tin yo'q)
       - keshda yo'q  -> None (noma'lum, hali warm qilinmagan)
 
+    force=True bo'lsa: keshni e'tiborsiz qoldirib jonli soliqdan o'qiydi va
+    keshni qayta yozadi (warm task uchun — muddati o'tmagan yozuvni ham yangilaydi).
+
     Qaytaradigan kalitlar (mavjud bo'lsa):
       stir, leader_fio, name, certificate_number, activity_status (1=active)
     """
@@ -174,12 +179,13 @@ def soliq_fields_for(pinfl: Optional[str], cache_only: bool = False) -> Optional
         return {}
 
     cache_key = f"soliq_fields:{pinfl}"
-    cached = cache.get(cache_key)
-    if cached is not None:
-        return cached
+    if not force:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
 
-    if cache_only:
-        return None
+        if cache_only:
+            return None
 
     fields: Dict[str, Any] = {}
 
@@ -208,8 +214,10 @@ def soliq_fields_for(pinfl: Optional[str], cache_only: bool = False) -> Optional
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq activity-rate xato (pinfl=%s): %s", pinfl, e)
 
-    # To'liq natija — 1 kun; xato/bo'sh — 5 daqiqa (soliq tiklanganda qayta urinish).
-    cache.set(cache_key, fields, 60 * 60 * 24 if fields else 300)
+    # Hammasi 1 kun keshlanadi (xato/bo'sh ham). Qayta urinish — kunlik warm
+    # task force=True bilan jonli o'qib qayta yozadi. Qisqa (5 daq) TTL endpointni
+    # warm oralig'ida "rangsiz" (pending) holatga tushirardi — shuning uchun olib tashlandi.
+    cache.set(cache_key, fields, 60 * 60 * 24)
     return fields
 
 
@@ -400,7 +408,9 @@ def get_online_nkm(
     return data or []
 
 
-def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
+def nkm_active(
+    tin: Optional[str], cache_only: bool = False, force: bool = False
+) -> Optional[bool]:
     """
     tin OXIRGI 7 KUNDA (shu hafta) kamida 1 ta chek urganmi (= kassa faol).
     Yengil: 1 yozuv yetadi (page=1,size=1). Natija ~1 kun keshlanadi —
@@ -410,6 +420,9 @@ def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
       - keshda bor   -> bool
       - tin yo'q     -> False (aniq)
       - keshda yo'q  -> None (noma'lum, hali warm qilinmagan)
+
+    force=True bo'lsa: keshni e'tiborsiz qoldirib jonli soliqdan o'qiydi va
+    keshni qayta yozadi (warm task uchun).
     """
     from django.core.cache import cache
 
@@ -419,12 +432,13 @@ def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
 
     # Kalitda 7d — kunlik (eski) keshlangan qiymatlar bilan aralashmasligi uchun.
     cache_key = f"nkm_active_7d:{tin}"
-    cached = cache.get(cache_key)
-    if cached is not None:
-        return cached
+    if not force:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
 
-    if cache_only:
-        return None
+        if cache_only:
+            return None
 
     today = date.today()
     period_to = today.strftime("%d.%m.%Y")
@@ -434,7 +448,9 @@ def nkm_active(tin: Optional[str], cache_only: bool = False) -> Optional[bool]:
         active = len(batch) > 0
     except (SoliqError, requests.RequestException) as e:
         logger.warning("soliq nkm-active xato (tin=%s): %s", tin, e)
-        cache.set(cache_key, False, 300)
+        # Xato ham ~1 kun keshlanadi (qisqa TTL endpointni "rangsiz"ga tushirardi);
+        # qayta urinish — keyingi warm task force=True bilan.
+        cache.set(cache_key, False, 60 * 60 * 26)
         return False
 
     # ~1 kundan ko'proq keshlaymiz (kunlik warm task yangilaydi; expiry race bo'lmasin).
