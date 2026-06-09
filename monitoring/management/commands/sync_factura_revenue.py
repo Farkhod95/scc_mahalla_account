@@ -27,6 +27,6 @@ class Command(BaseCommand):
             period_to=opts.get("period_to"),
         )
         self.stdout.write(self.style.SUCCESS(
-            f"Tugadi: tenants={stats.tenants}, tin_li={stats.with_tin}, "
-            f"yozilgan_kun={stats.days_written}, xato={stats.errors}"
+            f"Tugadi: tenants={stats.tenants}, nofaol_skip={stats.skipped_inactive}, "
+            f"tin_li={stats.with_tin}, yozilgan_kun={stats.days_written}, xato={stats.errors}"
         ))

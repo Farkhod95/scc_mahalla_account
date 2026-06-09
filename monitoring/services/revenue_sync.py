@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RevenueSyncStats:
     tenants: int = 0
+    skipped_inactive: int = 0
     with_tin: int = 0
     days_written: int = 0
     errors: int = 0
@@ -63,6 +64,13 @@ def sync_factura_revenue(period_from: Optional[str] = None, period_to: Optional[
 
     for tenant in ShopTenant.objects.all().iterator():
         stats.tenants += 1
+
+        # Nofaol ijarachi: eski FacturaRevenueDaily yozuvlari o'chmaydi (qoladi),
+        # lekin bugundan keyin yangi kun ma'lumoti yig'ilmaydi — skip qilamiz.
+        if tenant.activity_status == ShopTenant.ActivityStatus.INACTIVE:
+            stats.skipped_inactive += 1
+            continue
+
         tin = _resolve_tin(tenant)
         if not tin or tin in seen_tins:
             continue

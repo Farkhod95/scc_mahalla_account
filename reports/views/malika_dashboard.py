@@ -139,8 +139,14 @@ class MalikaDashboardReportView(APIView):
         sales_chart, tax_chart = self._revenue_charts(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
-        tenants_qs = ShopTenant.objects.all()
-        employees_qs = TenantEmployee.objects.all()
+        # Nofaol (INACTIVE) ijarachilar dashboard hisob-kitobiga kirmaydi —
+        # tadbirkor soni, terminal, OKKM tushum, cheklar va xodimlar shulardan.
+        tenants_qs = ShopTenant.objects.exclude(
+            activity_status=ShopTenant.ActivityStatus.INACTIVE
+        )
+        employees_qs = TenantEmployee.objects.exclude(
+            tenant__activity_status=ShopTenant.ActivityStatus.INACTIVE
+        )
 
         # =========================
         # 1. SHOPS

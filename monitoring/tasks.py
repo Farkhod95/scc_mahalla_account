@@ -812,6 +812,7 @@ def sync_factura_revenue_task(self, period_from=None, period_to=None):
     return {
         "ok": True,
         "tenants": stats.tenants,
+        "skipped_inactive": stats.skipped_inactive,
         "with_tin": stats.with_tin,
         "days_written": stats.days_written,
         "errors": stats.errors,
