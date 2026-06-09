@@ -185,8 +185,7 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 4 & 5. SALES and TAX REVENUE
         # =========================
-        # Elektron to'lov (faktura) — grafik bilan bir manba (FacturaRevenueDaily),
-        # xom so'm da. Card "Total" = grafik davri yig'indisi.
+        # Elektron to'lov (faktura) — grafik bilan bir manba (FacturaRevenueDaily), xom so'm.
         sales_e_payment = self._d(sum(item["value"] for item in sales_chart))
         tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
 
@@ -201,6 +200,16 @@ class MalikaDashboardReportView(APIView):
 
         # Umumiy savdo tushumi = elektron to'lov + OKKM.
         sales_total = sales_e_payment + sales_okkm
+
+        # OKKM ni savdo grafigining JORIY (bugungi) ustuniga qo'shamiz — shunda
+        # grafik yig'indisi karta "count" (jami) bilan teng bo'ladi. OKKM da kunlik
+        # tarix yo'q (faqat dtd/mtd/ytd yig'indi), shuning uchun bitta ustunga tushadi:
+        #   week  -> bugungi kun (Du..Ya ichida), month/year -> oxirgi (joriy) ustun.
+        if sales_chart:
+            okkm_idx = date.today().weekday() if chart_range == "week" else len(sales_chart) - 1
+            sales_chart[okkm_idx]["value"] = round(
+                sales_chart[okkm_idx]["value"] + float(sales_okkm), 2
+            )
 
         # Cheklar soni — oylik/kunlik davr uchun saqlangan (yillik maydon yo'q).
         checks_field = {"monthly": "monthly_checks_count", "daily": "daily_checks_count"}.get(period)
