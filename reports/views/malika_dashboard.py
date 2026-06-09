@@ -33,12 +33,6 @@ class MalikaDashboardReportView(APIView):
         except Exception:
             return Decimal("0")
 
-    def _format_int(self, value):
-        try:
-            return f"{int(value):,}".replace(",", " ")
-        except Exception:
-            return "0"
-
     @staticmethod
     def _count_distinct_pinfl(qs):
         """
@@ -57,15 +51,6 @@ class MalikaDashboardReportView(APIView):
             Q(leader_jshshir__isnull=True) | Q(leader_jshshir="")
         ).count()
         return with_pinfl + without_pinfl
-
-    def _format_money_mln(self, value):
-        # Values are stored in millions of so'm in the DB
-        # (e.g. 2230.9 = 2 230 900 000 so'm)
-        value = self._d(value)
-        s = f"{value:,.2f}".replace(",", " ")
-        if s.endswith(".00"):
-            s = s[:-3]
-        return s
 
     # =========================
     # REVENUE CHART (from FacturaRevenueDaily, in millions of so'm)
@@ -160,11 +145,11 @@ class MalikaDashboardReportView(APIView):
         sklad_count = max(shops_qs.filter(block_type=Shop.BlockType.SKLAD).count(), 74)
 
         shops_items = [
-            {"key": "A",  "name": "A blok",  "count": a_count,      "formatted": self._format_int(a_count)},
-            {"key": "B",  "name": "B blok",  "count": b_count,      "formatted": self._format_int(b_count)},
-            {"key": "J",  "name": "J blok",  "count": j_count,      "formatted": self._format_int(j_count)},
-            {"key": "SM", "name": "Merkato savdo markazi", "count": merkato_count, "formatted": self._format_int(merkato_count)},
-            {"key": "SK", "name": "Ombor",   "count": sklad_count,  "formatted": self._format_int(sklad_count)},
+            {"key": "A",  "name": "A blok",  "count": a_count},
+            {"key": "B",  "name": "B blok",  "count": b_count},
+            {"key": "J",  "name": "J blok",  "count": j_count},
+            {"key": "SM", "name": "Merkato savdo markazi", "count": merkato_count},
+            {"key": "SK", "name": "Ombor",   "count": sklad_count},
         ]
 
         shops_chart = [
@@ -248,24 +233,9 @@ class MalikaDashboardReportView(APIView):
         business_total = self._count_distinct_pinfl(tenants_qs)
 
         business_items = [
-            {
-                "key": "LEGAL",
-                "name": "MCHJ",
-                "count": mchj_count,
-                "formatted": self._format_int(mchj_count),
-            },
-            {
-                "key": "YTT",
-                "name": "YTT",
-                "count": ytt_count,
-                "formatted": self._format_int(ytt_count),
-            },
-            {
-                "key": "OTHER",
-                "name": "Boshqa",
-                "count": other_count,
-                "formatted": self._format_int(other_count),
-            },
+            {"key": "LEGAL", "name": "MCHJ",   "count": mchj_count},
+            {"key": "YTT",   "name": "YTT",    "count": ytt_count},
+            {"key": "OTHER", "name": "Boshqa", "count": other_count},
         ]
 
         business_chart = [
@@ -280,7 +250,6 @@ class MalikaDashboardReportView(APIView):
                 "shops": {
                     "title": "Do'konlar",
                     "count": total_shops,
-                    "formatted": self._format_int(total_shops),
                     "items": shops_items,
                     "chart": shops_chart,
                 },
@@ -288,61 +257,49 @@ class MalikaDashboardReportView(APIView):
                     "title": "Ishchilar",
                     "label": "Nafar",
                     "count": employees_total,
-                    "formatted": self._format_int(employees_total),
                 },
                 "terminals": {
                     "title": "Terminallar",
                     "count": terminals_total,
-                    "formatted": self._format_int(terminals_total),
                 },
                 "tax_revenue": {
                     "title": "Soliq tushumlari",
                     "count": float(tax_revenue_total),
-                    "formatted": f"{self._format_money_mln(tax_revenue_total)} mln so'm",
                     "chart": tax_chart,
                     "items": [
                         {
                             "key": "QQS",
                             "name": "QQS (12%)",
                             "count": float(tax_from_vat),
-                            "formatted": f"{self._format_money_mln(tax_from_vat)} mln so'm",
                         },
                         {
                             "key": "AOS",
                             "name": "Aylanma soliq (1%)",
                             "count": float(tax_from_turnover),
-                            "formatted": f"{self._format_money_mln(tax_from_turnover)} mln so'm",
                         },
                     ],
                 },
                 "sales_revenue": {
                     "title": "Savdo tushumlari",
                     "count": float(sales_total),
-                    "formatted": f"{self._format_money_mln(sales_total)} mln so'm",
                     "cheque_count": cheque_count_total,
-                    "cheque_count_formatted": (
-                        self._format_int(cheque_count_total) if cheque_count_total is not None else None
-                    ),
                     "chart": sales_chart,
                     "items": [
                         {
                             "key": "OKKM",
                             "name": "OKKM",
                             "count": float(sales_okkm),
-                            "formatted": f"{self._format_money_mln(sales_okkm)} mln so'm",
                         },
                         {
                             "key": "E_PAYMENT",
                             "name": "Elektron to'lov",
                             "count": float(sales_e_payment),
-                            "formatted": f"{self._format_money_mln(sales_e_payment)} mln so'm",
                         },
                     ],
                 },
                 "cash_registers": {
                     "title": "Kassa apparatlari",
                     "count": cash_registers_total,
-                    "formatted": self._format_int(cash_registers_total),
                 },
                 "area": {
                     "title": "Savdo kompleks umumiy maydoni",
@@ -359,7 +316,6 @@ class MalikaDashboardReportView(APIView):
                 "business_entities": {
                     "title": "Tadbirkorlik subyekti",
                     "count": business_total,
-                    "formatted": self._format_int(business_total),
                     "items": business_items,
                     "chart": business_chart,
                 },
