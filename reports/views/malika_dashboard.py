@@ -11,7 +11,6 @@ from monitoring.models import Shop, ShopTenant, TenantEmployee, FacturaRevenueDa
 WEEKDAY_LABELS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"]  # Mon..Sun
 MONTH_LABELS = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn",
                 "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"]
-MLN = Decimal("1000000")
 
 
 class MalikaDashboardReportView(APIView):
@@ -53,10 +52,11 @@ class MalikaDashboardReportView(APIView):
         return with_pinfl + without_pinfl
 
     # =========================
-    # REVENUE CHART (from FacturaRevenueDaily, in millions of so'm)
+    # REVENUE CHART (from FacturaRevenueDaily, in raw so'm)
     # =========================
-    def _chart_to_mln(self, value):
-        return float((Decimal(value or 0) / MLN).quantize(Decimal("0.01")))
+    def _chart_value(self, value):
+        # Xom so'm (to'liq summa), float — front o'zi mln/mlrd qilib formatlaydi.
+        return round(float(value or 0), 2)
 
     def _chart_sum_by_date(self, start, end):
         rows = (
@@ -106,8 +106,8 @@ class MalikaDashboardReportView(APIView):
             order = days
             label_of = {d: WEEKDAY_LABELS[i] for i, d in enumerate(days)}
 
-        sales = [{"label": label_of[k], "value": self._chart_to_mln(buckets[k][0])} for k in order]
-        tax = [{"label": label_of[k], "value": self._chart_to_mln(buckets[k][1])} for k in order]
+        sales = [{"label": label_of[k], "value": self._chart_value(buckets[k][0])} for k in order]
+        tax = [{"label": label_of[k], "value": self._chart_value(buckets[k][1])} for k in order]
         return sales, tax
 
     def get(self, request, *args, **kwargs):
@@ -186,18 +186,18 @@ class MalikaDashboardReportView(APIView):
         # 4 & 5. SALES and TAX REVENUE
         # =========================
         # Elektron to'lov (faktura) — grafik bilan bir manba (FacturaRevenueDaily),
-        # mln so'm da. Card "Total" = grafik davri yig'indisi.
+        # xom so'm da. Card "Total" = grafik davri yig'indisi.
         sales_e_payment = self._d(sum(item["value"] for item in sales_chart))
         tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
 
         # OKKM (NKM cheklar) tushumi — celery beat sync qilgan DB maydonlaridan,
-        # tanlangan davrga mos ustun (yearly->ytd, monthly->mtd, daily->dtd).
+        # tanlangan davrga mos ustun (yearly->ytd, monthly->mtd, daily->dtd). Xom so'm.
         okkm_prefix = {"yearly": "ytd", "monthly": "mtd", "daily": "dtd"}.get(period, "ytd")
         okkm_agg = tenants_qs.aggregate(
             v=Sum(f"{okkm_prefix}_okkm_vat"),
             t=Sum(f"{okkm_prefix}_okkm_turnover"),
         )
-        sales_okkm = ((self._d(okkm_agg["v"]) + self._d(okkm_agg["t"])) / MLN).quantize(Decimal("0.01"))
+        sales_okkm = self._d(okkm_agg["v"]) + self._d(okkm_agg["t"])
 
         # Umumiy savdo tushumi = elektron to'lov + OKKM.
         sales_total = sales_e_payment + sales_okkm
