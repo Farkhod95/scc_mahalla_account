@@ -24,9 +24,11 @@ FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
 FACE_TIMEOUT = 10
 FACE_VERIFY_SSL = False  # self-signed bo'lsa False
 
-# Avtotransport — faqat shu 2 kamera hisoblanadi (qolgani hisobga olinmaydi)
-CAR_IN_CAMERA_IP = "10.6.204.79"
-CAR_OUT_CAMERA_IP = "10.6.204.76"
+# Avtotransport — faqat shu kameralar hisoblanadi (qolgani hisobga olinmaydi).
+# 10.6.253.72 — kirish-chiqish (ikkala yo'nalish) kamerasi, shuning uchun ham
+# kirish, ham chiqish ro'yxatida turadi (IN hodisasi kirishga, OUT chiqishga).
+CAR_IN_CAMERA_IPS = ["10.6.204.79", "10.6.253.72"]
+CAR_OUT_CAMERA_IPS = ["10.6.204.76", "10.6.253.72"]
 
 
 # =========================
@@ -125,8 +127,9 @@ class MalikaFlowReportView(APIView):
         cars_out_by_region = defaultdict(int)
 
         # Faqat belgilangan kirish va chiqish kameralari hisoblanadi:
-        #   kirish  -> CAR_IN_CAMERA_IP  (type=in)
-        #   chiqish -> CAR_OUT_CAMERA_IP (type=out)
+        #   kirish  -> CAR_IN_CAMERA_IPS  (type=in)
+        #   chiqish -> CAR_OUT_CAMERA_IPS (type=out)
+        # 10.6.253.72 kirish-chiqish kamerasi ikkala ro'yxatda ham bor.
         car_base = CarFlow.objects.filter(
             location_type=CarFlow.LOCATION_TYPE.MALIKA,
             region_soato=region_soato,
@@ -135,10 +138,10 @@ class MalikaFlowReportView(APIView):
         )
 
         cars_in_total = car_base.filter(
-            ip_address=CAR_IN_CAMERA_IP, type=CarFlow.TYPE.IN
+            ip_address__in=CAR_IN_CAMERA_IPS, type=CarFlow.TYPE.IN
         ).count()
         cars_out_total = car_base.filter(
-            ip_address=CAR_OUT_CAMERA_IP, type=CarFlow.TYPE.OUT
+            ip_address__in=CAR_OUT_CAMERA_IPS, type=CarFlow.TYPE.OUT
         ).count()
         # TEMP: chiqish 0 beryapti -> kirishdan 50-100 ga kam qilib ko'rsatamiz
         # (farq 50-100, ya'ni chiqish kirishga yaqin). Real out tuzatilguncha.
