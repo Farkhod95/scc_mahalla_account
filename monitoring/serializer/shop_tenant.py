@@ -103,6 +103,37 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
         from monitoring.services.shop_status import tenant_cash_color
         return tenant_cash_color(obj, cache_only=True)
 
+    def _live_cheque_enabled(self):
+        """
+        Cheklar sonini JONLI (integratsiyadan) olamizmi? Faqat yengil qamrovda:
+          - detal (bitta tenant, include_factura), yoki
+          - shop bo'yicha filtrlangan modal (?shop=).
+        To'liq ro'yxatda yoqilmaydi (ASGI bitta thread — har tenantga jonli
+        so'rov barcha API ni bloklab qo'yardi); u yerda bazadagi qiymat qoladi.
+        """
+        if self.context.get("include_factura"):
+            return True
+        request = self.context.get("request")
+        return bool(request and request.query_params.get("shop"))
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Cheklar soni — jonli kontekstda (modal/detal) integratsiyadan qayta yoziladi.
+        # tenant.tax_type ga qarab _vat yoki _turnover ustuni yangilanadi (sync bilan
+        # bir xil qoida). Soliq xato/bo'sh bo'lsa bazadagi qiymat o'zgarmaydi.
+        if self._live_cheque_enabled():
+            tin = (instance.stir or "").strip()
+            if tin:
+                from monitoring.services import soliq_service
+                counts = soliq_service.live_cheque_counts(tin)
+                if counts:
+                    suffix = "vat" if instance.tax_type == ShopTenant.TaxType.VAT else "turnover"
+                    if counts.get("monthly") is not None:
+                        data[f"monthly_checks_count_{suffix}"] = counts["monthly"]
+                    if counts.get("daily") is not None:
+                        data[f"daily_checks_count_{suffix}"] = counts["daily"]
+        return data
+
     def get_avatar(self, obj):
         if not obj.avatar:
             return None

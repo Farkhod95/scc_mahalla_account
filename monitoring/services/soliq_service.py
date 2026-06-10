@@ -491,6 +491,48 @@ def get_cheque_statistics(
     return resp.json()
 
 
+def live_cheque_counts(tin: Optional[str], cache_ttl: int = 300) -> Optional[Dict[str, Any]]:
+    """
+    tin uchun JONLI cheklar soni: oylik (oy boshidan bugungacha) va kunlik (bugun).
+    get_cheque_statistics ni 2 marta chaqiradi (yengil GET). Qisqa kesh (default 5 daq.)
+    bir do'kon modalini qayta ochishda takror so'rovdan himoya qiladi.
+
+    Shop-tenant modal/detal serializer i shu yerdan jonli o'qiydi (cheklar soni
+    bazadagi celery-sync qiymatdan emas, real vaqtda integratsiyadan keladi).
+    Xato/tin yo'q bo'lsa None — chaqiruvchi bazadagi qiymatda qoladi.
+    Qaytaradi: {"monthly": int|None, "daily": int|None} yoki None.
+    """
+    from django.core.cache import cache
+
+    tin = (tin or "").strip()
+    if not tin:
+        return None
+
+    cache_key = f"live_cheque_counts:{tin}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    today = date.today()
+    today_str = today.strftime("%d.%m.%Y")
+    month_from = today.strftime("01.%m.%Y")
+    try:
+        monthly = get_cheque_statistics(tin, month_from, today_str) or {}
+        daily = get_cheque_statistics(tin, today_str, today_str) or {}
+    except (SoliqError, requests.RequestException, ValueError) as e:
+        logger.warning("live cheque counts xato (tin=%s): %s", tin, e)
+        return None
+
+    mc = monthly.get("chequeCount")
+    dc = daily.get("chequeCount")
+    out = {
+        "monthly": int(mc) if mc is not None else None,
+        "daily": int(dc) if dc is not None else None,
+    }
+    cache.set(cache_key, out, cache_ttl)
+    return out
+
+
 # --- Ijara (rent / justice-api) --------------------------------------------
 
 def get_rent_information(pinfl=None, tin=None, cadastr=None):
