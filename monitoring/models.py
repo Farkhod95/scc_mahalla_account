@@ -594,3 +594,30 @@ class FacturaRevenueDaily(models.Model):
 
     def __str__(self):
         return f"{self.date} | {self.seller_tin} | {self.sales}"
+
+
+class OkkmRevenueDaily(models.Model):
+    """
+    OKKM (onlayn-kassa / NKM cheklar) kunlik tushum tarixi (tin bo'yicha).
+    Dashboard grafigi factura (FacturaRevenueDaily) bilan birga shu yerdan o'qiydi.
+
+    Soliqda OKKM ni kunlarga bo'lib beradigan arzon endpoint yo'q, shuning uchun
+    har KUN uchun get_cheque_statistics(tin, kun, kun) alohida chaqirilib upsert
+    qilinadi: kunlik sync bugunni, backfill command o'tgan kunlarni to'ldiradi.
+    """
+    date = models.DateField(db_index=True, help_text=_("Chek sanasi"))
+    tin = models.CharField(max_length=20, help_text=_("STIR"))
+    turnover = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                   help_text=_("Kunlik OKKM savdo (turnover)"))
+    vat = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                              help_text=_("Kunlik OKKM QQS (vat)"))
+    cheque_count = models.PositiveIntegerField(default=0, help_text=_("Cheklar soni"))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("OKKM Revenue Daily")
+        verbose_name_plural = _("OKKM Revenue Daily")
+        unique_together = ("date", "tin")
+
+    def __str__(self):
+        return f"{self.date} | {self.tin} | {self.turnover}"

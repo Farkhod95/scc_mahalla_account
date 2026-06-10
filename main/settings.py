@@ -144,16 +144,23 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_factura_revenue_task',
         'schedule': crontab(hour=2, minute=0),
     },
+    # Har kuni 03:00 da BUGUNGI OKKM (NKM cheklar) tushumini OkkmRevenueDaily ga
+    # yig'adi. O'tgan kunlar — `python manage.py sync_okkm_revenue --from .. --to ..`
+    # (bir martalik backfill).
+    'sync-okkm-revenue-daily': {
+        'task': 'celery_task.sync_okkm_revenue_task',
+        'schedule': crontab(hour=3, minute=0),
+    },
     # Har oyning 1-kuni 04:00 da ijara (rent) integratsiyasidan ijarachilarni sync qiladi.
     'sync-tenants-rent-monthly': {
         'task': 'celery_task.sync_tenants_rent_task',
         'schedule': crontab(day_of_month=1, hour=4, minute=0),
     },
-    # Har kuni 05:00 da do'kon kassa (NKM, oxirgi 7 kun) rangi keshini
+    # Har 15 daqiqada do'kon kassa (NKM, bugungi kun) rangi keshini
     # to'ldiradi, shunda /shop/cash-status/ jonli soliqqa bormay tez javob beradi.
     'warm-shop-cash-status': {
         'task': 'celery_task.warm_shop_cash_status_task',
-        'schedule': crontab(hour=5, minute=0),
+        'schedule': crontab(minute='*/15'),
     },
     # Har 6 soatda soliq rekvizit + faktura tushumini ShopTenant maydonlariga
     # yozadi, shunda shop-tenant API lari request thread da soliqqa bormaydi.

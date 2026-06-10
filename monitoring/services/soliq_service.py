@@ -11,7 +11,7 @@ DIQQAT: API faqat ruxsat etilgan server IP sidan ochiladi (localda DNS yo'q).
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -412,9 +412,9 @@ def nkm_active(
     tin: Optional[str], cache_only: bool = False, force: bool = False
 ) -> Optional[bool]:
     """
-    tin OXIRGI 7 KUNDA (shu hafta) kamida 1 ta chek urganmi (= kassa faol).
+    tin BUGUN (joriy kun) kamida 1 ta chek urganmi (= kassa faol).
     Yengil: 1 yozuv yetadi (page=1,size=1). Natija ~1 kun keshlanadi —
-    keshni har kuni warm task (celery beat) yangilab turadi.
+    keshni har 15 daqiqada warm task (celery beat) yangilab turadi.
 
     cache_only=True bo'lsa: faqat keshdan o'qiydi, hech qachon soliqqa bormaydi.
       - keshda bor   -> bool
@@ -430,8 +430,8 @@ def nkm_active(
     if not tin:
         return False
 
-    # Kalitda 7d — kunlik (eski) keshlangan qiymatlar bilan aralashmasligi uchun.
-    cache_key = f"nkm_active_7d:{tin}"
+    # Kalitda 1d — haftalik (eski) keshlangan qiymatlar bilan aralashmasligi uchun.
+    cache_key = f"nkm_active_1d:{tin}"
     if not force:
         cached = cache.get(cache_key)
         if cached is not None:
@@ -442,7 +442,7 @@ def nkm_active(
 
     today = date.today()
     period_to = today.strftime("%d.%m.%Y")
-    period_from = (today - timedelta(days=7)).strftime("%d.%m.%Y")
+    period_from = today.strftime("%d.%m.%Y")
     try:
         batch = get_online_nkm(tin, period_from, period_to, page=1, size=1)
         active = len(batch) > 0
@@ -453,7 +453,7 @@ def nkm_active(
         cache.set(cache_key, False, 60 * 60 * 26)
         return False
 
-    # ~1 kundan ko'proq keshlaymiz (kunlik warm task yangilaydi; expiry race bo'lmasin).
+    # ~1 kundan ko'proq keshlaymiz (har 15 daqiqalik warm task yangilaydi; expiry race bo'lmasin).
     cache.set(cache_key, active, 60 * 60 * 26)
     return active
 

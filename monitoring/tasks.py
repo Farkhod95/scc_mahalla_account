@@ -819,6 +819,32 @@ def sync_factura_revenue_task(self, period_from=None, period_to=None):
     }
 
 
+@shared_task(name="celery_task.sync_okkm_revenue_task")
+def sync_okkm_revenue_task(period_from=None, period_to=None):
+    """
+    OKKM (NKM cheklar) kunlik tushumini OkkmRevenueDaily ga yig'adi.
+
+    Davr berilmasa — KECHA + BUGUN ni oladi: beat tunda ishlaydi, "bugun" hali
+    deyarli bo'sh; ertaga shu kun "kecha" sifatida to'liq qayta yoziladi (upsert).
+    O'tgan kunlar uchun — backfill management command.
+    """
+    from datetime import date, timedelta
+    from monitoring.services.okkm_revenue_sync import sync_okkm_revenue
+    if not period_from and not period_to:
+        today = date.today()
+        period_from = (today - timedelta(days=1)).strftime("%d.%m.%Y")
+        period_to = today.strftime("%d.%m.%Y")
+    stats = sync_okkm_revenue(period_from=period_from, period_to=period_to)
+    return {
+        "ok": True,
+        "tenants": stats.tenants,
+        "skipped_inactive": stats.skipped_inactive,
+        "with_tin": stats.with_tin,
+        "days_written": stats.days_written,
+        "errors": stats.errors,
+    }
+
+
 @shared_task(name="celery_task.sync_tenant_soliq_task")
 def sync_tenant_soliq_task():
     """

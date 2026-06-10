@@ -6,7 +6,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from monitoring.models import Shop, ShopTenant, TenantEmployee, FacturaRevenueDaily
+from monitoring.models import (
+    Shop, ShopTenant, TenantEmployee, FacturaRevenueDaily, OkkmRevenueDaily,
+)
 
 WEEKDAY_LABELS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"]  # Mon..Sun
 MONTH_LABELS = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn",
@@ -52,23 +54,48 @@ class MalikaDashboardReportView(APIView):
         return with_pinfl + without_pinfl
 
     # =========================
-    # REVENUE CHART (from FacturaRevenueDaily, in raw so'm)
+    # REVENUE CHART (FacturaRevenueDaily + OkkmRevenueDaily, in raw so'm)
     # =========================
     def _chart_value(self, value):
         # Xom so'm (to'liq summa), float — front o'zi mln/mlrd qilib formatlaydi.
         return round(float(value or 0), 2)
 
     def _chart_sum_by_date(self, start, end):
-        rows = (
+        """
+        Kunlik (sales, tax, okkm_sales) — faktura va OKKM birga, xom so'm.
+          sales      = faktura savdo + OKKM turnover (grafik ustuni: jami savdo)
+          tax        = faktura QQS + OKKM QQS (chek vat) — jami soliq ustuni
+          okkm_sales = OKKM turnover (karta "OKKM"/"Elektron to'lov" ni ajratish uchun)
+        """
+        out: dict = {}
+        for r in (
             FacturaRevenueDaily.objects
             .filter(date__gte=start, date__lte=end)
             .values("date")
             .annotate(s=Sum("sales"), t=Sum("tax"))
-        )
-        return {r["date"]: (r["s"] or 0, r["t"] or 0) for r in rows}
+        ):
+            out[r["date"]] = [r["s"] or 0, r["t"] or 0, 0]
+
+        for r in (
+            OkkmRevenueDaily.objects
+            .filter(date__gte=start, date__lte=end)
+            .values("date")
+            .annotate(o=Sum("turnover"), v=Sum("vat"))
+        ):
+            okkm = r["o"] or 0
+            okkm_vat = r["v"] or 0
+            bucket = out.setdefault(r["date"], [0, 0, 0])
+            bucket[0] += okkm       # jami savdo ustuniga
+            bucket[1] += okkm_vat   # soliq (QQS) ustuniga
+            bucket[2] += okkm       # OKKM savdo ulushi (karta uchun)
+        return out
 
     def _revenue_charts(self, rng, today):
-        """(sales_chart, tax_chart) — rng: week|month|year."""
+        """
+        (sales_chart, tax_chart, okkm_total) — rng: week|month|year.
+        sales_chart har ustuni faktura+OKKM (kunlik tarixdan); okkm_total — shu
+        oynadagi OKKM ulushi (karta jami = grafik yig'indisi invariantini saqlash uchun).
+        """
         if rng == "month":
             keys, labels = [], []
             y, m = today.year, today.month
@@ -81,34 +108,35 @@ class MalikaDashboardReportView(APIView):
             keys.reverse(); labels.reverse()
             start = date(keys[0][0], keys[0][1], 1)
             by_date = self._chart_sum_by_date(start, today)
-            buckets = {k: [Decimal(0), Decimal(0)] for k in keys}
-            for d, (s, t) in by_date.items():
+            buckets = {k: [Decimal(0), Decimal(0), Decimal(0)] for k in keys}
+            for d, (s, t, o) in by_date.items():
                 k = (d.year, d.month)
                 if k in buckets:
-                    buckets[k][0] += Decimal(s); buckets[k][1] += Decimal(t)
+                    buckets[k][0] += Decimal(s); buckets[k][1] += Decimal(t); buckets[k][2] += Decimal(o)
             order = keys
             label_of = dict(zip(keys, labels))
         elif rng == "year":
             years = [today.year - i for i in range(6, -1, -1)]
             start = date(years[0], 1, 1)
             by_date = self._chart_sum_by_date(start, today)
-            buckets = {y: [Decimal(0), Decimal(0)] for y in years}
-            for d, (s, t) in by_date.items():
+            buckets = {y: [Decimal(0), Decimal(0), Decimal(0)] for y in years}
+            for d, (s, t, o) in by_date.items():
                 if d.year in buckets:
-                    buckets[d.year][0] += Decimal(s); buckets[d.year][1] += Decimal(t)
+                    buckets[d.year][0] += Decimal(s); buckets[d.year][1] += Decimal(t); buckets[d.year][2] += Decimal(o)
             order = years
             label_of = {y: str(y) for y in years}
         else:  # week
             monday = today - timedelta(days=today.weekday())
             days = [monday + timedelta(days=i) for i in range(7)]
             by_date = self._chart_sum_by_date(days[0], days[-1])
-            buckets = {d: list(by_date.get(d, (0, 0))) for d in days}
+            buckets = {d: list(by_date.get(d, (0, 0, 0))) for d in days}
             order = days
             label_of = {d: WEEKDAY_LABELS[i] for i, d in enumerate(days)}
 
         sales = [{"label": label_of[k], "value": self._chart_value(buckets[k][0])} for k in order]
         tax = [{"label": label_of[k], "value": self._chart_value(buckets[k][1])} for k in order]
-        return sales, tax
+        okkm_total = sum((self._d(buckets[k][2]) for k in order), Decimal(0))
+        return sales, tax, okkm_total
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
@@ -121,7 +149,7 @@ class MalikaDashboardReportView(APIView):
         if chart_range not in ["week", "month", "year"]:
             chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
 
-        sales_chart, tax_chart = self._revenue_charts(chart_range, date.today())
+        sales_chart, tax_chart, sales_okkm = self._revenue_charts(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
         # Nofaol (INACTIVE) ijarachilar dashboard hisob-kitobiga kirmaydi —
@@ -185,31 +213,16 @@ class MalikaDashboardReportView(APIView):
         # =========================
         # 4 & 5. SALES and TAX REVENUE
         # =========================
-        # Elektron to'lov (faktura) — grafik bilan bir manba (FacturaRevenueDaily), xom so'm.
-        sales_e_payment = self._d(sum(item["value"] for item in sales_chart))
+        # Savdo grafigi = faktura (FacturaRevenueDaily) + OKKM (OkkmRevenueDaily),
+        # ikkalasi ham kunlik tarixdan kun-bekun yig'iladi (_revenue_charts). Karta
+        # jami = grafik yig'indisi, OKKM/elektron to'lov ulushi ham shu oynadan —
+        # hammasi bir manba, bir davr (invariant: items yig'indisi = count).
+        sales_total = self._d(sum(item["value"] for item in sales_chart))
+        sales_okkm = self._d(sales_okkm)                    # grafik oynasidagi OKKM ulushi
+        sales_e_payment = sales_total - sales_okkm          # qolgani — elektron to'lov (faktura)
+
+        # Soliq grafigi = faktura QQS + OKKM QQS (chek vat), ikkalasi kunlik tarixdan.
         tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
-
-        # OKKM (NKM cheklar) tushumi — celery beat sync qilgan DB maydonlaridan,
-        # tanlangan davrga mos ustun (yearly->ytd, monthly->mtd, daily->dtd). Xom so'm.
-        okkm_prefix = {"yearly": "ytd", "monthly": "mtd", "daily": "dtd"}.get(period, "ytd")
-        okkm_agg = tenants_qs.aggregate(
-            v=Sum(f"{okkm_prefix}_okkm_vat"),
-            t=Sum(f"{okkm_prefix}_okkm_turnover"),
-        )
-        sales_okkm = self._d(okkm_agg["v"]) + self._d(okkm_agg["t"])
-
-        # Umumiy savdo tushumi = elektron to'lov + OKKM.
-        sales_total = sales_e_payment + sales_okkm
-
-        # OKKM ni savdo grafigining JORIY (bugungi) ustuniga qo'shamiz — shunda
-        # grafik yig'indisi karta "count" (jami) bilan teng bo'ladi. OKKM da kunlik
-        # tarix yo'q (faqat dtd/mtd/ytd yig'indi), shuning uchun bitta ustunga tushadi:
-        #   week  -> bugungi kun (Du..Ya ichida), month/year -> oxirgi (joriy) ustun.
-        if sales_chart:
-            okkm_idx = date.today().weekday() if chart_range == "week" else len(sales_chart) - 1
-            sales_chart[okkm_idx]["value"] = round(
-                sales_chart[okkm_idx]["value"] + float(sales_okkm), 2
-            )
 
         # Cheklar soni — oylik/kunlik davr uchun saqlangan (yillik maydon yo'q).
         checks_field = {"monthly": "monthly_checks_count", "daily": "daily_checks_count"}.get(period)
@@ -222,7 +235,8 @@ class MalikaDashboardReportView(APIView):
         else:
             cheque_count_total = None
 
-        # Factura vatSum = VAT. Turnover tax requires a separate source.
+        # QQS (12%) = faktura QQS + OKKM QQS (= tax_revenue_total). Aylanma soliq (1%)
+        # uchun alohida manba hali yo'q, shuning uchun 0.
         tax_from_vat = tax_revenue_total
         tax_from_turnover = Decimal("0")
 
