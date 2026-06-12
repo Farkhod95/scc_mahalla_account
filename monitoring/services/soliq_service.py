@@ -533,6 +533,104 @@ def live_cheque_counts(tin: Optional[str], cache_ttl: int = 300) -> Optional[Dic
     return out
 
 
+# --- NKM chek summary (yangi egovernment cheques/summary) ------------------
+
+def parse_terminal_ids(*values: Optional[str]) -> List[str]:
+    """
+    Bir yoki bir nechta vergulli maydondan terminal ro'yxati — unikal, tartib saqlab.
+    Masalan: parse_terminal_ids(cash_register_number_vat, cash_register_number_turnover)
+    -> ['A','B','C'] (takror va bo'sh bo'shliqlar olib tashlanadi).
+    """
+    out: List[str] = []
+    seen = set()
+    for value in values:
+        if not value:
+            continue
+        for t in str(value).split(","):
+            t = t.strip()
+            if t and t not in seen:
+                seen.add(t)
+                out.append(t)
+    return out
+
+
+def get_cheque_summary(
+    tin: str, terminal_id: str, date_from: str, date_to: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Yangi NKM chek summary endpoint (egovernment `cheques/summary`).
+    Sana formati: YYYY-MM-DD. terminal_id — kassa terminal raqami (majburiy).
+
+    Javob — massiv: [{"chequeCount": int, "turnover": num, "vat": num}] (yoki bo'sh []).
+    `success` envelope yo'q — to'g'ridan-to'g'ri massiv. Massivning 1-elementini
+    (bo'sh bo'lsa None) qaytaradi.
+    """
+    tin = (tin or "").strip()
+    terminal_id = (terminal_id or "").strip()
+    if not tin or not terminal_id:
+        return None
+
+    url = f"{BASE_URL}/cheques/summary"
+    resp = _get_session().get(
+        url,
+        params={"tin": tin, "dateFrom": date_from, "dateTo": date_to, "terminalId": terminal_id},
+        headers=_headers(),
+        timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    if isinstance(data, dict):  # ehtimoliy {success, data:[...]} envelope
+        data = data.get("data")
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data if isinstance(data, dict) else None
+
+
+def cheque_active(
+    tin: Optional[str],
+    terminals: List[str],
+    cache_only: bool = False,
+    force: bool = False,
+) -> Optional[bool]:
+    """
+    tin BUGUN terminallari bo'yicha kamida 1 ta chek urganmi (= kassa faol).
+    Yangi cheques/summary endpoint (har terminal: dateFrom=dateTo=bugun, YYYY-MM-DD).
+    Natija ~1 kun keshlanadi; warm task har 15 daqiqada force=True bilan yangilaydi.
+
+    cache_only=True: faqat keshdan (bool yoki None=pending, hech qachon soliqqa bormaydi).
+    force=True: keshni e'tiborsiz qoldirib jonli o'qiydi va qayta yozadi (warm task).
+    """
+    from django.core.cache import cache
+
+    tin = (tin or "").strip()
+    if not tin:
+        return False
+
+    cache_key = f"cheque_active_1d:{tin}"
+    if not force:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+        if cache_only:
+            return None
+
+    today = date.today().strftime("%Y-%m-%d")
+    active = False
+    try:
+        for terminal in terminals:
+            summary = get_cheque_summary(tin, terminal, today, today)
+            if summary and int(summary.get("chequeCount") or 0) > 0:
+                active = True
+                break
+    except (SoliqError, requests.RequestException, ValueError) as e:
+        logger.warning("cheque-active xato (tin=%s): %s", tin, e)
+        cache.set(cache_key, False, 60 * 60 * 26)
+        return False
+
+    cache.set(cache_key, active, 60 * 60 * 26)
+    return active
+
+
 # --- Ijara (rent / justice-api) --------------------------------------------
 
 def get_rent_information(pinfl=None, tin=None, cadastr=None):

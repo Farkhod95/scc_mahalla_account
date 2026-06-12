@@ -2,9 +2,9 @@
 Kassa (onlayn-NKM / chek) faolligiga qarab rang.
 
 Tenant (ijarachi) rangi:
-  - green  : joriy oyda chek urgan (nkm_active)
-  - yellow : kassa apparati ro'yxatda bor, lekin chek yo'q
-  - red     : kassa ham yo'q, chek ham yo'q
+  - green  : bugun chek urgan (cheques/summary, terminal bo'yicha) YOKI joriy yilda faktura bor
+  - yellow : kassa terminal (cash_register_number_vat/turnover) bor, lekin chek/faktura yo'q
+  - red     : terminal ham, chek ham, faktura ham yo'q
 
 Do'kon rangi (tenantlar bo'yicha):
   - hammasi green              -> green
@@ -37,29 +37,45 @@ def _tenant_tin(tenant, cache_only: bool = False, force: bool = False) -> Option
     return (fields.get("stir") or "").strip()
 
 
-def _has_registered_kassa(tenant) -> bool:
-    return bool(
-        (tenant.cash_register_number_vat or "").strip()
-        or (tenant.cash_register_number_turnover or "").strip()
-    )
+def _has_factura_this_year(tenant) -> bool:
+    """Joriy yilda faktura (e_payment) tushumi bormi — ShopTenant ytd maydonidan (tez)."""
+    return ((tenant.ytd_e_payment_vat or 0) > 0) or ((tenant.ytd_e_payment_turnover or 0) > 0)
 
 
 def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> str:
     """
-    Tenant rangi. cache_only=True bo'lsa hech qachon soliqqa bormaydi —
-    kerakli ma'lumot hali keshlanmagan bo'lsa PENDING qaytaradi.
-    force=True bo'lsa keshni e'tiborsiz qoldirib jonli o'qiydi (warm task).
+    Tenant rangi:
+      green  : BUGUN chek urgan (terminal bo'yicha) YOKI joriy yilda faktura bor
+      yellow : kassa terminal (cash_register_number_vat/turnover) bor, lekin chek/faktura yo'q
+      red     : terminal ham, chek ham, faktura ham yo'q
+
+    Chek — yangi cheques/summary API orqali (terminallar cash_register_number_vat
+    va _turnover dan, ',' bilan ajratilgan). cache_only=True bo'lsa hech qachon
+    soliqqa bormaydi (kesh bo'sh -> PENDING); force=True bo'lsa jonli o'qib qayta
+    yozadi (warm task).
     """
     tin = _tenant_tin(tenant, cache_only=cache_only, force=force)
-    if tin is None:  # soliq fields hali keshlanmagan
+    if tin is None:  # soliq rekvizit hali keshlanmagan
         return PENDING
-    if tin:
-        active = soliq_service.nkm_active(tin, cache_only=cache_only, force=force)
-        if active is None:  # nkm hali keshlanmagan
+
+    terminals = soliq_service.parse_terminal_ids(
+        tenant.cash_register_number_vat, tenant.cash_register_number_turnover
+    )
+
+    # 1) Chek (bugun, terminallar bo'yicha) — faqat terminal bor bo'lsa tekshiriladi.
+    if tin and terminals:
+        cheque = soliq_service.cheque_active(tin, terminals, cache_only=cache_only, force=force)
+        if cheque is None:  # kesh hali to'lmagan
             return PENDING
-        if active:
+        if cheque:
             return "green"
-    return "yellow" if _has_registered_kassa(tenant) else "red"
+
+    # 2) Faktura (joriy yil) — tez, ShopTenant maydonidan (soliqqa bormaydi).
+    if _has_factura_this_year(tenant):
+        return "green"
+
+    # 3) Chek ham, faktura ham yo'q: terminal bo'lsa sariq, bo'lmasa qizil.
+    return "yellow" if terminals else "red"
 
 
 def shop_cash_status(shop, cache_only: bool = False, force: bool = False) -> Dict[str, Any]:

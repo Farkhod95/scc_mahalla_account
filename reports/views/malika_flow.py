@@ -1,6 +1,5 @@
 ﻿# reports/views.py
 import random
-import re
 import requests
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -23,6 +22,10 @@ FACE_UPSTREAM_BASE_URL = "https://172.20.20.9"
 FACE_TOKEN = "8e713f659aad819ba5fa02353d8c913a"
 FACE_TIMEOUT = 10
 FACE_VERIFY_SSL = False  # self-signed bo'lsa False
+
+# Tashrif buyuruvchilar — faqat shu kirish (turniket) FACE kamera(lar)idan
+# hisoblanadi (do'kon ichidagi kameralar emas). Avtomobil kameralari kabi.
+FACE_VISITOR_CAMERA_IPS = ["10.6.253.71"]
 
 # Avtotransport — faqat shu kameralar hisoblanadi (qolgani hisobga olinmaydi).
 # 10.6.253.72 — kirish-chiqish (ikkala yo'nalish) kamerasi, shuning uchun ham
@@ -109,16 +112,11 @@ class MalikaFlowReportView(APIView):
         to_str = to_dt.strftime("%d.%m.%Y %H:%M:%S")
 
         # ------------------------
-        # B) FACE — barcha do'kon kameralari (ShopCamera) IP lari
+        # B) FACE — tashrif buyuruvchilar faqat kirish kamera(lar)idan
         # ------------------------
-        from monitoring.models import ShopCamera
-        face_ips = set()
-        for url in (ShopCamera.objects
-                    .exclude(url__isnull=True).exclude(url__exact="")
-                    .values_list("url", flat=True)):
-            m = re.search(r"@([0-9.]+)[:/]", url) or re.search(r"//([0-9.]+)[:/]", url)
-            if m:
-                face_ips.add(m.group(1))
+        # Ilgari barcha do'kon kameralari (ShopCamera) FACE yig'indisi olinardi —
+        # u 0 qaytarardi. Endi maxsus kirish (turniket) FACE kamerasidan olamiz.
+        face_ips = list(FACE_VISITOR_CAMERA_IPS)
 
         # ------------------------
         # C) CARS — CarFlow modelidan
@@ -170,8 +168,8 @@ class MalikaFlowReportView(APIView):
             face_headers["X-Forwarded-For"] = client_ip
             face_headers["X-Real-IP"] = client_ip
 
-        # Har bir do'kon kamerasi IP si uchun FACE chaqiramiz (parallel — sekin bo'lmasin).
-        # ShopCamera'da kirish/chiqish turi yo'q -> umumiy son.
+        # Har bir kirish kamerasi IP si uchun FACE chaqiramiz (parallel — sekin bo'lmasin).
+        # FACE detection-count kirish/chiqish turini ajratmaydi -> umumiy son (= kirish).
         def _fetch_face_count(ip):
             params = {
                 "region_soato": region_soato,
@@ -195,7 +193,7 @@ class MalikaFlowReportView(APIView):
             # 1 soatlik kesh (Redis) — har so'rovda barcha kameralarni chaqirmaslik uchun.
             # Kalit davr (region + from + to) bo'yicha.
             from django.core.cache import cache
-            face_cache_key = f"face_visitors:{region_soato}:{from_str}:{to_str}"
+            face_cache_key = f"face_visitors_entrance:{region_soato}:{from_str}:{to_str}"
             cached_people = cache.get(face_cache_key)
             if cached_people is not None:
                 people_in_total = cached_people
