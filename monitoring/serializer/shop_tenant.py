@@ -122,10 +122,13 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
         # tenant.tax_type ga qarab _vat yoki _turnover ustuni yangilanadi (sync bilan
         # bir xil qoida). Soliq xato/bo'sh bo'lsa bazadagi qiymat o'zgarmaydi.
         if self._live_cheque_enabled():
+            from monitoring.services import soliq_service
             tin = (instance.stir or "").strip()
-            if tin:
-                from monitoring.services import soliq_service
-                counts = soliq_service.live_cheque_counts(tin)
+            terminals = soliq_service.parse_terminal_ids(
+                instance.cash_register_number_vat, instance.cash_register_number_turnover
+            )
+            if tin and terminals:
+                counts = soliq_service.live_cheque_counts(tin, terminals)
                 if counts:
                     suffix = "vat" if instance.tax_type == ShopTenant.TaxType.VAT else "turnover"
                     if counts.get("monthly") is not None:

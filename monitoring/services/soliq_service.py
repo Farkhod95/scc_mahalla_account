@@ -491,21 +491,24 @@ def get_cheque_statistics(
     return resp.json()
 
 
-def live_cheque_counts(tin: Optional[str], cache_ttl: int = 300) -> Optional[Dict[str, Any]]:
+def live_cheque_counts(
+    tin: Optional[str], terminals: List[str], cache_ttl: int = 300
+) -> Optional[Dict[str, Any]]:
     """
     tin uchun JONLI cheklar soni: oylik (oy boshidan bugungacha) va kunlik (bugun).
-    get_cheque_statistics ni 2 marta chaqiradi (yengil GET). Qisqa kesh (default 5 daq.)
+    Yangi cheques/summary endpoint (har terminal bo'yicha, dateFrom/dateTo=YYYY-MM-DD);
+    terminallar cash_register_number_vat/turnover dan. Qisqa kesh (default 5 daq.)
     bir do'kon modalini qayta ochishda takror so'rovdan himoya qiladi.
 
     Shop-tenant modal/detal serializer i shu yerdan jonli o'qiydi (cheklar soni
     bazadagi celery-sync qiymatdan emas, real vaqtda integratsiyadan keladi).
-    Xato/tin yo'q bo'lsa None — chaqiruvchi bazadagi qiymatda qoladi.
-    Qaytaradi: {"monthly": int|None, "daily": int|None} yoki None.
+    tin/terminal yo'q yoki xato bo'lsa None — chaqiruvchi bazadagi qiymatda qoladi.
+    Qaytaradi: {"monthly": int, "daily": int} yoki None.
     """
     from django.core.cache import cache
 
     tin = (tin or "").strip()
-    if not tin:
+    if not tin or not terminals:
         return None
 
     cache_key = f"live_cheque_counts:{tin}"
@@ -514,21 +517,23 @@ def live_cheque_counts(tin: Optional[str], cache_ttl: int = 300) -> Optional[Dic
         return cached
 
     today = date.today()
-    today_str = today.strftime("%d.%m.%Y")
-    month_from = today.strftime("01.%m.%Y")
+    today_str = today.strftime("%Y-%m-%d")
+    month_from = today.strftime("%Y-%m-01")
+    monthly = 0
+    daily = 0
     try:
-        monthly = get_cheque_statistics(tin, month_from, today_str) or {}
-        daily = get_cheque_statistics(tin, today_str, today_str) or {}
+        for terminal in terminals:
+            m = get_cheque_summary(tin, terminal, month_from, today_str)
+            if m:
+                monthly += int(m.get("chequeCount") or 0)
+            d = get_cheque_summary(tin, terminal, today_str, today_str)
+            if d:
+                daily += int(d.get("chequeCount") or 0)
     except (SoliqError, requests.RequestException, ValueError) as e:
         logger.warning("live cheque counts xato (tin=%s): %s", tin, e)
         return None
 
-    mc = monthly.get("chequeCount")
-    dc = daily.get("chequeCount")
-    out = {
-        "monthly": int(mc) if mc is not None else None,
-        "daily": int(dc) if dc is not None else None,
-    }
+    out = {"monthly": monthly, "daily": daily}
     cache.set(cache_key, out, cache_ttl)
     return out
 
