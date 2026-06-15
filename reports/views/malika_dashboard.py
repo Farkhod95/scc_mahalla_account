@@ -168,6 +168,7 @@ class MalikaDashboardReportView(APIView):
 
         a_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_A).count()
         b_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_B).count()
+        g_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_G).count()
         j_count = shops_qs.filter(block_type=Shop.BlockType.BLOK_J).count()
         merkato_count = max(shops_qs.filter(block_type=Shop.BlockType.SAVDO_MARKAZ).count(), 78)
         sklad_count = max(shops_qs.filter(block_type=Shop.BlockType.SKLAD).count(), 74)
@@ -175,6 +176,7 @@ class MalikaDashboardReportView(APIView):
         shops_items = [
             {"key": "A",  "name": "A blok",  "count": a_count},
             {"key": "B",  "name": "B blok",  "count": b_count},
+            {"key": "G",  "name": "G blok",  "count": g_count},
             {"key": "J",  "name": "J blok",  "count": j_count},
             {"key": "SM", "name": "Merkato savdo markazi", "count": merkato_count},
             {"key": "SK", "name": "Ombor",   "count": sklad_count},
