@@ -82,6 +82,8 @@ def _upsert_tenant(shop, a, stats):
         "leader_jshshir": to_pinfl,
         "business_type": _business_type(a.get("toUserType")),
         "rented_area": _to_decimal(a.get("rentField")),
+        "rent_month_sum": _to_decimal(a.get("monthSum")),
+        "rent_total_sum": _to_decimal(a.get("allSum")),
         "activity_status": (
             ShopTenant.ActivityStatus.ACTIVE if a.get("state") == STATE_ACTIVE
             else ShopTenant.ActivityStatus.INACTIVE

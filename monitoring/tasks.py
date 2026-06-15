@@ -845,6 +845,26 @@ def sync_okkm_revenue_task(period_from=None, period_to=None):
     }
 
 
+@shared_task(name="celery_task.sync_tax_revenue_task")
+def sync_tax_revenue_task():
+    """
+    Soliq tushumi (company-account, payTax) ni kodlar bo'yicha TaxRevenue ga yig'adi
+    (har faol tin x 7 kod x 3 davr — og'ir, shu sababli FON da). Dashboard endpoint
+    (reports/tax-revenue) shu jadvaldan o'qiydi.
+    """
+    from monitoring.services.tax_revenue_sync import sync_tax_revenue
+    stats = sync_tax_revenue()
+    return {
+        "ok": True,
+        "tenants": stats.tenants,
+        "skipped_inactive": stats.skipped_inactive,
+        "with_tin": stats.with_tin,
+        "rows_written": stats.rows_written,
+        "cleared": stats.cleared,
+        "errors": stats.errors,
+    }
+
+
 @shared_task(name="celery_task.sync_tenant_soliq_task")
 def sync_tenant_soliq_task():
     """

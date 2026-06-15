@@ -168,6 +168,13 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_tenant_soliq_task',
         'schedule': crontab(minute=0, hour='*/6'),
     },
+    # Har kuni 06:00 da soliq tushumini (company-account, payTax) kodlar bo'yicha
+    # TaxRevenue ga yig'adi (har faol tin x 7 kod x 3 davr). reports/tax-revenue
+    # endpoint shu jadvaldan o'qiydi.
+    'sync-tax-revenue-daily': {
+        'task': 'celery_task.sync_tax_revenue_task',
+        'schedule': crontab(hour=6, minute=0),
+    },
 }
 
 ### Local Host uchun

@@ -21,7 +21,7 @@ class SoliqEnrichMixin:
 class ShopTenantSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
     class Meta:
         model = ShopTenant
-        fields = ('id', 'shop', 'rented_area', 'business_type', 'tax_type', 'trade_type', 'activity_status', 'name', 'leader_fio',
+        fields = ('id', 'shop', 'rented_area', 'rent_month_sum', 'rent_total_sum', 'business_type', 'tax_type', 'trade_type', 'activity_status', 'name', 'leader_fio',
                   'leader_jshshir', 'leader_phone', 'avatar', 'stir', 'certificate_number', 'employees_count',
                   'cash_register_number_vat', 'cash_register_number_turnover',
                   'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
@@ -82,7 +82,7 @@ class ShopTenantListSerializer(SoliqEnrichMixin, serializers.ModelSerializer):
         fields = ('id', 'shop', 'shop_id', 'shop_number', 'shop_block_type', 'shop_block_type_label', 'rented_area',
                   'business_type', 'business_type_label', 'tax_type', 'tax_type_label', 'trade_type', 'activity_status',
                   'activity_status_label', 'name', 'leader_fio', 'leader_jshshir', 'leader_phone', 'avatar', 'stir',
-                  'cash_status', 'certificate_number', 'employees_count',
+                  'cash_status', 'certificate_number', 'employees_count', 'rent_month_sum', 'rent_total_sum',
                   'cash_register_number_vat', 'cash_register_number_turnover',
                   'ytd_okkm_vat', 'ytd_okkm_turnover', 'ytd_e_payment_vat', 'ytd_e_payment_turnover',
                   'mtd_okkm_vat', 'mtd_okkm_turnover', 'mtd_e_payment_vat', 'mtd_e_payment_turnover',

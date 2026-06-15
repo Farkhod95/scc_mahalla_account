@@ -401,6 +401,8 @@ class ShopTenant(BaseModel):
         HIGH = "high", _("Yuqori")
 
     rented_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text=_("Ijaraga berilgan maydon (kv.m)"))
+    rent_month_sum = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Ijara oylik summasi"))
+    rent_total_sum = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, help_text=_("Ijara shartnoma bo'yicha jami summasi"))
     business_type = models.CharField(max_length=255, choices=BusinessType.choices, null=True, blank=True)
     tax_type = models.CharField(max_length=100, choices=TaxType.choices, null=True, blank=True, help_text=_("Soliq turi"))
     activity_status = models.CharField(max_length=100, choices=ActivityStatus.choices, null=True, blank=True, help_text=_("Tadbirkorlik subyekti holati (FAOL/NOFAOL)"))
@@ -621,3 +623,31 @@ class OkkmRevenueDaily(models.Model):
 
     def __str__(self):
         return f"{self.date} | {self.tin} | {self.turnover}"
+
+
+class TaxRevenue(models.Model):
+    """
+    Soliq tushumi (company-account, payTax) — har tin x har soliq kodi uchun
+    JORIY snapshot: kunlik (bugun) / oylik (oy boshidan) / yillik (yil boshidan).
+
+    Celery sync (sync_tax_revenue_task) har faol ijarachi tin i uchun belgilangan
+    soliq kodlari (1,32,36,38,46,100,186) bo'yicha 3 davrni so'rab upsert qiladi.
+    Dashboard endpoint kodlar bo'yicha barcha tin lar yig'indisini qaytaradi.
+    """
+    tin = models.CharField(max_length=20, db_index=True, help_text=_("STIR"))
+    tax_code = models.PositiveIntegerField(help_text=_("Soliq kodi (taxCode)"))
+    dtd_pay = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                  help_text=_("Bugun to'langan soliq (payTax)"))
+    mtd_pay = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                  help_text=_("Oy boshidan to'langan soliq (payTax)"))
+    ytd_pay = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                  help_text=_("Yil boshidan to'langan soliq (payTax)"))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("Tax Revenue")
+        verbose_name_plural = _("Tax Revenue")
+        unique_together = ("tin", "tax_code")
+
+    def __str__(self):
+        return f"{self.tin} | {self.tax_code} | {self.ytd_pay}"
