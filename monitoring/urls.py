@@ -30,7 +30,7 @@ from monitoring.views.object_category_dashboard import ObjectCategoryForDashboar
 from monitoring.views.office_camera import OfficeCameraView, OfficeCameraDetailView, OfficeCameraFieldInfoView
 from monitoring.views.patrol_car import PatrolCarView, PatrolCarDetailView, PatrolCarFieldInfoView
 from monitoring.views.shop import ShopView, ShopDetailView, ShopFieldInfoView
-from monitoring.views.shop_cash_status import ShopCashStatusView
+from monitoring.views.shop_cash_status import ShopCashStatusView, TenantCashStatusSummaryView
 from monitoring.views.shop_crime import ShopCrimeListCreateView, ShopCrimeDetailView
 from monitoring.views.shop_and_tenant_avatars import SyncShopOwnerAvatarAPIView, SyncShopOwnerAvatarStatusAPIView, \
     SyncShopTenantLeaderAvatarAPIView, SyncShopTenantLeaderAvatarStatusAPIView
@@ -96,6 +96,7 @@ urlpatterns = [
 
 
     re_path(r'^shop/$', ShopView.as_view(), name='shop_view'),
+    path('shop/cash-status/summary/', TenantCashStatusSummaryView.as_view(), name='tenant_cash_status_summary'),
     path('shop/cash-status/', ShopCashStatusView.as_view(), name='shop_cash_status'),
     path('shop/<int:pk>', ShopDetailView.as_view(), name='shop_detail_view'),
     path('shop/fields/', ShopFieldInfoView.as_view(), name='shop_fields_info'),

@@ -18,8 +18,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from monitoring.models import Shop
-from monitoring.services.shop_status import shop_cash_status
+from monitoring.models import Shop, ShopTenant
+from monitoring.services.shop_status import shop_cash_status, tenant_cash_color
 
 
 def _row(shop, cache_only=True):
@@ -50,3 +50,37 @@ class ShopCashStatusView(APIView):
             qs = qs.filter(block_type=block_type)
 
         return Response([_row(shop, cache_only=cache_only) for shop in qs])
+
+
+class TenantCashStatusSummaryView(APIView):
+    """
+    IJARACHILAR (do'kon emas) bo'yicha kassa rangi sanog'i: green/yellow/red.
+    /market dagi soliq bo'limi uchun. Nofaol ijarachilar hisobga olinmaydi.
+
+    GET /shop/cash-status/summary/
+    GET /shop/cash-status/summary/?block_type=A
+    GET /shop/cash-status/summary/?live=1   -> keshni chetlab jonli (sekin!)
+
+    Javob: {"green": N, "yellow": N, "red": N, "pending": N, "total": N}
+    (pending — kesh hali warm task tomonidan to'ldirilmagan ijarachilar.)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        block_type = request.query_params.get("block_type")
+        cache_only = request.query_params.get("live") not in ("1", "true", "True")
+
+        qs = ShopTenant.objects.exclude(
+            activity_status=ShopTenant.ActivityStatus.INACTIVE
+        ).select_related("shop")
+        if block_type:
+            qs = qs.filter(shop__block_type=block_type)
+
+        counts = {"green": 0, "yellow": 0, "red": 0, "pending": 0}
+        total = 0
+        for tenant in qs.iterator():
+            total += 1
+            color = tenant_cash_color(tenant, cache_only=cache_only)
+            counts[color] = counts.get(color, 0) + 1
+
+        return Response({**counts, "total": total})
