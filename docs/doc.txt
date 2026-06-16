@@ -1,0 +1,107 @@
+# Damafon Mikroservis API
+
+Damafon backend — bir nechta Dahua VTO (intercom) qurilmasini boshqaradigan
+mikroservis. Frontend boshqa joyda turishi mumkin — bu yerda faqat REST API +
+WebSocket beriladi.
+
+- Asosiy host: `https://<server-ip>:8000` (masalan `https://192.168.168.170:8000`)
+- **HTTPS shart**: mikrofon (`getUserMedia`) faqat HTTPS yoki `localhost`'da
+  ishlaydi. Self-signed sertifikat — brauzer bir marta ogohlantiradi
+  (`Advanced > Proceed`).
+- WebSocket: `wss://` (sahifa HTTPS bo'lgani uchun).
+- CORS ochiq (`CORS_ORIGINS` orqali cheklash mumkin) — frontend boshqa origin'da.
+- Damafon qurilmalari **PostgreSQL** bazada saqlanadi (`damafon_db`).
+- Har bir damafon uchun alohida event listener — tugma bosilganda qaysi damafon
+  ekanini WebSocket orqali xabar qiladi.
+
+---
+
+## 1. Damafon CRUD
+
+### `GET /api/damafons`
+
+Barcha damafonlar ro'yxati (parol qaytarilmaydi).
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Asosiy damafon",
+    "host": "192.168.168.225",
+    "username": "admin",
+    "rtsp_port": 554,
+    "channel": 1,
+    "subtype": 1,
+    "location_id": null,
+    "enabled": true,
+    "created_at": "...",
+    "updated_at": "..."
+  }
+]
+```
+
+### `POST /api/damafons`
+
+Yangi damafon qo'shadi. Majburiy: `name`, `host`, `password`.
+
+```bash
+curl -k -X POST https://192.168.168.170:8000/api/damafons \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Eshik 2","host":"192.168.168.226","username":"admin","password":"Abc112233","channel":1}'
+```
+
+Ixtiyoriy: `username` (default `admin`), `rtsp_port` (554), `channel` (1),
+`subtype` (1), `location_id`, `enabled` (true).
+
+### `GET /api/damafons/{id}` — bitta damafon.
+
+### `PUT /api/damafons/{id}` — yangilash (faqat berilgan maydonlar).
+
+### `DELETE /api/damafons/{id}` — o'chirish.
+
+CRUD operatsiyadan keyin listener'lar va go2rtc stream'lari avtomatik
+qayta sinxronlanadi.
+
+---
+
+## 2. Media
+
+### `GET /api/damafons/{id}/snapshot`
+
+Tanlangan damafondan oxirgi rasm (JPEG).
+
+### `POST /api/webrtc?damafon_id={id}`
+
+WebRTC video uchun go2rtc proxy. Body — brauzer SDP offer (`text/plain`),
+javob — SDP answer.
+
+### `POST /api/doorbell`
+
+Zaxira webhook (masalan Asterisk dialplan'dan). Body ixtiyoriy
+`{ "damafon_id": 1, "call_id": "..." }`. Barcha WS clientlarga `incoming_call`
+yuboradi.
+
+---
+
+## 3. WebSocket
+
+### `wss://<host>:8000/ws`
+
+Hodisalar oqimi. Tugma bosilganda:
+
+```json
+{
+  "type": "incoming_call",
+  "damafon_id": 1,
+  "damafon_name": "Asosiy damafon",
+  "host": "192.168.168.225",
+  "call_id": "...",
+  "stream": "damafon_1",
+  "ts": "..."
+}
+```
+
+### `wss://<host>:8000/ws/talkback?damafon_id={id}`
+
+Mikrofon → damafon (RTSP backchannel). Binary frame: 160 bayt G.711 ulaw
+(20ms @ 8kHz). Server `{"type":"ready"}` yuborgach paketlar boshlanadi.

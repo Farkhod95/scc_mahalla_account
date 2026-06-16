@@ -177,6 +177,12 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# Damafon (Dahua VTO intercom) mikroservis — bizning backend faqat PROXY qiladi
+# (REST + WebSocket). Ma'lumot mikroservis DB sida; mahalla bog'lanishi location_id.
+DAMAFON_BASE_URL = "https://192.168.168.170:8000"
+DAMAFON_VERIFY_SSL = False  # self-signed sertifikat
+DAMAFON_TIMEOUT = 15
+
 ### Local Host uchun
 
 # CHANNEL_LAYERS = {

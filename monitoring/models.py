@@ -651,3 +651,31 @@ class TaxRevenue(models.Model):
 
     def __str__(self):
         return f"{self.tin} | {self.tax_code} | {self.ytd_pay}"
+
+
+class DamafonCall(models.Model):
+    """
+    Damafon (intercom) qo'ng'iroqlari TARIXI — mikroservis `incoming_call` hodisasi.
+
+    Damafon listener (management command) mikroservis WS ni tinglaydi, har bir
+    incoming_call ni shu yerga yozadi va frontend WS group ("damafon") ga uzatadi.
+    Qurilmalar mikroservis DB sida (biz proxy qilamiz); bu yerda faqat qo'ng'iroq
+    tarixi. location_id = damafon `location_id` (= directory.Mahalla.id).
+    """
+    remote_damafon_id = models.PositiveIntegerField(null=True, blank=True,
+                                                    help_text=_("Mikroservis damafon id"))
+    damafon_name = models.CharField(max_length=255, blank=True, default="")
+    host = models.CharField(max_length=100, blank=True, default="")
+    call_id = models.CharField(max_length=255, blank=True, default="")
+    stream = models.CharField(max_length=100, blank=True, default="")
+    location_id = models.PositiveIntegerField(null=True, blank=True, db_index=True,
+                                              help_text=_("Mahalla id (damafon location_id)"))
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = _("Damafon Call")
+        verbose_name_plural = _("Damafon Calls")
+        ordering = ("-received_at",)
+
+    def __str__(self):
+        return f"{self.received_at} | {self.damafon_name} | {self.call_id}"

@@ -2,6 +2,10 @@ from django.urls import re_path, path
 
 from monitoring.views.all_count_by_mahalla import AllCountByMahallaView
 from monitoring.views.car_flow import CarFlowView
+from monitoring.views.damafon import (
+    DamafonListCreateView, DamafonDetailView, DamafonSnapshotView,
+    DamafonWebrtcView, DamafonDoorbellView, DamafonCallListView,
+)
 from monitoring.views.bazar_camera import BazarCameraView, BazarCameraDetailView, BazarCameraFieldInfoView
 from monitoring.views.camera_information import CameraInformationView, CameraInformationDetailView, \
     CameraInformationFieldInfoView, CameraInformationForMapView
@@ -140,4 +144,13 @@ urlpatterns = [
 
     re_path(r'^shop-crime/$', ShopCrimeListCreateView.as_view(), name='shop_crime_list_create'),
     path('shop-crime/<int:pk>', ShopCrimeDetailView.as_view(), name='shop_crime_detail'),
+
+    # Damafon (intercom): qurilmalar — mikroservis proxy; qo'ng'iroq tarixi — bizning DB.
+    # WS: routing.py (ws/damafon/ jonli call, ws/damafon/talkback/ mikrofon).
+    path('damafon/calls/', DamafonCallListView.as_view(), name='damafon_calls'),
+    path('damafon/webrtc', DamafonWebrtcView.as_view(), name='damafon_webrtc'),
+    path('damafon/doorbell', DamafonDoorbellView.as_view(), name='damafon_doorbell'),
+    re_path(r'^damafon/$', DamafonListCreateView.as_view(), name='damafon_list_create'),
+    path('damafon/<int:pk>', DamafonDetailView.as_view(), name='damafon_detail'),
+    path('damafon/<int:pk>/snapshot', DamafonSnapshotView.as_view(), name='damafon_snapshot'),
 ]
