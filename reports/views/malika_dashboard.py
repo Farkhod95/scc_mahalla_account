@@ -330,7 +330,7 @@ class MalikaDashboardReportView(APIView):
                     "title": "Savdo kompleks umumiy maydoni",
                     "total_kv": 48421,
                     "items": [
-                        {"key": "A",  "name": "A blok",  "kv": 14012},
+                        {"key": "A",  "name": "A blok",  "kv": 23741},
                         {"key": "B",  "name": "B blok",  "kv": 5533},
                         {"key": "J",  "name": "J blok",  "kv": 675},
                         {"key": "SM", "name": "Merkato savdo markazi", "kv": 1107},
