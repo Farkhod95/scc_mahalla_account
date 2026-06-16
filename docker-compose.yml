@@ -63,6 +63,17 @@ services:
       - db
       - redis
 
+  damafon-listener:
+    build: .
+    container_name: mahalla_account_damafon_listener
+    restart: always
+    command: python manage.py damafon_listener
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+
   go2rtc:
     image: alexxit/go2rtc
     container_name: mahalla_go2rtc
