@@ -37,22 +37,17 @@ def _tenant_tin(tenant, cache_only: bool = False, force: bool = False) -> Option
     return (fields.get("stir") or "").strip()
 
 
-def _has_factura_today(tenant) -> bool:
-    """Bugun faktura (e_payment) tushumi bormi — ShopTenant dtd (kun boshidan) maydonidan (tez)."""
-    return ((tenant.dtd_e_payment_vat or 0) > 0) or ((tenant.dtd_e_payment_turnover or 0) > 0)
-
-
 def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> str:
     """
     Tenant rangi:
-      green  : BUGUN chek urgan (terminal bo'yicha) YOKI BUGUN faktura bor
+      green  : BUGUN chek urgan (terminal bo'yicha) YOKI BUGUN faktura chiqargan
       yellow : kassa terminal (cash_register_number_vat/turnover) bor, lekin chek/faktura yo'q
       red     : terminal ham, chek ham, faktura ham yo'q
 
-    Chek — yangi cheques/summary API orqali (terminallar cash_register_number_vat
-    va _turnover dan, ',' bilan ajratilgan). cache_only=True bo'lsa hech qachon
-    soliqqa bormaydi (kesh bo'sh -> PENDING); force=True bo'lsa jonli o'qib qayta
-    yozadi (warm task).
+    Chek — cheques/summary API (terminallar cash_register_number_vat/turnover dan).
+    Faktura — get-factura-data API, BUGUN bo'yicha (sync_tenant_soliq ga bog'liq emas).
+    Ikkalasi ham keshlanadi; warm task force=True bilan jonli yangilaydi. cache_only=True
+    bo'lsa hech qachon soliqqa bormaydi (kesh bo'sh -> PENDING).
     """
     tin = _tenant_tin(tenant, cache_only=cache_only, force=force)
     if tin is None:  # soliq rekvizit hali keshlanmagan
@@ -70,9 +65,13 @@ def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> 
         if cheque:
             return "green"
 
-    # 2) Faktura (bugun) — tez, ShopTenant dtd maydonidan (soliqqa bormaydi).
-    if _has_factura_today(tenant):
-        return "green"
+    # 2) Faktura (bugun) — jonli faktura API (chek bo'lmasa/yo'q bo'lsa).
+    if tin:
+        factura = soliq_service.factura_active(tin, cache_only=cache_only, force=force)
+        if factura is None:  # kesh hali to'lmagan
+            return PENDING
+        if factura:
+            return "green"
 
     # 3) Chek ham, faktura ham yo'q: terminal bo'lsa sariq, bo'lmasa qizil.
     return "yellow" if terminals else "red"

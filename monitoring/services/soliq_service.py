@@ -379,6 +379,45 @@ def aggregate_factura_by_day(
     return daily
 
 
+def factura_active(
+    tin: Optional[str], cache_only: bool = False, force: bool = False
+) -> Optional[bool]:
+    """
+    tin BUGUN kamida 1 ta faktura chiqarganmi (= faktura faol).
+    get_factura_data ni yengil chaqiradi (bugun..bugun, page=0, size=1) — bitta
+    yozuv yetadi. Natija ~1 kun keshlanadi; warm task har 15 daqiqada force=True
+    bilan yangilaydi. sync_tenant_soliq / dtd_e_payment maydoniga BOG'LIQ EMAS.
+
+    cache_only=True: faqat keshdan (bool yoki None=pending, soliqqa bormaydi).
+    force=True: keshni e'tiborsiz qoldirib jonli o'qiydi va qayta yozadi (warm task).
+    """
+    from django.core.cache import cache
+
+    tin = (tin or "").strip()
+    if not tin:
+        return False
+
+    cache_key = f"factura_active_1d:{tin}"
+    if not force:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+        if cache_only:
+            return None
+
+    today = date.today().strftime("%d.%m.%Y")
+    try:
+        batch = get_factura_data(tin, today, today, page=0, size=1)
+        active = len(batch) > 0
+    except (SoliqError, requests.RequestException) as e:
+        logger.warning("factura-active xato (tin=%s): %s", tin, e)
+        cache.set(cache_key, False, 60 * 60 * 26)
+        return False
+
+    cache.set(cache_key, active, 60 * 60 * 26)
+    return active
+
+
 # --- Online NKM (onlayn nazorat-kassa / cheklar) ---------------------------
 
 def get_online_nkm(
