@@ -2,7 +2,7 @@
 Kassa (onlayn-NKM / chek) faolligiga qarab rang.
 
 Tenant (ijarachi) rangi:
-  - green  : bugun chek urgan (cheques/summary, terminal bo'yicha) YOKI joriy yilda faktura bor
+  - green  : bugun chek urgan (cheques/summary, terminal bo'yicha) YOKI bugun faktura bor
   - yellow : kassa terminal (cash_register_number_vat/turnover) bor, lekin chek/faktura yo'q
   - red     : terminal ham, chek ham, faktura ham yo'q
 
@@ -37,15 +37,15 @@ def _tenant_tin(tenant, cache_only: bool = False, force: bool = False) -> Option
     return (fields.get("stir") or "").strip()
 
 
-def _has_factura_this_year(tenant) -> bool:
-    """Joriy yilda faktura (e_payment) tushumi bormi — ShopTenant ytd maydonidan (tez)."""
-    return ((tenant.ytd_e_payment_vat or 0) > 0) or ((tenant.ytd_e_payment_turnover or 0) > 0)
+def _has_factura_today(tenant) -> bool:
+    """Bugun faktura (e_payment) tushumi bormi — ShopTenant dtd (kun boshidan) maydonidan (tez)."""
+    return ((tenant.dtd_e_payment_vat or 0) > 0) or ((tenant.dtd_e_payment_turnover or 0) > 0)
 
 
 def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> str:
     """
     Tenant rangi:
-      green  : BUGUN chek urgan (terminal bo'yicha) YOKI joriy yilda faktura bor
+      green  : BUGUN chek urgan (terminal bo'yicha) YOKI BUGUN faktura bor
       yellow : kassa terminal (cash_register_number_vat/turnover) bor, lekin chek/faktura yo'q
       red     : terminal ham, chek ham, faktura ham yo'q
 
@@ -70,8 +70,8 @@ def tenant_cash_color(tenant, cache_only: bool = False, force: bool = False) -> 
         if cheque:
             return "green"
 
-    # 2) Faktura (joriy yil) — tez, ShopTenant maydonidan (soliqqa bormaydi).
-    if _has_factura_this_year(tenant):
+    # 2) Faktura (bugun) — tez, ShopTenant dtd maydonidan (soliqqa bormaydi).
+    if _has_factura_today(tenant):
         return "green"
 
     # 3) Chek ham, faktura ham yo'q: terminal bo'lsa sariq, bo'lmasa qizil.
