@@ -236,7 +236,7 @@ def get_factura_data(
     Sana formati: dd.mm.yyyy. Qaytaradi: list.
     """
     body: Dict[str, Any] = {
-        "sellerTin": int(seller_tin),
+        "pin": int(seller_tin),
         "page": page,
         "size": size,
         "periodFrom": period_from,

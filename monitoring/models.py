@@ -657,10 +657,12 @@ class DamafonCall(models.Model):
     """
     Damafon (intercom) qo'ng'iroqlari TARIXI — mikroservis `incoming_call` hodisasi.
 
-    Damafon listener (management command) mikroservis WS ni tinglaydi, har bir
-    incoming_call ni shu yerga yozadi va frontend WS group ("damafon") ga uzatadi.
-    Qurilmalar mikroservis DB sida (biz proxy qilamiz); bu yerda faqat qo'ng'iroq
-    tarixi. location_id = damafon `location_id` (= directory.Mahalla.id).
+    Damafon listener (management command) mikroservis WS ni tinglaydi va har bir
+    incoming_call ni shu yerga yozadi (tarix). Frontendning JONLI oqimi esa
+    DamafonEventConsumer (/ws/damafon/) orqali mikroservis /ws iga shaffof ko'prik
+    bilan boradi — bu jadval faqat qo'ng'iroq tarixini saqlaydi.
+    Qurilmalar mikroservis DB sida (biz proxy qilamiz). location_id = damafon
+    `location_id` (= directory.Mahalla.id).
     """
     remote_damafon_id = models.PositiveIntegerField(null=True, blank=True,
                                                     help_text=_("Mikroservis damafon id"))

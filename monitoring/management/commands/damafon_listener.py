@@ -1,10 +1,13 @@
 """
-Damafon mikroservis WS (/ws) ni tinglaydi va `incoming_call` ni:
-  1) DamafonCall (bizning DB) ga yozadi — TARIX;
-  2) frontend WS group ("damafon") ga broadcast qiladi — JONLI.
+Damafon mikroservis WS (/ws) ni tinglaydi va har `incoming_call` ni
+DamafonCall (bizning DB) ga yozadi — qo'ng'iroqlar TARIXI.
 
-Markaziy, doimiy ishlaydigan jarayon (supervisor/systemd bilan). Har client emas,
-faqat shu bitta listener mikroservisga ulanadi. Uzilsa 5s dan keyin qayta ulanadi.
+JONLI oqim (frontend) endi shu listener orqali EMAS: har client
+DamafonEventConsumer (/ws/damafon/) orqali mikroservis /ws iga to'g'ridan-to'g'ri
+shaffof ko'prik bilan ulanadi. Bu listener faqat tarix uchun.
+
+Markaziy, doimiy ishlaydigan jarayon (supervisor/systemd bilan). Uzilsa 5s dan
+keyin qayta ulanadi.
 
     python manage.py damafon_listener
 """
@@ -15,7 +18,6 @@ import ssl
 
 import websockets
 from channels.db import database_sync_to_async
-from channels.layers import get_channel_layer
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -34,8 +36,7 @@ _NO_VERIFY.verify_mode = ssl.CERT_NONE
 @database_sync_to_async
 def _store_call(msg, location_id):
     from monitoring.models import DamafonCall
-    from monitoring.serializer.damafon import DamafonCallSerializer
-    obj = DamafonCall.objects.create(
+    DamafonCall.objects.create(
         remote_damafon_id=msg.get("damafon_id"),
         damafon_name=msg.get("damafon_name") or "",
         host=msg.get("host") or "",
@@ -43,7 +44,6 @@ def _store_call(msg, location_id):
         stream=msg.get("stream") or "",
         location_id=location_id,
     )
-    return dict(DamafonCallSerializer(obj).data)
 
 
 async def _resolve_location_id(damafon_id):
@@ -58,7 +58,7 @@ async def _resolve_location_id(damafon_id):
 
 
 class Command(BaseCommand):
-    help = "Damafon mikroservis WS ni tinglaydi: incoming_call -> DB + frontend broadcast."
+    help = "Damafon mikroservis WS ni tinglaydi: incoming_call -> DamafonCall (tarix)."
 
     def handle(self, *args, **opts):
         try:
@@ -67,7 +67,6 @@ class Command(BaseCommand):
             self.stdout.write("Damafon listener to'xtatildi.")
 
     async def _run(self):
-        layer = get_channel_layer()
         ssl_arg = _NO_VERIFY if _WS_URL.startswith("wss://") else None
         while True:
             try:
@@ -75,12 +74,12 @@ class Command(BaseCommand):
                 async with websockets.connect(_WS_URL, ssl=ssl_arg, max_size=None) as ws:
                     self.stdout.write("Ulandi. incoming_call kutilmoqda...")
                     async for raw in ws:
-                        await self._on_message(raw, layer)
+                        await self._on_message(raw)
             except Exception as e:
                 logger.warning("damafon listener uzildi: %s", e)
                 await asyncio.sleep(5)  # qayta ulanish
 
-    async def _on_message(self, raw, layer):
+    async def _on_message(self, raw):
         try:
             msg = json.loads(raw)
         except (ValueError, TypeError):
@@ -88,5 +87,4 @@ class Command(BaseCommand):
         if not isinstance(msg, dict) or msg.get("type") != "incoming_call":
             return
         location_id = await _resolve_location_id(msg.get("damafon_id"))
-        data = await _store_call(msg, location_id)
-        await layer.group_send("damafon", {"type": "damafon.call", "data": data})
+        await _store_call(msg, location_id)

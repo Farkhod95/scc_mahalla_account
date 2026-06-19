@@ -1,22 +1,23 @@
 """
 Damafon mikroservis WebSocket PROXY consumer'lari (Channels/ASGI).
 
-Bizning backend client (frontend) bilan damafon mikroservis WS i o'rtasida
-ko'prik bo'ladi — xabarlarni ikki tomonga uzatadi:
+Har ikkala WS ham SHAFFOF ko'prik — client (frontend) bilan damafon mikroservis
+WS i o'rtasida xabarlarni o'zgarmasdan, ikki tomonga uzatadi:
   - /ws/damafon/           -> mikroservis /ws            (incoming_call hodisalari)
   - /ws/damafon/talkback/  -> mikroservis /ws/talkback   (mikrofon -> damafon, binary)
+
+Har client mikroservisga to'g'ridan-to'g'ri ulanadi, shu sababli mikroservis
+yuborgan hodisa original shaklida (o'zgarmasdan) yetadi. Qo'ng'iroqlar TARIXI
+esa alohida `damafon_listener` management command orqali DamafonCall ga yoziladi.
 
 Mikroservis self-signed (wss) va auth ochiq.
 """
 import asyncio
-import json
 import ssl
 
 import websockets
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
-
-DAMAFON_GROUP = "damafon"  # listener shu group ga incoming_call ni broadcast qiladi
 
 _BASE = getattr(settings, "DAMAFON_BASE_URL", "https://192.168.168.170:8000").rstrip("/")
 # https -> wss, http -> ws
@@ -82,25 +83,18 @@ class _BaseDamafonProxy(AsyncWebsocketConsumer):
                 pass
 
 
-class DamafonEventConsumer(AsyncWebsocketConsumer):
+class DamafonEventConsumer(_BaseDamafonProxy):
     """
-    /ws/damafon/ — frontend jonli `incoming_call` ni shu yerdan oladi.
+    /ws/damafon/ -> mikroservis /ws (shaffof ko'prik).
 
-    Proxy EMAS: bitta markaziy listener (management command) mikroservis WS ni
-    tinglaydi, DamafonCall ga yozadi va "damafon" group ga broadcast qiladi.
-    Bu consumer faqat shu group ga obuna bo'ladi (har client mikroservisga
-    alohida ulanmaydi). Frontend ko'rinishi: {"type": "incoming_call", "data": {...}}.
+    Har client mikroservis /ws iga to'g'ridan-to'g'ri ulanadi; hodisalar
+    (incoming_call ...) mikroservis yuborgan shaklida — FLAT va o'zgarmasdan —
+    yetadi (masalan {"type":"incoming_call","damafon_id":..,"call_id":..}).
+    Qo'ng'iroqlar TARIXI alohida `damafon_listener` orqali DamafonCall ga yoziladi.
     """
 
-    async def connect(self):
-        await self.channel_layer.group_add(DAMAFON_GROUP, self.channel_name)
-        await self.accept()
-
-    async def disconnect(self, code):
-        await self.channel_layer.group_discard(DAMAFON_GROUP, self.channel_name)
-
-    async def damafon_call(self, event):
-        await self.send(text_data=json.dumps({"type": "incoming_call", "data": event["data"]}))
+    def upstream_path(self) -> str:
+        return "/ws"
 
 
 class DamafonTalkbackConsumer(_BaseDamafonProxy):
