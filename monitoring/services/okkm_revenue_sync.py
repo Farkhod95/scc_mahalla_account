@@ -27,6 +27,7 @@ from django.db import transaction
 
 from monitoring.models import ShopTenant, OkkmRevenueDaily
 from monitoring.services import soliq_service
+from monitoring.services.revenue_sync import _resolve_tin
 
 logger = logging.getLogger(__name__)
 
@@ -62,24 +63,6 @@ def _daterange(start: date, end: date):
     while d <= end:
         yield d
         d += timedelta(days=1)
-
-
-def _resolve_tin(tenant: ShopTenant) -> Optional[str]:
-    """tenant.stir bo'lsa o'sha, aks holda pinfl orqali self-employment'dan tin."""
-    tin = (tenant.stir or "").strip()
-    if tin:
-        return tin
-    pinfl = (tenant.leader_jshshir or "").strip()
-    if not pinfl:
-        return None
-    try:
-        se = soliq_service.get_self_employment(pinfl)
-    except (soliq_service.SoliqError, requests.RequestException) as e:
-        logger.warning("okkm tin resolve xato (tenant=%s): %s", tenant.pk, e)
-        return None
-    if se and se.get("tin"):
-        return str(se["tin"]).strip()
-    return None
 
 
 def sync_okkm_revenue(

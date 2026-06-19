@@ -30,11 +30,8 @@ class RevenueSyncStats:
     errors: int = 0
 
 
-def _resolve_tin(tenant: ShopTenant) -> Optional[str]:
-    """tenant.stir bo'lsa o'sha, aks holda pinfl orqali self-employment'dan tin."""
-    tin = (tenant.stir or "").strip()
-    if tin:
-        return tin
+def _tin_from_pinfl(tenant: ShopTenant) -> Optional[str]:
+    """pinfl (leader_jshshir) orqali self-employment'dan tin. Xato/yo'q bo'lsa None."""
     pinfl = (tenant.leader_jshshir or "").strip()
     if not pinfl:
         return None
@@ -46,6 +43,24 @@ def _resolve_tin(tenant: ShopTenant) -> Optional[str]:
     if se and se.get("tin"):
         return str(se["tin"]).strip()
     return None
+
+
+def _resolve_tin(tenant: ShopTenant) -> Optional[str]:
+    """
+    Revenue (faktura/OKKM) qaysi tin bo'yicha olinishi — tashkilot turiga qarab:
+      - YTT  -> pinfl (leader_jshshir) orqali self-employment tin (stir e'tiborga olinmaydi;
+                resolve bo'lmasa fallback sifatida stir).
+      - MCHJ (yuridik) / boshqa -> stir; stir bo'lmasa pinfl orqali tin.
+    """
+    stir = (tenant.stir or "").strip()
+
+    if tenant.business_type == ShopTenant.BusinessType.YTT:
+        return _tin_from_pinfl(tenant) or (stir or None)
+
+    # MCHJ (LEGAL) / OTHER: avval stir, bo'lmasa pinfl.
+    if stir:
+        return stir
+    return _tin_from_pinfl(tenant)
 
 
 def sync_factura_revenue(period_from: Optional[str] = None, period_to: Optional[str] = None) -> RevenueSyncStats:

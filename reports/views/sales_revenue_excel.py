@@ -1,9 +1,15 @@
 """
 Savdo tushumlari (faktura + OKKM) — tashkilotlar bo'yicha OYLIK Excel hisobot.
 
-Har bir tashkilot (ShopTenant, STIR bo'yicha) qator, har oy (Yan..Dek) ustun.
-Qiymat = FacturaRevenueDaily.sales + OkkmRevenueDaily.turnover (xom so'm), shu
-oyda yig'ilgan. Bu dashboarddagi "Savdo tushumlari" bilan bir xil manba.
+Har bir tashkilot (ShopTenant) qator, har oy (Yan..Dek) ustun. Qiymat =
+FacturaRevenueDaily.sales + OkkmRevenueDaily.turnover (xom so'm), shu oyda
+yig'ilgan. Bu dashboarddagi "Savdo tushumlari" bilan bir xil manba.
+
+Identifikator ustuni tashkilot turiga qarab:
+  - YTT  -> PINFL (rahbar JSHSHIR)
+  - MCHJ -> STIR
+Bu sync (revenue_sync._resolve_tin) bilan bir mantiq: YTT pinfl bo'yicha,
+MCHJ stir bo'yicha olinadi.
 
 GET /api/v1/reports/sales-revenue/excel?year=2026
   ?year= berilmasa — joriy yil.
@@ -27,6 +33,12 @@ MONTHS_UZ = [
     "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
     "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
 ]
+
+TYPE_LABEL = {
+    ShopTenant.BusinessType.YTT: "YTT",
+    ShopTenant.BusinessType.LEGAL: "MCHJ",
+    ShopTenant.BusinessType.OTHER: "Boshqa",
+}
 
 XLSX_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -70,9 +82,9 @@ class SalesRevenueExcelView(APIView):
             if tin:
                 revenue[tin][r["date__month"] - 1] += r["o"] or Decimal(0)
 
-        # 2) STIR -> tashkilot nomi + do'kon(lar). Bitta STIR bir nechta do'konda
-        #    bo'lishi mumkin — nomlarni va do'konlarni birlashtiramiz.
-        info_by_stir: dict[str, dict] = {}
+        # 2) tin (= revenue kaliti, odatda stir) -> tashkilot ma'lumoti. Bitta tin
+        #    bir nechta do'konda bo'lishi mumkin — nom/do'konlar birlashtiriladi.
+        info_by_tin: dict[str, dict] = {}
         for t in (
             ShopTenant.objects
             .exclude(stir__isnull=True).exclude(stir="")
@@ -81,9 +93,16 @@ class SalesRevenueExcelView(APIView):
             stir = (t.stir or "").strip()
             if not stir:
                 continue
-            entry = info_by_stir.setdefault(stir, {"name": None, "shops": []})
+            entry = info_by_tin.setdefault(stir, {
+                "name": None, "shops": [], "btype": None,
+                "stir": stir, "pinfl": None,
+            })
             if not entry["name"]:
                 entry["name"] = (t.name or t.leader_fio or "").strip() or None
+            if not entry["btype"]:
+                entry["btype"] = t.business_type
+            if not entry["pinfl"]:
+                entry["pinfl"] = (t.leader_jshshir or "").strip() or None
             if t.shop_id:
                 label = str(t.shop)
                 if label not in entry["shops"]:
@@ -95,12 +114,12 @@ class SalesRevenueExcelView(APIView):
             total = sum(months, Decimal(0))
             if total == 0:
                 continue  # shu yilda savdosi bo'lmagan tin lar tushmasin
-            info = info_by_stir.get(tin)
-            name = (info["name"] if info and info["name"] else tin)
-            shop = ", ".join(info["shops"]) if info and info["shops"] else ""
+            info = info_by_tin.get(tin)
+            name, type_label, ident, shop = self._identity(tin, info)
             rows.append({
                 "name": name,
-                "stir": tin,
+                "type": type_label,
+                "ident": ident,
                 "shop": shop,
                 "months": months,
                 "total": total,
@@ -119,6 +138,27 @@ class SalesRevenueExcelView(APIView):
         return resp
 
     # ------------------------------------------------------------------
+    @staticmethod
+    def _identity(tin: str, info: dict | None):
+        """
+        (nom, turi, identifikator, do'kon) ni qaytaradi.
+          - YTT  -> identifikator = PINFL
+          - MCHJ -> identifikator = STIR
+        Tashkilot topilmasa — bari tin.
+        """
+        if not info:
+            return tin, "", tin, ""
+        btype = info["btype"]
+        if btype == ShopTenant.BusinessType.YTT and info["pinfl"]:
+            ident = info["pinfl"]
+        else:
+            ident = info["stir"] or tin
+        type_label = TYPE_LABEL.get(btype, "")
+        name = info["name"] or ident
+        shop = ", ".join(info["shops"]) if info["shops"] else ""
+        return name, type_label, ident, shop
+
+    # ------------------------------------------------------------------
     def _build_workbook(self, year: int, rows: list[dict]) -> Workbook:
         thin = Side(style="thin", color="D9D9D9")
         border = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -127,12 +167,17 @@ class SalesRevenueExcelView(APIView):
         total_fill = PatternFill("solid", fgColor="DDEBF7")
         money_fmt = "#,##0"
 
+        # Sobit ustunlar: №, Tashkilot, Turi, STIR / PINFL, Do'kon
+        fixed = ["№", "Tashkilot", "Turi", "STIR / PINFL", "Do'kon"]
+        n_fixed = len(fixed)
+        month_col0 = n_fixed + 1          # birinchi oy ustuni (1-based)
+        total_col = month_col0 + 12       # "Jami" ustuni
+        headers = fixed + MONTHS_UZ + ["Jami"]
+        last_col = len(headers)
+
         wb = Workbook()
         ws = wb.active
         ws.title = f"{year}"
-
-        headers = ["№", "Tashkilot", "STIR", "Do'kon"] + MONTHS_UZ + ["Jami"]
-        last_col = len(headers)
 
         # Sarlavha (merged)
         ws.merge_cells(
@@ -165,17 +210,19 @@ class SalesRevenueExcelView(APIView):
         for i, r in enumerate(rows, start=1):
             ws.cell(row=row_idx, column=1, value=i).border = border
             ws.cell(row=row_idx, column=2, value=r["name"]).border = border
-            ws.cell(row=row_idx, column=3, value=r["stir"]).border = border
-            ws.cell(row=row_idx, column=4, value=r["shop"]).border = border
+            ws.cell(row=row_idx, column=3, value=r["type"]).border = border
+            # Identifikator (STIR/PINFL) — matn sifatida (uzun raqam buzilmasin)
+            ic = ws.cell(row=row_idx, column=4, value=r["ident"])
+            ic.number_format = "@"
+            ic.border = border
+            ws.cell(row=row_idx, column=5, value=r["shop"]).border = border
             for m in range(12):
                 val = r["months"][m]
-                c = ws.cell(row=row_idx, column=5 + m, value=float(val))
+                c = ws.cell(row=row_idx, column=month_col0 + m, value=float(val))
                 c.number_format = money_fmt
                 c.border = border
                 col_totals[m] += val
-            tc = ws.cell(
-                row=row_idx, column=5 + 12, value=float(r["total"])
-            )
+            tc = ws.cell(row=row_idx, column=total_col, value=float(r["total"]))
             tc.number_format = money_fmt
             tc.font = Font(bold=True)
             tc.border = border
@@ -183,35 +230,32 @@ class SalesRevenueExcelView(APIView):
             row_idx += 1
 
         # Jami qatori
-        ws.cell(row=row_idx, column=1, value="").border = border
-        jami = ws.cell(row=row_idx, column=2, value="JAMI")
-        jami.font = Font(bold=True)
-        jami.fill = total_fill
-        jami.border = border
-        ws.cell(row=row_idx, column=3, value="").fill = total_fill
-        ws.cell(row=row_idx, column=4, value="").fill = total_fill
+        for col in range(1, n_fixed + 1):
+            c = ws.cell(row=row_idx, column=col, value="JAMI" if col == 2 else "")
+            c.fill = total_fill
+            c.font = Font(bold=True)
+            c.border = border
         for m in range(12):
-            c = ws.cell(row=row_idx, column=5 + m, value=float(col_totals[m]))
+            c = ws.cell(row=row_idx, column=month_col0 + m, value=float(col_totals[m]))
             c.number_format = money_fmt
             c.font = Font(bold=True)
             c.fill = total_fill
             c.border = border
-        gc = ws.cell(row=row_idx, column=5 + 12, value=float(grand_total))
+        gc = ws.cell(row=row_idx, column=total_col, value=float(grand_total))
         gc.number_format = money_fmt
         gc.font = Font(bold=True)
         gc.fill = total_fill
         gc.border = border
 
         # Ustun kengliklari
-        ws.column_dimensions["A"].width = 5
-        ws.column_dimensions["B"].width = 34
-        ws.column_dimensions["C"].width = 14
-        ws.column_dimensions["D"].width = 22
+        widths = {1: 5, 2: 32, 3: 8, 4: 16, 5: 22}
+        for col, w in widths.items():
+            ws.column_dimensions[get_column_letter(col)].width = w
         for m in range(12):
-            ws.column_dimensions[get_column_letter(5 + m)].width = 13
-        ws.column_dimensions[get_column_letter(5 + 12)].width = 16
+            ws.column_dimensions[get_column_letter(month_col0 + m)].width = 13
+        ws.column_dimensions[get_column_letter(total_col)].width = 16
 
-        # Sarlavhalarni va birinchi ustunlarni muzlatish
-        ws.freeze_panes = "E3"
+        # Sarlavhalarni va sobit ustunlarni muzlatish (birinchi oy ustunidan boshlab oqar)
+        ws.freeze_panes = f"{get_column_letter(month_col0)}3"
 
         return wb
