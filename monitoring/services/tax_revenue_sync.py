@@ -107,11 +107,18 @@ def sync_tax_revenue() -> TaxRevenueSyncStats:
                 )
             stats.rows_written += 1
 
-    # 3) Faol bo'lmagan (stale) tin larni tozalaymiz — snapshot toza qolsin.
-    #    active_tins bo'sh bo'lsa (soliq ishlamadi) — tozalamaymiz (xato bilan
-    #    butun jadvalni o'chirib yubormaslik uchun).
+    # 3) Hech qaysi tenant'ga (faol YOKI nofaol) tegishli bo'lmagan orphan tin larni
+    #    tozalaymiz. Nofaol tenantlar uchun qo'lda backfill qilingan tax (stir/PINFL
+    #    bo'yicha) SAQLANADI — ular ketgan, lekin tarixiy tushumi kerak. active_tins
+    #    bo'sh bo'lsa (soliq ishlamadi) — tozalamaymiz.
     if active_tins:
-        deleted, _ = TaxRevenue.objects.exclude(tin__in=active_tins).delete()
+        keep = set(active_tins)
+        for stir, pinfl in ShopTenant.objects.values_list("stir", "leader_jshshir"):
+            if stir and stir.strip():
+                keep.add(stir.strip())
+            if pinfl and pinfl.strip():
+                keep.add(pinfl.strip())
+        deleted, _ = TaxRevenue.objects.exclude(tin__in=keep).delete()
         stats.cleared = deleted
 
     return stats
