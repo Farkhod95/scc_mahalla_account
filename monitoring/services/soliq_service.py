@@ -232,7 +232,8 @@ def get_factura_data(
     buyer_tin: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Bitta sahifa faktura ma'lumoti (sellerTin sotgan fakturalar).
+    Bitta sahifa faktura ma'lumoti. `pin` maydoni sotuvchining STIR yoki PINFL
+    qiymatini qabul qiladi (STIR bo'lmasa PINFL yuboriladi).
     Sana formati: dd.mm.yyyy. Qaytaradi: list.
     """
     body: Dict[str, Any] = {

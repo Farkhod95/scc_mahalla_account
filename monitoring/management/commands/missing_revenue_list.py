@@ -57,12 +57,18 @@ class Command(BaseCommand):
         # tin -> (has_factura, has_okkm) keshi
         data_cache: dict = {}
 
-        def has_data(tin):
-            if tin not in data_cache:
-                f = FacturaRevenueDaily.objects.filter(seller_tin=tin, date__year=year).exists()
-                o = OkkmRevenueDaily.objects.filter(tin=tin, date__year=year).exists()
-                data_cache[tin] = (f, o)
-            return data_cache[tin]
+        def has_factura(key):
+            if key not in data_cache:
+                data_cache[key] = FacturaRevenueDaily.objects.filter(
+                    seller_tin=key, date__year=year).exists()
+            return data_cache[key]
+
+        def has_okkm(tin):
+            ckey = f"okkm:{tin}"
+            if ckey not in data_cache:
+                data_cache[ckey] = OkkmRevenueDaily.objects.filter(
+                    tin=tin, date__year=year).exists()
+            return data_cache[ckey]
 
         rows = []
         total = checked = 0
@@ -70,22 +76,25 @@ class Command(BaseCommand):
             total += 1
             stir = (t.stir or "").strip()
             pinfl = (t.leader_jshshir or "").strip()
-
-            if stir:
-                tin = stir
-            else:
-                if pinfl in tin_cache:
-                    tin = tin_cache[pinfl]
-                else:
-                    tin = _resolve_tin(t)
-                    tin_cache[pinfl] = tin
             checked += 1
 
-            if not tin:
-                reason = "tin_aniqlanmadi"
-                has_f = has_o = False
+            # Faktura kaliti = STIR yoki PINFL (sync_factura_revenue bilan bir xil).
+            factura_key = stir or pinfl
+            # OKKM tin = STIR yoki PINFL->soliq TIN (sync_okkm_revenue bilan bir xil).
+            if stir:
+                okkm_tin = stir
             else:
-                has_f, has_o = has_data(tin)
+                if pinfl in tin_cache:
+                    okkm_tin = tin_cache[pinfl]
+                else:
+                    okkm_tin = _resolve_tin(t)
+                    tin_cache[pinfl] = okkm_tin
+
+            if not factura_key and not okkm_tin:
+                reason = "tin_aniqlanmadi"
+            else:
+                has_f = has_factura(factura_key) if factura_key else False
+                has_o = has_okkm(okkm_tin) if okkm_tin else False
                 if has_f or has_o:
                     continue  # tushum bor — ro'yxatga tushmaydi
                 reason = "integratsiya_malumoti_yoq"
@@ -96,7 +105,7 @@ class Command(BaseCommand):
                 "type": TYPE_LABEL.get(t.business_type, ""),
                 "stir": stir,
                 "pinfl": pinfl,
-                "tin": tin or "",
+                "tin": (stir or okkm_tin or pinfl or ""),
                 "shop": str(t.shop) if t.shop_id else "",
                 "reason": reason,
             })

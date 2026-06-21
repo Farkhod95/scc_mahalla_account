@@ -83,7 +83,11 @@ def sync_factura_revenue(period_from: Optional[str] = None, period_to: Optional[
             stats.skipped_inactive += 1
             continue
 
-        tin = _resolve_tin(tenant)
+        # Faktura: STIR bo'lsa STIR bo'yicha, bo'lmasa to'g'ridan-to'g'ri PINFL
+        # (leader_jshshir) bo'yicha olamiz. Ikkalasi ham soliq faktura `pin`
+        # maydoniga yuboriladi (pin STIR ham, PINFL ham qabul qiladi). Soliqdan
+        # TIN resolve qilinmaydi — STIR'siz YTT data'si PINFL kaliti bilan saqlanadi.
+        tin = (tenant.stir or "").strip() or (tenant.leader_jshshir or "").strip()
         if not tin or tin in seen_tins:
             continue
         seen_tins.add(tin)
@@ -92,7 +96,7 @@ def sync_factura_revenue(period_from: Optional[str] = None, period_to: Optional[
         try:
             daily = soliq_service.aggregate_factura_by_day(tin, period_from, period_to)
         except (soliq_service.SoliqError, requests.RequestException) as e:
-            logger.warning("faktura sync xato (tin=%s): %s", tin, e)
+            logger.warning("faktura sync xato (pin=%s): %s", tin, e)
             stats.errors += 1
             continue
 
