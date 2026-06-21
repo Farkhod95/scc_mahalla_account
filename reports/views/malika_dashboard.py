@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -8,11 +9,22 @@ from rest_framework.permissions import IsAuthenticated
 
 from monitoring.models import (
     Shop, ShopTenant, TenantEmployee, FacturaRevenueDaily, OkkmRevenueDaily,
+    TaxRevenue,
 )
 
 WEEKDAY_LABELS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"]  # Mon..Sun
 MONTH_LABELS = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn",
                 "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"]
+
+# Soliq kodlari (TaxRevenue.tax_code) — dashboardda ko'rsatiladiganlar.
+TAX_CODE_QQS = 1
+TAX_CODE_FOYDA = 32
+TAX_CODE_AYLANMA = 100
+TAX_CODE_NDFL = 46          # Jismoniy shaxs daromad solig'i (ishchilar yonida)
+
+# Kunlik soliq o'zimiz hisoblanadi (soliq ma'lumoti kech keladi): savdoga nisbatan.
+DAILY_TAX_RATE_YTT = Decimal("0.01")    # YTT  -> 1%
+DAILY_TAX_RATE_MCHJ = Decimal("0.04")   # MCHJ / boshqa -> 4%
 
 
 class MalikaDashboardReportView(APIView):
@@ -138,6 +150,67 @@ class MalikaDashboardReportView(APIView):
         okkm_total = sum((self._d(buckets[k][2]) for k in order), Decimal(0))
         return sales, tax, okkm_total
 
+    # =========================
+    # TAX REVENUE (TaxRevenue jadvalidan — integratsiyadan saqlangan, jonli emas)
+    # =========================
+    def _tax_by_code(self, period):
+        """
+        {tax_code: Decimal} — TaxRevenue dan tanlangan davr (monthly->mtd, yearly->ytd)
+        bo'yicha barcha tin lar yig'indisi. daily uchun ishlatilmaydi (o'zimiz hisoblaymiz).
+        """
+        field = {"monthly": "mtd_pay", "yearly": "ytd_pay"}.get(period)
+        if not field:
+            return {}
+        out = {}
+        for r in TaxRevenue.objects.values("tax_code").annotate(s=Sum(field)):
+            out[r["tax_code"]] = self._d(r["s"])
+        return out
+
+    def _daily_computed_tax(self, today):
+        """
+        Kunlik soliq — soliq ma'lumoti kech kelgani uchun o'zimiz savdodan hisoblaymiz:
+        MCHJ kunlik savdo x 4% + YTT kunlik savdo x 1%.
+
+        Savdo = bugungi FacturaRevenueDaily.sales + OkkmRevenueDaily.turnover, kalit
+        (seller_tin/tin) tenant turiga (business_type) bog'lanadi. Kalit topilmasa:
+        14 xonali -> PINFL (YTT 1%), aks holda -> MCHJ 4%.
+        """
+        sales = defaultdict(Decimal)
+        for r in (FacturaRevenueDaily.objects.filter(date=today)
+                  .values("seller_tin").annotate(s=Sum("sales"))):
+            key = (r["seller_tin"] or "").strip()
+            if key:
+                sales[key] += self._d(r["s"])
+        for r in (OkkmRevenueDaily.objects.filter(date=today)
+                  .values("tin").annotate(o=Sum("turnover"))):
+            key = (r["tin"] or "").strip()
+            if key:
+                sales[key] += self._d(r["o"])
+
+        if not sales:
+            return Decimal("0")
+
+        # kalit (STIR yoki PINFL) -> business_type
+        stir_type, pinfl_type = {}, {}
+        for t in (ShopTenant.objects
+                  .exclude(activity_status=ShopTenant.ActivityStatus.INACTIVE)
+                  .values("stir", "leader_jshshir", "business_type")):
+            s = (t["stir"] or "").strip()
+            p = (t["leader_jshshir"] or "").strip()
+            if s:
+                stir_type[s] = t["business_type"]
+            if p:
+                pinfl_type[p] = t["business_type"]
+
+        total = Decimal("0")
+        for key, amount in sales.items():
+            btype = stir_type.get(key) or pinfl_type.get(key)
+            if btype is None:
+                btype = ShopTenant.BusinessType.YTT if len(key) == 14 else ShopTenant.BusinessType.LEGAL
+            rate = DAILY_TAX_RATE_YTT if btype == ShopTenant.BusinessType.YTT else DAILY_TAX_RATE_MCHJ
+            total += amount * rate
+        return total
+
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
         if period not in ["daily", "monthly", "yearly"]:
@@ -223,9 +296,6 @@ class MalikaDashboardReportView(APIView):
         sales_okkm = self._d(sales_okkm)                    # grafik oynasidagi OKKM ulushi
         sales_e_payment = sales_total - sales_okkm          # qolgani — elektron to'lov (faktura)
 
-        # Soliq grafigi = faktura QQS + OKKM QQS (chek vat), ikkalasi kunlik tarixdan.
-        tax_revenue_total = self._d(sum(item["value"] for item in tax_chart))
-
         # Cheklar soni — oylik/kunlik davr uchun saqlangan (yillik maydon yo'q).
         checks_field = {"monthly": "monthly_checks_count", "daily": "daily_checks_count"}.get(period)
         if checks_field:
@@ -237,10 +307,28 @@ class MalikaDashboardReportView(APIView):
         else:
             cheque_count_total = None
 
-        # QQS (12%) = faktura QQS + OKKM QQS (= tax_revenue_total). Aylanma soliq (1%)
-        # uchun alohida manba hali yo'q, shuning uchun 0.
-        tax_from_vat = tax_revenue_total
-        tax_from_turnover = Decimal("0")
+        # =========================
+        # SOLIQ TUSHUMLARI
+        #   - oylik/yillik: TaxRevenue jadvalidan (integratsiyadan saqlangan) —
+        #     QQS(1) + Foyda(32) + Aylanma(100). NDFL(46) ishchilar yonida.
+        #   - kunlik: o'zimiz savdodan hisoblaymiz (MCHJ 4% + YTT 1%), bitta umumiy son.
+        # =========================
+        if period == "daily":
+            tax_total = self._daily_computed_tax(date.today())
+            tax_items = []                  # kunlik — bitta umumiy son, breakdown yo'q
+            income_tax_value = None         # NDFL faqat oylik/yillik
+        else:
+            by_code = self._tax_by_code(period)
+            qqs = by_code.get(TAX_CODE_QQS, Decimal("0"))
+            foyda = by_code.get(TAX_CODE_FOYDA, Decimal("0"))
+            aylanma = by_code.get(TAX_CODE_AYLANMA, Decimal("0"))
+            tax_total = qqs + foyda + aylanma
+            tax_items = [
+                {"key": "QQS", "name": "QQS", "count": float(qqs)},
+                {"key": "FOYDA", "name": "Foyda solig'i", "count": float(foyda)},
+                {"key": "AYLANMA", "name": "Aylanma soliq", "count": float(aylanma)},
+            ]
+            income_tax_value = float(by_code.get(TAX_CODE_NDFL, Decimal("0")))
 
         # =========================
         # 6. CASH REGISTERS
@@ -282,6 +370,10 @@ class MalikaDashboardReportView(APIView):
                     "title": "Ishchilar",
                     "label": "Nafar",
                     "count": employees_total,
+                    "income_tax": {
+                        "name": "Jismoniy shaxs daromad solig'i",
+                        "count": income_tax_value,   # oylik/yillik qiymat, kunlikda null
+                    },
                 },
                 "terminals": {
                     "title": "Terminallar",
@@ -289,20 +381,9 @@ class MalikaDashboardReportView(APIView):
                 },
                 "tax_revenue": {
                     "title": "Soliq tushumlari",
-                    "count": float(tax_revenue_total),
+                    "count": float(tax_total),
                     "chart": tax_chart,
-                    "items": [
-                        {
-                            "key": "QQS",
-                            "name": "QQS (12%)",
-                            "count": float(tax_from_vat),
-                        },
-                        {
-                            "key": "AOS",
-                            "name": "Aylanma soliq (1%)",
-                            "count": float(tax_from_turnover),
-                        },
-                    ],
+                    "items": tax_items,
                 },
                 "sales_revenue": {
                     "title": "Savdo tushumlari",
