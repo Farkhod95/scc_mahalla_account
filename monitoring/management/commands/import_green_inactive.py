@@ -105,6 +105,8 @@ class Command(BaseCommand):
         parser.add_argument("--to", dest="period_to", help="dd.mm.yyyy (default: bugun)")
         parser.add_argument("--no-tax", action="store_true", help="Tax-revenue backfill qilinmaydi")
         parser.add_argument("--no-okkm", action="store_true", help="OKKM backfill qilinmaydi (tez)")
+        parser.add_argument("--include-existing", action="store_true",
+                            help="Allaqachon qo'shilgan (tenant) PINFL'larni ham qayta backfill qiladi (tenant yaratmaydi)")
 
     def handle(self, *args, **opts):
         from openpyxl import load_workbook
@@ -139,18 +141,23 @@ class Command(BaseCommand):
                 "terminals": soliq_service.parse_terminal_ids(ws.cell(r, 18).value, ws.cell(r, 19).value),
             })
 
+        include_existing = opts["include_existing"]
         existing = set(_digits(p) for p in ShopTenant.objects
                        .exclude(leader_jshshir__isnull=True).exclude(leader_jshshir="")
                        .values_list("leader_jshshir", flat=True))
-        todo = [g for g in rows if g["pinfl"] not in existing]
+        todo = rows if include_existing else [g for g in rows if g["pinfl"] not in existing]
 
         self.stdout.write(f"Fayl: {path}\nDavr: {pf} .. {pt}")
-        self.stdout.write(f"Yashil jami: {len(rows)} | backendda yo'q (qo'shiladi): {len(todo)}")
+        self.stdout.write(
+            f"Yashil jami: {len(rows)} | qayta ishlanadi: {len(todo)} "
+            f"({'mavjudlar ham' if include_existing else 'faqat yangilari'})"
+        )
         self.stdout.write(self.style.SUCCESS("--- APPLY ---") if apply else self.style.WARNING("--- DRY-RUN ---"))
 
-        created = fac_rows = okkm_rows = tax_rows = 0
+        created = backfilled = fac_rows = okkm_rows = tax_rows = 0
         for g in todo:
             pinfl = g["pinfl"]
+            is_existing = pinfl in existing
             # 1) soliqdan resolved tin (stir) + nom
             tin = None
             try:
@@ -164,9 +171,11 @@ class Command(BaseCommand):
             block, num = _parse_shop(g["dokon"])
             kassa = ", ".join(g["terminals"]) if g["terminals"] else None
 
-            self.stdout.write(f"  + {g['name']} | pinfl={pinfl} tin={tin or '-'} | {g['dokon']} | kassa={kassa or '-'}")
+            tag = "~" if is_existing else "+"
+            self.stdout.write(f"  {tag} {g['name']} | pinfl={pinfl} tin={tin or '-'} | {g['dokon']} | kassa={kassa or '-'}")
 
-            if apply:
+            # Tenant: faqat yo'q bo'lsa yaratiladi (mavjudi qayta yaratilmaydi).
+            if apply and not is_existing:
                 with transaction.atomic():
                     shop, _ = Shop.objects.get_or_create(block_type=block, shop_number=num)
                     ShopTenant.objects.create(
@@ -179,7 +188,10 @@ class Command(BaseCommand):
                         activity_status=ShopTenant.ActivityStatus.INACTIVE,
                         cash_register_number_turnover=kassa,
                     )
-            created += 1
+            if is_existing:
+                backfilled += 1
+            else:
+                created += 1
 
             # 2) Faktura backfill (sellerTin = key)
             try:
@@ -200,13 +212,16 @@ class Command(BaseCommand):
             if do_okkm and g["terminals"]:
                 okkm_rows += self._okkm(key, g["terminals"], start, end, apply)
 
-            # 4) Tax backfill (faqat resolved tin bo'lsa)
+            # 4) Tax backfill — faqat resolved tin (real STIR) bo'lsa.
+            #    company-account PINFL ni QABUL QILMAYDI ("Korxona topilmadi yoki
+            #    aktiv emas"), shuning uchun tin yo'q YTT uchun tax olinmaydi.
             if do_tax and tin:
-                tax_rows += self._tax(key, today, apply)
+                tax_rows += self._tax(tin, today, apply)
 
         self.stdout.write(self.style.SUCCESS(
-            f"\n{'Yozildi' if apply else 'Yoziladi'}: tenant={created}, "
-            f"factura_kun={fac_rows}, okkm_kun={okkm_rows}, tax_yozuv={tax_rows}"
+            f"\n{'Yozildi' if apply else 'Yoziladi'}: tenant_yangi={created}, "
+            f"mavjud_backfill={backfilled}, factura_kun={fac_rows}, "
+            f"okkm_kun={okkm_rows}, tax_yozuv={tax_rows}"
         ))
 
     # ------------------------------------------------------------------
