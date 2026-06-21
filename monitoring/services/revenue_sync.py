@@ -47,17 +47,14 @@ def _tin_from_pinfl(tenant: ShopTenant) -> Optional[str]:
 
 def _resolve_tin(tenant: ShopTenant) -> Optional[str]:
     """
-    Revenue (faktura/OKKM) qaysi tin bo'yicha olinishi — tashkilot turiga qarab:
-      - YTT  -> pinfl (leader_jshshir) orqali self-employment tin (stir e'tiborga olinmaydi;
-                resolve bo'lmasa fallback sifatida stir).
-      - MCHJ (yuridik) / boshqa -> stir; stir bo'lmasa pinfl orqali tin.
+    Revenue (faktura/OKKM) qaysi tin bo'yicha olinishi — tashkilot turidan qat'i nazar:
+      - STIR bo'lsa -> STIR (MCHJ, yoki STIR'i bor YTT);
+      - STIR bo'lmasa -> PINFL (leader_jshshir) orqali self-employment tin.
+
+    sync_factura_revenue (sync-factura-revenue-daily) va sync_okkm_revenue
+    (sync-okkm-revenue-daily) ikkalasi ham shu funksiyani ishlatadi.
     """
     stir = (tenant.stir or "").strip()
-
-    if tenant.business_type == ShopTenant.BusinessType.YTT:
-        return _tin_from_pinfl(tenant) or (stir or None)
-
-    # MCHJ (LEGAL) / OTHER: avval stir, bo'lmasa pinfl.
     if stir:
         return stir
     return _tin_from_pinfl(tenant)
