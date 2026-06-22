@@ -10,6 +10,7 @@ DIQQAT: API faqat ruxsat etilgan server IP sidan ochiladi (localda DNS yo'q).
 """
 from __future__ import annotations
 
+import calendar
 import logging
 from datetime import date, datetime
 from decimal import Decimal
@@ -391,6 +392,16 @@ def factura_turnover_fields(tin: Optional[str], tax_type: Optional[str]) -> Dict
     return result
 
 
+def _month_windows(start: date, end: date):
+    """[start, end] ni oylik (dd.mm.yyyy, dd.mm.yyyy) oynalarga bo'ladi."""
+    cur = start
+    while cur <= end:
+        last_day = calendar.monthrange(cur.year, cur.month)[1]
+        m_end = min(date(cur.year, cur.month, last_day), end)
+        yield cur.strftime("%d.%m.%Y"), m_end.strftime("%d.%m.%Y")
+        cur = date(cur.year + 1, 1, 1) if cur.month == 12 else date(cur.year, cur.month + 1, 1)
+
+
 def aggregate_factura_by_day(
     seller_tin: str, period_from: str, period_to: str
 ) -> Dict[Any, Dict[str, Any]]:
@@ -398,19 +409,26 @@ def aggregate_factura_by_day(
     sellerTin bo'yicha [period_from, period_to] oralig'idagi faktura'larni
     facturaDate (kun) bo'yicha yig'adi.
 
+    DIQQAT: butun davrni bittada so'rasak, soliq API ko'p yozuvda to'liq qaytarmaydi
+    (page ishlamaydi, size cheklangan). Shuning uchun OYMA-OY so'raymiz — har oyning
+    yozuvlari kam bo'lib, to'liq olinadi.
+
     Qaytaradi: { date(obyekt): {"sales": Decimal, "tax": Decimal, "count": int} }
     deliverySumWithVat -> sales, vatSum -> tax.
     """
-    facturas = get_all_facturas(seller_tin, period_from, period_to)
+    start = datetime.strptime(period_from, "%d.%m.%Y").date()
+    end = datetime.strptime(period_to, "%d.%m.%Y").date()
+
     daily: Dict[Any, Dict[str, Any]] = {}
-    for f in facturas:
-        fd = _parse_factura_date(f.get("facturaDate"))
-        if fd is None:
-            continue
-        bucket = daily.setdefault(fd, {"sales": Decimal(0), "tax": Decimal(0), "count": 0})
-        bucket["sales"] += _to_decimal(f.get("deliverySumWithVat"))
-        bucket["tax"] += _to_decimal(f.get("vatSum"))
-        bucket["count"] += 1
+    for m_from, m_to in _month_windows(start, end):
+        for f in get_all_facturas(seller_tin, m_from, m_to):
+            fd = _parse_factura_date(f.get("facturaDate"))
+            if fd is None:
+                continue
+            bucket = daily.setdefault(fd, {"sales": Decimal(0), "tax": Decimal(0), "count": 0})
+            bucket["sales"] += _to_decimal(f.get("deliverySumWithVat"))
+            bucket["tax"] += _to_decimal(f.get("vatSum"))
+            bucket["count"] += 1
     return daily
 
 
