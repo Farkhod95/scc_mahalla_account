@@ -170,31 +170,8 @@ class MalikaDashboardReportView(APIView):
             out[r["tax_code"]] = self._d(r["s"])
         return out
 
-    def _daily_computed_tax(self, today):
-        """
-        Kunlik soliq — soliq ma'lumoti kech kelgani uchun o'zimiz savdodan hisoblaymiz:
-        MCHJ kunlik savdo x 4% + YTT kunlik savdo x 1%.
-
-        Savdo = bugungi FacturaRevenueDaily.sales + OkkmRevenueDaily.turnover, kalit
-        (seller_tin/tin) tenant turiga (business_type) bog'lanadi. Kalit topilmasa:
-        14 xonali -> PINFL (YTT 1%), aks holda -> MCHJ 4%.
-        """
-        sales = defaultdict(Decimal)
-        for r in (FacturaRevenueDaily.objects.filter(date=today)
-                  .values("seller_tin").annotate(s=Sum("sales"))):
-            key = (r["seller_tin"] or "").strip()
-            if key:
-                sales[key] += self._d(r["s"])
-        for r in (OkkmRevenueDaily.objects.filter(date=today)
-                  .values("tin").annotate(o=Sum("turnover"))):
-            key = (r["tin"] or "").strip()
-            if key:
-                sales[key] += self._d(r["o"])
-
-        if not sales:
-            return Decimal("0")
-
-        # kalit (STIR yoki PINFL) -> business_type
+    def _btype_maps(self):
+        """(stir->business_type, pinfl->business_type) faol tenantlardan."""
         stir_type, pinfl_type = {}, {}
         for t in (ShopTenant.objects
                   .exclude(activity_status=ShopTenant.ActivityStatus.INACTIVE)
@@ -205,15 +182,89 @@ class MalikaDashboardReportView(APIView):
                 stir_type[s] = t["business_type"]
             if p:
                 pinfl_type[p] = t["business_type"]
+        return stir_type, pinfl_type
 
-        total = Decimal("0")
-        for key, amount in sales.items():
-            btype = stir_type.get(key) or pinfl_type.get(key)
-            if btype is None:
-                btype = ShopTenant.BusinessType.YTT if len(key) == 14 else ShopTenant.BusinessType.LEGAL
-            rate = DAILY_TAX_RATE_YTT if btype == ShopTenant.BusinessType.YTT else DAILY_TAX_RATE_MCHJ
-            total += amount * rate
-        return total
+    def _rate_for(self, key, stir_type, pinfl_type):
+        btype = stir_type.get(key) or pinfl_type.get(key)
+        if btype is None:
+            btype = ShopTenant.BusinessType.YTT if len(key) == 14 else ShopTenant.BusinessType.LEGAL
+        return DAILY_TAX_RATE_YTT if btype == ShopTenant.BusinessType.YTT else DAILY_TAX_RATE_MCHJ
+
+    def _computed_tax_by_day(self, start, end):
+        """
+        Kunlik soliq (o'zimiz hisoblaymiz, soliq kech kelgani uchun): har kun uchun
+        MCHJ savdo x 4% + YTT savdo x 1%. {date: Decimal} qaytaradi.
+        Savdo = FacturaRevenueDaily.sales + OkkmRevenueDaily.turnover, kalit tenant
+        turiga bog'lanadi (topilmasa: 14 xonali -> YTT, aks holda -> MCHJ).
+        """
+        per_day = defaultdict(lambda: defaultdict(Decimal))  # date -> key -> savdo
+        for r in (FacturaRevenueDaily.objects.filter(date__gte=start, date__lte=end)
+                  .values("date", "seller_tin").annotate(s=Sum("sales"))):
+            key = (r["seller_tin"] or "").strip()
+            if key:
+                per_day[r["date"]][key] += self._d(r["s"])
+        for r in (OkkmRevenueDaily.objects.filter(date__gte=start, date__lte=end)
+                  .values("date", "tin").annotate(o=Sum("turnover"))):
+            key = (r["tin"] or "").strip()
+            if key:
+                per_day[r["date"]][key] += self._d(r["o"])
+
+        if not per_day:
+            return {}
+        stir_type, pinfl_type = self._btype_maps()
+        out = {}
+        for d, keymap in per_day.items():
+            out[d] = sum(
+                (amt * self._rate_for(key, stir_type, pinfl_type) for key, amt in keymap.items()),
+                Decimal(0),
+            )
+        return out
+
+    def _daily_computed_tax(self, today):
+        return self._computed_tax_by_day(today, today).get(today, Decimal("0"))
+
+    def _tax_chart(self, rng, today):
+        """
+        Soliq grafigi — count bilan bir manba:
+          month -> oxirgi 7 oy (TaxRevenueMonthly payTax, kod 1+32+100)
+          year  -> oxirgi 7 yil (TaxRevenueMonthly yig'indisi)
+          week  -> oxirgi 7 kun (savdodan hisoblangan kunlik soliq)
+        """
+        codes = [TAX_CODE_QQS, TAX_CODE_FOYDA, TAX_CODE_AYLANMA]
+
+        if rng == "month":
+            keys, labels = [], []
+            y, m = today.year, today.month
+            for _ in range(7):
+                keys.append((y, m))
+                labels.append(MONTH_LABELS[m - 1])
+                m -= 1
+                if m == 0:
+                    m, y = 12, y - 1
+            keys.reverse(); labels.reverse()
+            agg = defaultdict(Decimal)
+            for r in (TaxRevenueMonthly.objects
+                      .filter(year__in={k[0] for k in keys}, tax_code__in=codes)
+                      .values("year", "month").annotate(s=Sum("pay_tax"))):
+                agg[(r["year"], r["month"])] += self._d(r["s"])
+            return [{"label": lbl, "value": self._chart_value(agg.get(k, 0))}
+                    for k, lbl in zip(keys, labels)]
+
+        if rng == "year":
+            years = [today.year - i for i in range(6, -1, -1)]
+            agg = defaultdict(Decimal)
+            for r in (TaxRevenueMonthly.objects
+                      .filter(year__in=years, tax_code__in=codes)
+                      .values("year").annotate(s=Sum("pay_tax"))):
+                agg[r["year"]] += self._d(r["s"])
+            return [{"label": str(y), "value": self._chart_value(agg.get(y, 0))} for y in years]
+
+        # week — daily period: savdodan hisoblangan kunlik soliq (7 kun)
+        monday = today - timedelta(days=today.weekday())
+        days = [monday + timedelta(days=i) for i in range(7)]
+        by_day = self._computed_tax_by_day(days[0], days[-1])
+        return [{"label": WEEKDAY_LABELS[i], "value": self._chart_value(by_day.get(d, 0))}
+                for i, d in enumerate(days)]
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
@@ -226,7 +277,10 @@ class MalikaDashboardReportView(APIView):
         if chart_range not in ["week", "month", "year"]:
             chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
 
-        sales_chart, tax_chart, sales_okkm = self._revenue_charts(chart_range, date.today())
+        sales_chart, _sales_qqs_chart, sales_okkm = self._revenue_charts(chart_range, date.today())
+        # Soliq grafigi count bilan bir manbadan (TaxRevenueMonthly / kunlik hisob),
+        # savdo QQS dan emas — aks holda chart va count nomuvofiq bo'lardi.
+        tax_chart = self._tax_chart(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
         # Nofaol (INACTIVE) ijarachilar dashboard hisob-kitobiga kirmaydi —
