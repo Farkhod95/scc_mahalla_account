@@ -151,25 +151,8 @@ class MalikaDashboardReportView(APIView):
         return sales, tax, okkm_total
 
     # =========================
-    # TAX REVENUE (TaxRevenue jadvalidan — integratsiyadan saqlangan, jonli emas)
+    # TAX REVENUE (TaxRevenueMonthly — oylik tarix; count/grafik bir manbadan)
     # =========================
-    def _tax_by_code(self, period):
-        """
-        {tax_code: Decimal} — TaxRevenueMonthly (oylik tarix) dan:
-          monthly -> joriy oy; yearly -> joriy yil barcha oylari yig'indisi.
-        daily uchun ishlatilmaydi (o'zimiz savdodan hisoblaymiz).
-        """
-        if period not in ("monthly", "yearly"):
-            return {}
-        today = date.today()
-        qs = TaxRevenueMonthly.objects.filter(year=today.year)
-        if period == "monthly":
-            qs = qs.filter(month=today.month)
-        out = {}
-        for r in qs.values("tax_code").annotate(s=Sum("pay_tax")):
-            out[r["tax_code"]] = self._d(r["s"])
-        return out
-
     def _btype_maps(self):
         """(stir->business_type, pinfl->business_type) faol tenantlardan."""
         stir_type, pinfl_type = {}, {}
@@ -220,51 +203,65 @@ class MalikaDashboardReportView(APIView):
             )
         return out
 
-    def _daily_computed_tax(self, today):
-        return self._computed_tax_by_day(today, today).get(today, Decimal("0"))
-
-    def _tax_chart(self, rng, today):
+    def _tax_window(self, rng, today):
         """
-        Soliq grafigi — count bilan bir manba:
-          month -> oxirgi 7 oy (TaxRevenueMonthly payTax, kod 1+32+100)
-          year  -> oxirgi 7 yil (TaxRevenueMonthly yig'indisi)
-          week  -> oxirgi 7 kun (savdodan hisoblangan kunlik soliq)
+        Soliq grafigi + per-kod oyna yig'indisi (count va items bir manbadan).
+          month -> oxirgi 7 oy (TaxRevenueMonthly payTax)
+          year  -> oxirgi 7 yil
+          week  -> oxirgi 7 kun (savdodan hisoblangan kunlik soliq — kod ajralmaydi)
+
+        Qaytaradi: (chart, by_code)
+          chart   = [{label, value}] — har ustun ko'rsatiladigan kodlar (1+32+100) yig'indisi
+          by_code = {tax_code: Decimal} — butun oyna bo'yicha kod yig'indisi (1,32,100,46);
+                    daily (week) uchun {} (kod ajralmaydi).
+        count = sum(chart) = by_code(1+32+100). Savdo kartasi bilan bir xil mantiq.
         """
-        codes = [TAX_CODE_QQS, TAX_CODE_FOYDA, TAX_CODE_AYLANMA]
+        display = [TAX_CODE_QQS, TAX_CODE_FOYDA, TAX_CODE_AYLANMA]
+        all_codes = display + [TAX_CODE_NDFL]
 
-        if rng == "month":
-            keys, labels = [], []
-            y, m = today.year, today.month
-            for _ in range(7):
-                keys.append((y, m))
-                labels.append(MONTH_LABELS[m - 1])
-                m -= 1
-                if m == 0:
-                    m, y = 12, y - 1
-            keys.reverse(); labels.reverse()
-            agg = defaultdict(Decimal)
-            for r in (TaxRevenueMonthly.objects
-                      .filter(year__in={k[0] for k in keys}, tax_code__in=codes)
-                      .values("year", "month").annotate(s=Sum("pay_tax"))):
-                agg[(r["year"], r["month"])] += self._d(r["s"])
-            return [{"label": lbl, "value": self._chart_value(agg.get(k, 0))}
-                    for k, lbl in zip(keys, labels)]
+        if rng in ("month", "year"):
+            if rng == "month":
+                keys, labels = [], []
+                y, m = today.year, today.month
+                for _ in range(7):
+                    keys.append((y, m))
+                    labels.append(MONTH_LABELS[m - 1])
+                    m -= 1
+                    if m == 0:
+                        m, y = 12, y - 1
+                keys.reverse(); labels.reverse()
+                cell = defaultdict(Decimal)  # (year, month, code)
+                for r in (TaxRevenueMonthly.objects
+                          .filter(year__in={k[0] for k in keys}, tax_code__in=all_codes)
+                          .values("year", "month", "tax_code").annotate(s=Sum("pay_tax"))):
+                    cell[(r["year"], r["month"], r["tax_code"])] += self._d(r["s"])
+                bucket_codes = lambda k, c: cell.get((k[0], k[1], c), Decimal(0))
+            else:  # year
+                keys = [today.year - i for i in range(6, -1, -1)]
+                labels = [str(y) for y in keys]
+                cell = defaultdict(Decimal)  # (year, code)
+                for r in (TaxRevenueMonthly.objects
+                          .filter(year__in=keys, tax_code__in=all_codes)
+                          .values("year", "tax_code").annotate(s=Sum("pay_tax"))):
+                    cell[(r["year"], r["tax_code"])] += self._d(r["s"])
+                bucket_codes = lambda k, c: cell.get((k, c), Decimal(0))
 
-        if rng == "year":
-            years = [today.year - i for i in range(6, -1, -1)]
-            agg = defaultdict(Decimal)
-            for r in (TaxRevenueMonthly.objects
-                      .filter(year__in=years, tax_code__in=codes)
-                      .values("year").annotate(s=Sum("pay_tax"))):
-                agg[r["year"]] += self._d(r["s"])
-            return [{"label": str(y), "value": self._chart_value(agg.get(y, 0))} for y in years]
+            chart = []
+            by_code = defaultdict(Decimal)
+            for k, lbl in zip(keys, labels):
+                bucket_total = sum((bucket_codes(k, c) for c in display), Decimal(0))
+                chart.append({"label": lbl, "value": self._chart_value(bucket_total)})
+                for c in all_codes:
+                    by_code[c] += bucket_codes(k, c)
+            return chart, dict(by_code)
 
-        # week — daily period: savdodan hisoblangan kunlik soliq (7 kun)
+        # week — daily period: savdodan hisoblangan kunlik soliq (kod ajralmaydi)
         monday = today - timedelta(days=today.weekday())
         days = [monday + timedelta(days=i) for i in range(7)]
         by_day = self._computed_tax_by_day(days[0], days[-1])
-        return [{"label": WEEKDAY_LABELS[i], "value": self._chart_value(by_day.get(d, 0))}
-                for i, d in enumerate(days)]
+        chart = [{"label": WEEKDAY_LABELS[i], "value": self._chart_value(by_day.get(d, 0))}
+                 for i, d in enumerate(days)]
+        return chart, {}
 
     def get(self, request, *args, **kwargs):
         period = request.query_params.get("period", "yearly").lower()
@@ -278,9 +275,9 @@ class MalikaDashboardReportView(APIView):
             chart_range = {"daily": "week", "monthly": "month", "yearly": "year"}.get(period, "week")
 
         sales_chart, _sales_qqs_chart, sales_okkm = self._revenue_charts(chart_range, date.today())
-        # Soliq grafigi count bilan bir manbadan (TaxRevenueMonthly / kunlik hisob),
-        # savdo QQS dan emas — aks holda chart va count nomuvofiq bo'lardi.
-        tax_chart = self._tax_chart(chart_range, date.today())
+        # Soliq grafigi + per-kod oyna yig'indisi — count va items shu manbadan
+        # (TaxRevenueMonthly / kunlik hisob). count = grafik yig'indisi (savdo kabi).
+        tax_chart, tax_window_by_code = self._tax_window(chart_range, date.today())
 
         shops_qs = Shop.objects.all()
         # Nofaol (INACTIVE) ijarachilar dashboard hisob-kitobiga kirmaydi —
@@ -366,27 +363,25 @@ class MalikaDashboardReportView(APIView):
             cheque_count_total = None
 
         # =========================
-        # SOLIQ TUSHUMLARI
-        #   - oylik/yillik: TaxRevenue jadvalidan (integratsiyadan saqlangan) —
-        #     QQS(1) + Foyda(32) + Aylanma(100). NDFL(46) ishchilar yonida.
-        #   - kunlik: o'zimiz savdodan hisoblaymiz (MCHJ 4% + YTT 1%), bitta umumiy son.
+        # SOLIQ TUSHUMLARI — count = grafik (oyna) yig'indisi (savdo kartasi kabi).
+        #   - oylik/yillik: TaxRevenueMonthly (oyna bo'yicha) — QQS(1)+Foyda(32)+Aylanma(100);
+        #     NDFL(46) ishchilar yonida (oyna yig'indisi).
+        #   - kunlik: o'zimiz savdodan hisoblaymiz (MCHJ 4% + YTT 1%), kod ajralmaydi.
         # =========================
+        tax_total = self._d(sum(item["value"] for item in tax_chart))  # = grafik yig'indisi
         if period == "daily":
-            tax_total = self._daily_computed_tax(date.today())
-            tax_items = []                  # kunlik — bitta umumiy son, breakdown yo'q
+            tax_items = []                  # kunlik — kod breakdown yo'q
             income_tax_value = None         # NDFL faqat oylik/yillik
         else:
-            by_code = self._tax_by_code(period)
-            qqs = by_code.get(TAX_CODE_QQS, Decimal("0"))
-            foyda = by_code.get(TAX_CODE_FOYDA, Decimal("0"))
-            aylanma = by_code.get(TAX_CODE_AYLANMA, Decimal("0"))
-            tax_total = qqs + foyda + aylanma
+            qqs = tax_window_by_code.get(TAX_CODE_QQS, Decimal("0"))
+            foyda = tax_window_by_code.get(TAX_CODE_FOYDA, Decimal("0"))
+            aylanma = tax_window_by_code.get(TAX_CODE_AYLANMA, Decimal("0"))
             tax_items = [
                 {"key": "QQS", "name": "QQS", "count": float(qqs)},
                 {"key": "FOYDA", "name": "Foyda solig'i", "count": float(foyda)},
                 {"key": "AYLANMA", "name": "Aylanma soliq", "count": float(aylanma)},
             ]
-            income_tax_value = float(by_code.get(TAX_CODE_NDFL, Decimal("0")))
+            income_tax_value = float(tax_window_by_code.get(TAX_CODE_NDFL, Decimal("0")))
 
         # =========================
         # 6. CASH REGISTERS
