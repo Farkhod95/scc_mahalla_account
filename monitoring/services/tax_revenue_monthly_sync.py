@@ -22,6 +22,7 @@ from typing import Optional
 
 import requests
 from django.db import transaction
+from django.db.models import Sum
 
 from monitoring.models import ShopTenant, TaxRevenueMonthly
 from monitoring.services import soliq_service
@@ -53,21 +54,28 @@ def _to_decimal(value) -> Decimal:
         return Decimal(0)
 
 
-def _month_paytax(tin, code, year, month, today, stats) -> Optional[Decimal]:
-    """Bitta tin x kod x oy uchun payTax (period = oy boshidan oy oxirigacha)."""
-    period_from = f"01.{month:02d}.{year}"
-    last_day = calendar.monthrange(year, month)[1]
-    end = date(year, month, last_day)
-    if year == today.year and month == today.month:
-        end = today  # joriy oy — bugungacha
-    period_to = end.strftime("%d.%m.%Y")
+def _ytd_paytax(tin, code, year, end_date, stats) -> Optional[Decimal]:
+    """
+    Yil boshidan `end_date` gacha KÜMÜLATİV payTax (YTD).
+
+    company-account `periodFrom` ni e'tiborga olmaydi (doim yil boshidan), lekin
+    `periodTo` ISHLAYDI — shuning uchun periodTo ni oy oxiriga qo'yib, shu oygacha
+    yig'ilgan YTD payTax ni olamiz. Oylik qiymat YTD farqlaridan hisoblanadi.
+    """
+    period_to = end_date.strftime("%d.%m.%Y")
     try:
-        data = soliq_service.get_company_account(tin, period_from, period_to, code) or {}
+        data = soliq_service.get_company_account(tin, f"01.01.{year}", period_to, code) or {}
     except (soliq_service.SoliqError, requests.RequestException) as e:
-        logger.warning("tax-monthly xato (tin=%s, kod=%s, %s-%s): %s", tin, code, year, month, e)
+        logger.warning("tax-monthly xato (tin=%s, kod=%s, ...%s): %s", tin, code, period_to, e)
         stats.errors += 1
         return None
     return _to_decimal(data.get("payTax"))
+
+
+def _month_end(year, month, today):
+    if year == today.year and month == today.month:
+        return today  # joriy oy — bugungacha
+    return date(year, month, calendar.monthrange(year, month)[1])
 
 
 def sync_tax_revenue_monthly(
@@ -76,18 +84,20 @@ def sync_tax_revenue_monthly(
     include_inactive: bool = False,
 ) -> TaxMonthlySyncStats:
     """
-    year (default joriy) uchun oylik soliqni yig'adi. only_current=True bo'lsa —
-    faqat joriy oy (kunlik celery uchun). Aks holda yil boshidan joriy oygacha
-    barcha oylar (backfill). include_inactive=True bo'lsa nofaollar ham (tarix).
+    OYLIK soliq = YTD(oy oxiri) − YTD(oldingi oy oxiri) (company-account payTax,
+    periodTo bo'yicha). year default joriy.
+
+      - only_current=True: faqat JORIY oyni yangilaydi (kunlik celery) —
+        joriy_oy = YTD(bugun) − (shu yil oldingi oylar yig'indisi). 1 so'rov/tin/kod.
+      - aks holda: yil boshidan joriy oygacha BARCHA oylar (backfill) — har oy oxiri
+        uchun YTD so'rab, ketma-ket delta. Backfill mumkin, chunki periodTo ishlaydi.
     """
     today = date.today()
     year = year or today.year
     last_month = today.month if year == today.year else 12
-    months = [last_month] if only_current else list(range(1, last_month + 1))
 
     stats = TaxMonthlySyncStats()
 
-    # Faol (yoki barcha) ijarachilarning takrorsiz tin lari.
     tins: set[str] = set()
     for tenant in ShopTenant.objects.all().iterator():
         stats.tenants += 1
@@ -100,15 +110,33 @@ def sync_tax_revenue_monthly(
 
     for tin in tins:
         for code, _name in MONTHLY_TAX_CODES:
-            for month in months:
-                pay = _month_paytax(tin, code, year, month, today, stats)
-                if pay is None:
+            if only_current:
+                ytd = _ytd_paytax(tin, code, year, _month_end(year, last_month, today), stats)
+                if ytd is None:
                     continue
-                with transaction.atomic():
-                    TaxRevenueMonthly.objects.update_or_create(
-                        tin=tin, tax_code=code, year=year, month=month,
-                        defaults={"pay_tax": pay},
-                    )
+                prior = TaxRevenueMonthly.objects.filter(
+                    tin=tin, tax_code=code, year=year, month__lt=last_month
+                ).aggregate(s=Sum("pay_tax"))["s"] or Decimal(0)
+                _upsert_monthly(tin, code, year, last_month, ytd - prior)
+                stats.rows_written += 1
+                continue
+
+            # To'liq backfill: har oy oxiri uchun YTD, ketma-ket delta.
+            prev_ytd = Decimal(0)
+            for month in range(1, last_month + 1):
+                ytd = _ytd_paytax(tin, code, year, _month_end(year, month, today), stats)
+                if ytd is None:
+                    continue  # bu oy o'tkazildi; prev_ytd o'zgarmaydi
+                _upsert_monthly(tin, code, year, month, ytd - prev_ytd)
+                prev_ytd = ytd
                 stats.rows_written += 1
 
     return stats
+
+
+def _upsert_monthly(tin, code, year, month, value):
+    with transaction.atomic():
+        TaxRevenueMonthly.objects.update_or_create(
+            tin=tin, tax_code=code, year=year, month=month,
+            defaults={"pay_tax": value},
+        )
