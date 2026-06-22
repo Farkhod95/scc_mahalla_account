@@ -865,6 +865,25 @@ def sync_tax_revenue_task():
     }
 
 
+@shared_task(name="celery_task.sync_tax_revenue_monthly_task")
+def sync_tax_revenue_monthly_task():
+    """
+    Soliq tushumi OYLIK tarixini (TaxRevenueMonthly) JORIY oy uchun yangilaydi
+    (oylik = YTD(bugun) - oldingi oylar yig'indisi). Dashboard (oylik/yillik) va
+    reports/tax-revenue SHU jadvaldan o'qiydi. O'tgan oylar bir martalik backfill:
+    `python manage.py sync_tax_revenue_monthly`.
+    """
+    from monitoring.services.tax_revenue_monthly_sync import sync_tax_revenue_monthly
+    stats = sync_tax_revenue_monthly(only_current=True)
+    return {
+        "ok": True,
+        "tenants": stats.tenants,
+        "with_tin": stats.with_tin,
+        "rows_written": stats.rows_written,
+        "errors": stats.errors,
+    }
+
+
 @shared_task(name="celery_task.sync_tenant_soliq_task")
 def sync_tenant_soliq_task():
     """

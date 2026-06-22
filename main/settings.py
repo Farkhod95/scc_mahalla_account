@@ -168,11 +168,14 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_tenant_soliq_task',
         'schedule': crontab(minute=0, hour='*/6'),
     },
-    # Har kuni 06:00 da soliq tushumini (company-account, payTax) kodlar bo'yicha
-    # TaxRevenue ga yig'adi (har faol tin x 7 kod x 3 davr). reports/tax-revenue
-    # endpoint shu jadvaldan o'qiydi.
+    # Har kuni 06:00 da soliq tushumi OYLIK tarixini (TaxRevenueMonthly) JORIY oy
+    # uchun yangilaydi (company-account payTax, kodlar 1/32/46/100). Dashboard
+    # (oylik/yillik) va reports/tax-revenue SHU jadvaldan o'qiydi. O'tgan oylar —
+    # bir martalik backfill: `python manage.py sync_tax_revenue_monthly`.
+    # (Nom o'zgarmadi — DatabaseScheduler mavjud entry'ni yangilashi uchun;
+    #  eski snapshot task o'rniga endi oylik task chaqiriladi.)
     'sync-tax-revenue-daily': {
-        'task': 'celery_task.sync_tax_revenue_task',
+        'task': 'celery_task.sync_tax_revenue_monthly_task',
         'schedule': crontab(hour=6, minute=0),
     },
 }
