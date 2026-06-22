@@ -11,9 +11,10 @@ tekshiriladi. Yozuv bo'lmasa tenant ro'yxatga tushadi:
 DIQQAT: soliqqa boradi (YTT tin resolve) — soliq ochiladigan SERVERDA ishlating.
 Natija stdout + CSV faylga yoziladi.
 
-    python manage.py missing_revenue_list
-    python manage.py missing_revenue_list --year 2026 --out docs/missing_2026.csv
-    python manage.py missing_revenue_list --include-inactive
+    python manage.py missing_revenue_list                      # both: factura ham, okkm ham yo'q
+    python manage.py missing_revenue_list --channel factura    # fakturasi yo'qlar ro'yxati
+    python manage.py missing_revenue_list --channel okkm       # OKKM'i yo'qlar
+    python manage.py missing_revenue_list --year 2026 --include-inactive
 """
 import csv
 import logging
@@ -38,15 +39,20 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--year", type=int, default=None, help="Yil (default: joriy)")
-        parser.add_argument("--out", default=None, help="CSV yo'li (default: docs/missing_revenue_<yil>.csv)")
+        parser.add_argument("--out", default=None, help="CSV yo'li (default: docs/missing_<channel>_<yil>.csv)")
         parser.add_argument("--include-inactive", action="store_true", help="NOFAOL tenantlarni ham tekshiradi")
+        parser.add_argument(
+            "--channel", choices=["both", "factura", "okkm"], default="both",
+            help="factura=fakturasi yo'qlar, okkm=OKKM'i yo'qlar, both=ikkalasi ham yo'q (default: both)",
+        )
 
     def handle(self, *args, **opts):
         # soliq resolve xatolari (JShShIR topilmadi) log spam qilmasin.
         logging.getLogger("monitoring.services.revenue_sync").setLevel(logging.ERROR)
 
         year = opts["year"] or date.today().year
-        out_path = opts["out"] or os.path.join(settings.BASE_DIR, "docs", f"missing_revenue_{year}.csv")
+        channel = opts["channel"]
+        out_path = opts["out"] or os.path.join(settings.BASE_DIR, "docs", f"missing_{channel}_{year}.csv")
 
         qs = ShopTenant.objects.select_related("shop").all()
         if not opts["include_inactive"]:
@@ -80,24 +86,37 @@ class Command(BaseCommand):
 
             # Faktura kaliti = STIR yoki PINFL (sync_factura_revenue bilan bir xil).
             factura_key = stir or pinfl
+
             # OKKM tin = STIR yoki PINFL->soliq TIN (sync_okkm_revenue bilan bir xil).
-            if stir:
-                okkm_tin = stir
-            else:
-                if pinfl in tin_cache:
+            # Faqat OKKM kerak bo'lganda resolve qilamiz (factura kanalida soliqqa bormaymiz).
+            okkm_tin = None
+            if channel in ("both", "okkm"):
+                if stir:
+                    okkm_tin = stir
+                elif pinfl in tin_cache:
                     okkm_tin = tin_cache[pinfl]
-                else:
+                elif pinfl:
                     okkm_tin = _resolve_tin(t)
                     tin_cache[pinfl] = okkm_tin
 
-            if not factura_key and not okkm_tin:
-                reason = "tin_aniqlanmadi"
-            else:
-                has_f = has_factura(factura_key) if factura_key else False
-                has_o = has_okkm(okkm_tin) if okkm_tin else False
-                if has_f or has_o:
-                    continue  # tushum bor — ro'yxatga tushmaydi
-                reason = "integratsiya_malumoti_yoq"
+            has_f = has_factura(factura_key) if factura_key else False
+            has_o = has_okkm(okkm_tin) if okkm_tin else False
+
+            if channel == "factura":
+                if has_f:
+                    continue
+                reason = "faktura_yoq" if factura_key else "id_yoq"
+            elif channel == "okkm":
+                if has_o:
+                    continue
+                reason = "okkm_yoq" if okkm_tin else "tin_aniqlanmadi"
+            else:  # both
+                if not factura_key and not okkm_tin:
+                    reason = "tin_aniqlanmadi"
+                elif has_f or has_o:
+                    continue
+                else:
+                    reason = "integratsiya_malumoti_yoq"
 
             rows.append({
                 "tenant_id": t.pk,
@@ -118,13 +137,14 @@ class Command(BaseCommand):
             w.writeheader()
             w.writerows(rows)
 
-        no_tin = sum(1 for r in rows if r["reason"] == "tin_aniqlanmadi")
-        no_data = sum(1 for r in rows if r["reason"] == "integratsiya_malumoti_yoq")
+        from collections import Counter
+        reasons = Counter(r["reason"] for r in rows)
         uniq_ids = sorted({(r["stir"] or r["pinfl"]) for r in rows if (r["stir"] or r["pinfl"])})
 
         self.stdout.write(self.style.SUCCESS(
-            f"Tekshirildi: {checked}/{total} tenant ({year}). "
-            f"Tushumsiz: {len(rows)} (tin_aniqlanmadi={no_tin}, integratsiya_malumoti_yoq={no_data})"
+            f"Tekshirildi: {checked}/{total} tenant ({year}, channel={channel}). "
+            f"Ro'yxatga tushdi: {len(rows)} "
+            f"({', '.join(f'{k}={v}' for k, v in reasons.items()) or '-'})"
         ))
         self.stdout.write(f"Noyob STIR/PINFL: {len(uniq_ids)} ta")
         self.stdout.write(f"CSV: {out_path}\n")
