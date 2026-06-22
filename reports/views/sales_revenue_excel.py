@@ -56,31 +56,38 @@ class SalesRevenueExcelView(APIView):
         except (TypeError, ValueError):
             year = date.today().year
 
-        # 1) Faktura va OKKM ni tin x oy bo'yicha DB da yig'amiz, keyin birlashtiramiz.
+        # ?source=factura | okkm | both (default both)
+        source = (request.query_params.get("source") or "both").lower()
+        if source not in ("factura", "okkm", "both"):
+            source = "both"
+
+        # 1) Tanlangan manba(lar)ni tin x oy bo'yicha DB da yig'amiz.
         #    revenue[tin][month_index 0..11] = Decimal savdo
         revenue: dict[str, list[Decimal]] = defaultdict(
             lambda: [Decimal(0)] * 12
         )
 
-        for r in (
-            FacturaRevenueDaily.objects
-            .filter(date__year=year)
-            .values("seller_tin", "date__month")
-            .annotate(s=Sum("sales"))
-        ):
-            tin = (r["seller_tin"] or "").strip()
-            if tin:
-                revenue[tin][r["date__month"] - 1] += r["s"] or Decimal(0)
+        if source in ("factura", "both"):
+            for r in (
+                FacturaRevenueDaily.objects
+                .filter(date__year=year)
+                .values("seller_tin", "date__month")
+                .annotate(s=Sum("sales"))
+            ):
+                tin = (r["seller_tin"] or "").strip()
+                if tin:
+                    revenue[tin][r["date__month"] - 1] += r["s"] or Decimal(0)
 
-        for r in (
-            OkkmRevenueDaily.objects
-            .filter(date__year=year)
-            .values("tin", "date__month")
-            .annotate(o=Sum("turnover"))
-        ):
-            tin = (r["tin"] or "").strip()
-            if tin:
-                revenue[tin][r["date__month"] - 1] += r["o"] or Decimal(0)
+        if source in ("okkm", "both"):
+            for r in (
+                OkkmRevenueDaily.objects
+                .filter(date__year=year)
+                .values("tin", "date__month")
+                .annotate(o=Sum("turnover"))
+            ):
+                tin = (r["tin"] or "").strip()
+                if tin:
+                    revenue[tin][r["date__month"] - 1] += r["o"] or Decimal(0)
 
         # 2) tin (= revenue kaliti, odatda stir) -> tashkilot ma'lumoti. Bitta tin
         #    bir nechta do'konda bo'lishi mumkin — nom/do'konlar birlashtiriladi.
@@ -126,14 +133,14 @@ class SalesRevenueExcelView(APIView):
             })
         rows.sort(key=lambda x: x["total"], reverse=True)
 
-        wb = self._build_workbook(year, rows)
+        wb = self._build_workbook(year, rows, source)
 
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
         resp = HttpResponse(buf.getvalue(), content_type=XLSX_CONTENT_TYPE)
         resp["Content-Disposition"] = (
-            f'attachment; filename="savdo_tushumlari_{year}.xlsx"'
+            f'attachment; filename="savdo_tushumlari_{source}_{year}.xlsx"'
         )
         return resp
 
@@ -159,7 +166,12 @@ class SalesRevenueExcelView(APIView):
         return name, type_label, ident, shop
 
     # ------------------------------------------------------------------
-    def _build_workbook(self, year: int, rows: list[dict]) -> Workbook:
+    def _build_workbook(self, year: int, rows: list[dict], source: str = "both") -> Workbook:
+        source_label = {
+            "factura": "faktura",
+            "okkm": "OKKM",
+            "both": "faktura + OKKM",
+        }.get(source, "faktura + OKKM")
         thin = Side(style="thin", color="D9D9D9")
         border = Border(left=thin, right=thin, top=thin, bottom=thin)
         header_fill = PatternFill("solid", fgColor="305496")
@@ -185,7 +197,7 @@ class SalesRevenueExcelView(APIView):
         )
         title_cell = ws.cell(row=1, column=1)
         title_cell.value = (
-            f"Savdo tushumlari (faktura + OKKM) — {year}-yil, "
+            f"Savdo tushumlari ({source_label}) — {year}-yil, "
             f"tashkilotlar bo'yicha oylik (so'm)"
         )
         title_cell.font = Font(bold=True, size=13)

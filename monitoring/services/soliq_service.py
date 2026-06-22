@@ -251,53 +251,86 @@ def get_factura_data(
     return data or []
 
 
+def _factura_envelope(
+    seller_tin: str, period_from: str, period_to: str, page: int = 0, size: int = 99,
+):
+    """get-factura-data — to'liq envelope (data, totalSize) qaytaradi."""
+    body: Dict[str, Any] = {
+        "sellerTin": int(seller_tin),
+        "page": page,
+        "size": size,
+        "periodFrom": period_from,
+        "periodTo": period_to,
+    }
+    resp = _get_session().post(
+        f"{BASE_URL}/get-factura-data", json=body, headers=_headers(), timeout=TIMEOUT,
+    )
+    resp.raise_for_status()
+    env = resp.json()
+    if not env.get("success", False):
+        reason = env.get("reason") or env.get("message") or "get-factura-data xato"
+        raise SoliqError(f"get-factura-data: {reason}")
+    return env.get("data") or [], int(env.get("totalSize") or 0)
+
+
 def get_all_facturas(
     seller_tin: str,
     period_from: str,
     period_to: str,
-    size: int = 99,
-    max_pages: int = 200,
+    size: int = 1000,
+    max_size: int = 50000,
 ) -> List[Dict[str, Any]]:
     """
-    Barcha sahifalarni yig'ib bitta ro'yxat qaytaradi.
+    Davr ichidagi BARCHA faktura qatorlarini qaytaradi.
 
-    Faktura `id` bo'yicha dublikatlar tashlanadi — agar API sahifani surmay
-    bir xil yozuvlarni qaytarsa, summa shishib ketmasligi uchun (va sahifa
-    takrorlansa to'xtaymiz).
+    DIQQAT: soliq API `page` parametrini SURMAYDI (page=1 ham page=0 ni qaytaradi).
+    Shuning uchun sahifalash o'rniga `size` ni `totalSize` gacha oshirib, bitta
+    so'rovda hammasini olamiz (avval keng size bilan so'rab, totalSize undan katta
+    bo'lsa — totalSize bilan qayta so'raymiz).
     """
+    data, total = _factura_envelope(seller_tin, period_from, period_to, page=0, size=size)
+    if total > len(data):
+        data, total = _factura_envelope(
+            seller_tin, period_from, period_to, page=0, size=min(total, max_size),
+        )
+        if total > len(data):
+            logger.warning(
+                "faktura to'liq olinmadi (tin=%s): totalSize=%s, olingan=%s",
+                seller_tin, total, len(data),
+            )
+
+    # `id` bo'yicha dedup (har ehtimolga qarshi).
     out: List[Dict[str, Any]] = []
     seen_ids: set = set()
-    page = 0
-    while page < max_pages:
-        batch = get_factura_data(seller_tin, period_from, period_to, page=page, size=size)
-        if not batch:
-            break
-
-        new_count = 0
-        for f in batch:
-            fid = f.get("id")
-            if fid is not None:
-                if fid in seen_ids:
-                    continue
-                seen_ids.add(fid)
-            out.append(f)
-            new_count += 1
-
-        if len(batch) < size:
-            break
-        if new_count == 0:  # sahifa faqat takror yozuvlar — to'xtaymiz
-            break
-        page += 1
+    for f in data:
+        fid = f.get("id")
+        if fid is not None:
+            if fid in seen_ids:
+                continue
+            seen_ids.add(fid)
+        out.append(f)
     return out
 
 
 def _parse_factura_date(value: Optional[str]):
+    """
+    facturaDate ni date ga o'giradi. Soliq turli format qaytarishi mumkin
+    (dd.mm.yyyy, yyyy-mm-dd, vaqt bilan ...). Avval faqat dd.mm.yyyy qabul
+    qilinardi — boshqa format kelsa faktura jimgina tashlanardi (sales=0).
+    Endi bir nechta format sinaladi; sana qismi vaqtdan ajratiladi.
+    """
     if not value:
         return None
-    try:
-        return datetime.strptime(value, "%d.%m.%Y").date()
-    except (ValueError, TypeError):
+    s = str(value).strip()
+    if not s:
         return None
+    s = s.split("T")[0].split(" ")[0]  # vaqt bo'lsa kesib tashlaymiz
+    for fmt in ("%d.%m.%Y", "%Y-%m-%d", "%d-%m-%Y", "%Y.%m.%d", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except (ValueError, TypeError):
+            continue
+    return None
 
 
 def _to_decimal(value: Any) -> Decimal:
