@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from monitoring.models import TaxRevenue, TaxRevenueMonthly
+from monitoring.models import TaxRevenueMonthly
 
 # Dashboard bilan bir xil — faqat shu 3 kod ko'rsatiladi.
 REPORT_TAX_CODES = [
@@ -18,36 +18,46 @@ REPORT_TAX_CODES = [
 class TaxRevenueReportView(APIView):
     """
     Soliq tushumi — QQS(1), Foyda solig'i(32), Aylanma soliq(100).
+    Manba: TaxRevenueMonthly (oylik tarix), dashboard bilan bir xil.
 
-      - oy berilmasa: TaxRevenue snapshot'idan (kunlik/oylik/yillik).
-      - ?month=1..12 (+ ?year=): TaxRevenueMonthly (oylik tarix) jadvalidan shu oy.
+      - filtersiz:           monthly = joriy oy, yearly = joriy yil yig'indisi.
+      - ?month=1..12&year=:  monthly = o'sha oy, yearly = o'sha yil yig'indisi.
 
-    Ikkala manba ham celery (sync_tax_revenue / sync_tax_revenue_monthly) bilan
-    to'ldiriladi — endpoint jonli soliqqa bormaydi.
+    Ikkala holatda ham javob FORMATI bir xil:
+      {"year","month","items":[{"code","name","daily","monthly","yearly"}], "total":{...}}
+    daily — tax uchun bu yerda saqlanmaydi (dashboard savdodan hisoblaydi), 0.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        month = request.query_params.get("month")
-        if month:
-            return self._month_report(request, month)
-        return self._snapshot_report()
+        today = date.today()
+        codes = [c for c, _ in REPORT_TAX_CODES]
 
-    # ------------------------------------------------------------------
-    def _snapshot_report(self):
-        agg = {
-            r["tax_code"]: r
-            for r in TaxRevenue.objects.values("tax_code").annotate(
-                d=Sum("dtd_pay"), m=Sum("mtd_pay"), y=Sum("ytd_pay")
-            )
-        }
+        try:
+            year = int(request.query_params.get("year") or today.year)
+        except (TypeError, ValueError):
+            year = today.year
+
+        month_raw = request.query_params.get("month")
+        if month_raw:
+            try:
+                month = int(month_raw)
+            except (TypeError, ValueError):
+                return Response({"detail": "month 1..12 bo'lishi kerak"}, status=400)
+            if not 1 <= month <= 12:
+                return Response({"detail": "month 1..12 bo'lishi kerak"}, status=400)
+        else:
+            month = today.month  # filtersiz -> joriy oy
+
+        monthly_agg = self._by_code(year, codes, month=month)
+        yearly_agg = self._by_code(year, codes, month=None)
+
         items = []
         td = tm = ty = 0.0
         for code, name in REPORT_TAX_CODES:
-            row = agg.get(code, {})
-            d = float(row.get("d") or 0)
-            m = float(row.get("m") or 0)
-            y = float(row.get("y") or 0)
+            d = 0.0
+            m = float(monthly_agg.get(code) or 0)
+            y = float(yearly_agg.get(code) or 0)
             td += d
             tm += m
             ty += y
@@ -55,44 +65,20 @@ class TaxRevenueReportView(APIView):
                 "code": code, "name": name,
                 "daily": round(d, 2), "monthly": round(m, 2), "yearly": round(y, 2),
             })
-        return Response({
-            "items": items,
-            "total": {"daily": round(td, 2), "monthly": round(tm, 2), "yearly": round(ty, 2)},
-        })
-
-    # ------------------------------------------------------------------
-    def _month_report(self, request, month_raw):
-        try:
-            month = int(month_raw)
-        except (TypeError, ValueError):
-            return Response({"detail": "month 1..12 bo'lishi kerak"}, status=400)
-        if not 1 <= month <= 12:
-            return Response({"detail": "month 1..12 bo'lishi kerak"}, status=400)
-
-        today = date.today()
-        try:
-            year = int(request.query_params.get("year") or today.year)
-        except (TypeError, ValueError):
-            year = today.year
-
-        codes = [c for c, _ in REPORT_TAX_CODES]
-        agg = {
-            r["tax_code"]: r["s"]
-            for r in TaxRevenueMonthly.objects
-            .filter(year=year, month=month, tax_code__in=codes)
-            .values("tax_code").annotate(s=Sum("pay_tax"))
-        }
-
-        items = []
-        total = 0.0
-        for code, name in REPORT_TAX_CODES:
-            v = round(float(agg.get(code) or 0), 2)
-            total += v
-            items.append({"code": code, "name": name, "monthly": v})
 
         return Response({
             "year": year,
             "month": month,
             "items": items,
-            "total": round(total, 2),
+            "total": {"daily": round(td, 2), "monthly": round(tm, 2), "yearly": round(ty, 2)},
         })
+
+    @staticmethod
+    def _by_code(year, codes, month=None):
+        qs = TaxRevenueMonthly.objects.filter(year=year, tax_code__in=codes)
+        if month is not None:
+            qs = qs.filter(month=month)
+        return {
+            r["tax_code"]: r["s"]
+            for r in qs.values("tax_code").annotate(s=Sum("pay_tax"))
+        }
