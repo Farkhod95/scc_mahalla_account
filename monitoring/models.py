@@ -653,6 +653,33 @@ class TaxRevenue(models.Model):
         return f"{self.tin} | {self.tax_code} | {self.ytd_pay}"
 
 
+class TaxRevenueMonthly(models.Model):
+    """
+    Soliq tushumi (company-account payTax) — OYLIK TARIX: har (tin, tax_code, year,
+    month) uchun SHU OYDA to'langan soliq (period = oy boshidan oy oxirigacha).
+
+    TaxRevenue (snapshot) dan farqi — tarixiy oylar saqlanadi. sync_tax_revenue_monthly
+    to'ldiradi: o'tgan oylar o'zgarmaydi, joriy oy yangilanib boradi. Dashboard
+    (oylik/yillik) va reports/tax-revenue (oy filteri) SHU jadvaldan o'qiydi.
+    """
+    tin = models.CharField(max_length=20, db_index=True, help_text=_("STIR"))
+    tax_code = models.PositiveIntegerField(help_text=_("Soliq kodi (taxCode)"))
+    year = models.PositiveIntegerField(help_text=_("Yil"))
+    month = models.PositiveIntegerField(help_text=_("Oy (1..12)"))
+    pay_tax = models.DecimalField(max_digits=20, decimal_places=2, default=0,
+                                  help_text=_("Shu oyda to'langan soliq (payTax)"))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("Tax Revenue Monthly")
+        verbose_name_plural = _("Tax Revenue Monthly")
+        unique_together = ("tin", "tax_code", "year", "month")
+        indexes = [models.Index(fields=["year", "month", "tax_code"])]
+
+    def __str__(self):
+        return f"{self.tin} | {self.tax_code} | {self.year}-{self.month:02d} | {self.pay_tax}"
+
+
 class DamafonCall(models.Model):
     """
     Damafon (intercom) qo'ng'iroqlari TARIXI — mikroservis `incoming_call` hodisasi.

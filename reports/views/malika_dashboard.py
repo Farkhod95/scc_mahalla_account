@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from monitoring.models import (
     Shop, ShopTenant, TenantEmployee, FacturaRevenueDaily, OkkmRevenueDaily,
-    TaxRevenue,
+    TaxRevenueMonthly,
 )
 
 WEEKDAY_LABELS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"]  # Mon..Sun
@@ -155,14 +155,18 @@ class MalikaDashboardReportView(APIView):
     # =========================
     def _tax_by_code(self, period):
         """
-        {tax_code: Decimal} — TaxRevenue dan tanlangan davr (monthly->mtd, yearly->ytd)
-        bo'yicha barcha tin lar yig'indisi. daily uchun ishlatilmaydi (o'zimiz hisoblaymiz).
+        {tax_code: Decimal} — TaxRevenueMonthly (oylik tarix) dan:
+          monthly -> joriy oy; yearly -> joriy yil barcha oylari yig'indisi.
+        daily uchun ishlatilmaydi (o'zimiz savdodan hisoblaymiz).
         """
-        field = {"monthly": "mtd_pay", "yearly": "ytd_pay"}.get(period)
-        if not field:
+        if period not in ("monthly", "yearly"):
             return {}
+        today = date.today()
+        qs = TaxRevenueMonthly.objects.filter(year=today.year)
+        if period == "monthly":
+            qs = qs.filter(month=today.month)
         out = {}
-        for r in TaxRevenue.objects.values("tax_code").annotate(s=Sum(field)):
+        for r in qs.values("tax_code").annotate(s=Sum("pay_tax")):
             out[r["tax_code"]] = self._d(r["s"])
         return out
 
