@@ -7,6 +7,7 @@ from reports.views.malika_dashboard import MalikaDashboardReportView
 from reports.views.malika_flow import MalikaFlowReportView
 from reports.views.sales_revenue_excel import SalesRevenueExcelView
 from reports.views.tax_revenue import TaxRevenueReportView
+from reports.views.tax_revenue_excel import TaxRevenueExcelView
 
 urlpatterns = [
     path("reports/drb/detection-count", DetectionCountProxyView.as_view(), name="drf-detection-count"),
@@ -16,6 +17,7 @@ urlpatterns = [
     path("reports/center-of-civilization", CenterOfCivilizationReportView.as_view(), name="civilization-report"),
     path("reports/dashboard", MalikaDashboardReportView.as_view(), name="malika-dashboard-report"),
     path("reports/tax-revenue", TaxRevenueReportView.as_view(), name="tax-revenue-report"),
+    path("reports/tax-revenue/excel", TaxRevenueExcelView.as_view(), name="tax-revenue-excel"),
     path("reports/sales-revenue/excel", SalesRevenueExcelView.as_view(), name="sales-revenue-excel"),
 
 ]
