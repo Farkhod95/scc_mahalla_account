@@ -30,6 +30,9 @@ JUSTICE_AUTH_HEADER = "Basic bWlwSnVzdGljZVVzZXJuYW1lOm1pcEp1c3RpY2VVc2VybmFtZQ=
 # (connect, read) timeout — soliq sekin javob bersa ham ulanish tez tekshiriladi.
 TIMEOUT     = (10, 30)
 RETRIES     = 3
+FACTURA_EXCLUDED_TINS = {
+    "202099756",
+}
 # ---------------------------------------------------------------------------
 
 
@@ -223,6 +226,11 @@ def soliq_fields_for(
 
 # --- Faktura (elektron hisob-faktura) --------------------------------------
 
+def factura_excluded(tin: Optional[str]) -> bool:
+    """tin FACTURA_EXCLUDED_TINS ro'yxatidami (faktura olinmaydi)."""
+    return (tin or "").strip() in FACTURA_EXCLUDED_TINS
+
+
 def get_factura_data(
     seller_tin: str,
     period_from: str,
@@ -237,6 +245,8 @@ def get_factura_data(
     ham `sellerTin` da qabul qiladi).
     Sana formati: dd.mm.yyyy. Qaytaradi: list.
     """
+    if factura_excluded(seller_tin):
+        return []
     body: Dict[str, Any] = {
         "sellerTin": int(seller_tin),
         "page": page,
@@ -301,7 +311,11 @@ def get_all_facturas(
 
     MUHIM: bitta `id` ostida bir nechta qator (mahsulot satri) kelsa ham hammasi
     qoladi — avvalgi `id`-dedup ularni jimgina tashlab, tushumni kam ko'rsatardi.
+
+    FACTURA_EXCLUDED_TINS dagi tin uchun hech narsa olinmaydi (bo'sh ro'yxat).
     """
+    if factura_excluded(seller_tin):
+        return []
     start = datetime.strptime(period_from, "%d.%m.%Y").date()
     end = datetime.strptime(period_to, "%d.%m.%Y").date()
     out: List[Dict[str, Any]] = []
