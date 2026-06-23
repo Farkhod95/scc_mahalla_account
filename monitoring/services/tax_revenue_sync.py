@@ -86,7 +86,7 @@ def sync_tax_revenue() -> TaxRevenueSyncStats:
             stats.skipped_inactive += 1
             continue
         tin = _resolve_tin(tenant)
-        if tin:
+        if tin and not soliq_service.tax_excluded(tin):
             active_tins.add(tin)
     stats.with_tin = len(active_tins)
 
@@ -118,6 +118,8 @@ def sync_tax_revenue() -> TaxRevenueSyncStats:
                 keep.add(stir.strip())
             if pinfl and pinfl.strip():
                 keep.add(pinfl.strip())
+        # Excluded tin lar keep dan chiqariladi — mavjud yozuvlari ham o'chsin.
+        keep.difference_update(soliq_service.TAX_EXCLUDED_TINS)
         deleted, _ = TaxRevenue.objects.exclude(tin__in=keep).delete()
         stats.cleared = deleted
 

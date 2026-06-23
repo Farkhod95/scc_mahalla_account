@@ -33,6 +33,13 @@ RETRIES     = 3
 FACTURA_EXCLUDED_TINS = {
     "202099756",
 }
+# Soliq tushumi (tax revenue) HISOBLANMAYDIGAN STIR/PINFL lar. Bu ro'yxatdagi tin
+# uchun TaxRevenue / TaxRevenueMonthly ga hech narsa yozilmaydi va mavjud yozuvlari
+# sync paytida o'chiriladi (dashboard / tax-revenue / soliq Excel ham ko'rsatmaydi).
+# Yangi STIR qo'shish — shu setga qatorini qo'shing (string ko'rinishida).
+TAX_EXCLUDED_TINS = {
+    "202099756",
+}
 # ---------------------------------------------------------------------------
 
 
@@ -109,6 +116,11 @@ def get_self_employment(pinfl: str) -> Optional[Dict[str, Any]]:
                registration_number, registration_date, activities[...], ...) yoki None.
     """
     return _request("self-employment", {"pinfl": pinfl})
+
+
+def tax_excluded(tin: Optional[str]) -> bool:
+    """tin TAX_EXCLUDED_TINS ro'yxatidami (soliq tushumi hisoblanmaydi/yozilmaydi)."""
+    return (tin or "").strip() in TAX_EXCLUDED_TINS
 
 
 def get_company_account(

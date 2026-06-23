@@ -104,9 +104,14 @@ def sync_tax_revenue_monthly(
         if not include_inactive and tenant.activity_status == ShopTenant.ActivityStatus.INACTIVE:
             continue
         tin = _resolve_tin(tenant)
-        if tin:
+        if tin and not soliq_service.tax_excluded(tin):
             tins.add(tin)
     stats.with_tin = len(tins)
+
+    # Excluded tin lar — bu sync da orphan-cleanup yo'q, shu sababli mavjud
+    # TaxRevenueMonthly yozuvlarini shu yerda o'chiramiz (qaytadan yozilmaydi).
+    if soliq_service.TAX_EXCLUDED_TINS:
+        TaxRevenueMonthly.objects.filter(tin__in=soliq_service.TAX_EXCLUDED_TINS).delete()
 
     for tin in tins:
         for code, _name in MONTHLY_TAX_CODES:
