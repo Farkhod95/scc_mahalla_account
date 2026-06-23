@@ -10,9 +10,8 @@ DIQQAT: API faqat ruxsat etilgan server IP sidan ochiladi (localda DNS yo'q).
 """
 from __future__ import annotations
 
-import calendar
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -253,7 +252,12 @@ def get_factura_data(
 
 
 def _factura_envelope(
-    seller_tin: str, period_from: str, period_to: str, page: int = 0, size: int = 99,
+    seller_tin: str,
+    period_from: str,
+    period_to: str,
+    page: int = 0,
+    size: int = 5000,
+    buyer_tin: Optional[str] = None,
 ):
     """get-factura-data — to'liq envelope (data, totalSize) qaytaradi."""
     body: Dict[str, Any] = {
@@ -263,6 +267,8 @@ def _factura_envelope(
         "periodFrom": period_from,
         "periodTo": period_to,
     }
+    if buyer_tin:
+        body["buyerTin"] = int(buyer_tin)
     resp = _get_session().post(
         f"{BASE_URL}/get-factura-data", json=body, headers=_headers(), timeout=TIMEOUT,
     )
@@ -278,39 +284,56 @@ def get_all_facturas(
     seller_tin: str,
     period_from: str,
     period_to: str,
-    size: int = 1000,
-    max_size: int = 50000,
+    size: int = 5000,
+    buyer_tin: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Davr ichidagi BARCHA faktura qatorlarini qaytaradi.
+    Davr ichidagi BARCHA faktura qatorlarini qaytaradi (bironta ham tushib qolmaydi,
+    takrorlanmaydi) — xom curl bilan bir xil yig'indi.
 
-    DIQQAT: soliq API `page` parametrini SURMAYDI (page=1 ham page=0 ni qaytaradi).
-    Shuning uchun sahifalash o'rniga `size` ni `totalSize` gacha oshirib, bitta
-    so'rovda hammasini olamiz (avval keng size bilan so'rab, totalSize undan katta
-    bo'lsa — totalSize bilan qayta so'raymiz).
+    DIQQAT, soliq get-factura-data ikki cheklov bilan keladi:
+      - `page` ISHLAMAYDI (page=1 ham page=0 ni qaytaradi) — sahifalab bo'lmaydi;
+      - bitta javobda qaytadigan qatorlar soni cheklangan (size cheksiz emas).
+    Yechim: davrni so'raymiz; agar `totalSize` qaytgan qatordan KATTA bo'lsa (hammasi
+    sig'madi), [period_from, period_to] ni sana bo'yicha kesishmaydigan ikki oynaga
+    bo'lib REKURSIV qayta so'raymiz — har bo'lak to'liq sig'guncha (eng kichigi — 1 kun).
+    Oynalar kesishmagani uchun dedup KERAK EMAS.
+
+    MUHIM: bitta `id` ostida bir nechta qator (mahsulot satri) kelsa ham hammasi
+    qoladi — avvalgi `id`-dedup ularni jimgina tashlab, tushumni kam ko'rsatardi.
     """
-    data, total = _factura_envelope(seller_tin, period_from, period_to, page=0, size=size)
-    if total > len(data):
-        data, total = _factura_envelope(
-            seller_tin, period_from, period_to, page=0, size=min(total, max_size),
-        )
-        if total > len(data):
-            logger.warning(
-                "faktura to'liq olinmadi (tin=%s): totalSize=%s, olingan=%s",
-                seller_tin, total, len(data),
-            )
-
-    # `id` bo'yicha dedup (har ehtimolga qarshi).
+    start = datetime.strptime(period_from, "%d.%m.%Y").date()
+    end = datetime.strptime(period_to, "%d.%m.%Y").date()
     out: List[Dict[str, Any]] = []
-    seen_ids: set = set()
-    for f in data:
-        fid = f.get("id")
-        if fid is not None:
-            if fid in seen_ids:
-                continue
-            seen_ids.add(fid)
-        out.append(f)
+    _collect_facturas(seller_tin, start, end, size, buyer_tin, out)
     return out
+
+
+def _collect_facturas(
+    seller_tin: str,
+    start: date,
+    end: date,
+    size: int,
+    buyer_tin: Optional[str],
+    out: List[Dict[str, Any]],
+) -> None:
+    """[start, end] oynani to'liq oladi; sig'masa kunlar bo'yicha 2 ga bo'lib rekursiya."""
+    data, total = _factura_envelope(
+        seller_tin, start.strftime("%d.%m.%Y"), end.strftime("%d.%m.%Y"),
+        page=0, size=size, buyer_tin=buyer_tin,
+    )
+    if total <= len(data) or start >= end:
+        if start >= end and total > len(data):
+            logger.warning(
+                "faktura bitta kunda ham to'liq sig'madi (tin=%s, %s): totalSize=%s, olingan=%s",
+                seller_tin, start, total, len(data),
+            )
+        out.extend(data)
+        return
+
+    mid = start + (end - start) // 2
+    _collect_facturas(seller_tin, start, mid, size, buyer_tin, out)
+    _collect_facturas(seller_tin, mid + timedelta(days=1), end, size, buyer_tin, out)
 
 
 def _parse_factura_date(value: Optional[str]):
@@ -392,43 +415,27 @@ def factura_turnover_fields(tin: Optional[str], tax_type: Optional[str]) -> Dict
     return result
 
 
-def _month_windows(start: date, end: date):
-    """[start, end] ni oylik (dd.mm.yyyy, dd.mm.yyyy) oynalarga bo'ladi."""
-    cur = start
-    while cur <= end:
-        last_day = calendar.monthrange(cur.year, cur.month)[1]
-        m_end = min(date(cur.year, cur.month, last_day), end)
-        yield cur.strftime("%d.%m.%Y"), m_end.strftime("%d.%m.%Y")
-        cur = date(cur.year + 1, 1, 1) if cur.month == 12 else date(cur.year, cur.month + 1, 1)
-
-
 def aggregate_factura_by_day(
     seller_tin: str, period_from: str, period_to: str
 ) -> Dict[Any, Dict[str, Any]]:
     """
     sellerTin bo'yicha [period_from, period_to] oralig'idagi faktura'larni
-    facturaDate (kun) bo'yicha yig'adi.
-
-    DIQQAT: butun davrni bittada so'rasak, soliq API ko'p yozuvda to'liq qaytarmaydi
-    (page ishlamaydi, size cheklangan). Shuning uchun OYMA-OY so'raymiz — har oyning
-    yozuvlari kam bo'lib, to'liq olinadi.
+    facturaDate (kun) bo'yicha yig'adi. To'liqlikni get_all_facturas kafolatlaydi
+    (sig'masa sana-oynani o'zi bo'lib oladi), shuning uchun bu yerda davrni bittada
+    so'rasak bo'ladi.
 
     Qaytaradi: { date(obyekt): {"sales": Decimal, "tax": Decimal, "count": int} }
     deliverySumWithVat -> sales, vatSum -> tax.
     """
-    start = datetime.strptime(period_from, "%d.%m.%Y").date()
-    end = datetime.strptime(period_to, "%d.%m.%Y").date()
-
     daily: Dict[Any, Dict[str, Any]] = {}
-    for m_from, m_to in _month_windows(start, end):
-        for f in get_all_facturas(seller_tin, m_from, m_to):
-            fd = _parse_factura_date(f.get("facturaDate"))
-            if fd is None:
-                continue
-            bucket = daily.setdefault(fd, {"sales": Decimal(0), "tax": Decimal(0), "count": 0})
-            bucket["sales"] += _to_decimal(f.get("deliverySumWithVat"))
-            bucket["tax"] += _to_decimal(f.get("vatSum"))
-            bucket["count"] += 1
+    for f in get_all_facturas(seller_tin, period_from, period_to):
+        fd = _parse_factura_date(f.get("facturaDate"))
+        if fd is None:
+            continue
+        bucket = daily.setdefault(fd, {"sales": Decimal(0), "tax": Decimal(0), "count": 0})
+        bucket["sales"] += _to_decimal(f.get("deliverySumWithVat"))
+        bucket["tax"] += _to_decimal(f.get("vatSum"))
+        bucket["count"] += 1
     return daily
 
 
