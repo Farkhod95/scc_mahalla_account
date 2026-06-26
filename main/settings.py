@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-+z(00bq*+-lxrzdvn3-6ti8czltg_8r0-+c$+q8+!e&j%u2m_v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['mm.safecity.uz','192.168.168.149','api-mm.safecity.uz','localhost','127.0.0.1', '10.6.189.50']
+ALLOWED_HOSTS = ['mm.safecity.uz','192.168.168.149','192.168.168.171','api-mm.safecity.uz','localhost','127.0.0.1', '10.6.189.50']
 
 INSTALLED_APPS = [
     'modeltranslation',
@@ -66,6 +66,11 @@ CSRF_TRUSTED_ORIGINS = [
     "http://192.168.168.149",
 
     "http://192.168.168.149:8080",
+
+    "http://192.168.168.171",
+    "http://192.168.168.171:3000",
+    "http://192.168.168.171:3030",
+    "http://192.168.168.171:8080",
 ]
 
 CORS_ORIGIN_ALLOW_ALL = False
@@ -85,6 +90,13 @@ CORS_ALLOWED_ORIGINS = [
     "https://192.168.168.149:3030",
 
     "http://192.168.168.149:8080",
+
+    "http://192.168.168.171:3000",
+    "https://192.168.168.171:3000",
+    "http://192.168.168.171:3030",
+    "https://192.168.168.171:3030",
+    "http://192.168.168.171:8080",
+    "http://192.168.168.171",
 
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
