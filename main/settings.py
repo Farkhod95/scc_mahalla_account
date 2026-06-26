@@ -61,6 +61,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://mm.safecity.uz",
     "http://mm.safecity.uz",
     "http://10.6.189.50",
+    "https://10.6.189.50",
     "http://192.168.168.149:3000",
     "http://192.168.168.149",
 
@@ -93,6 +94,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.6.189.50:8080",
     "http://10.6.189.50",
     "http://10.6.189.50:3000",
+    "https://10.6.189.50:8080",
+    "https://10.6.189.50",
+    "https://10.6.189.50:3000",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
