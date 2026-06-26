@@ -47,7 +47,7 @@ class ActiveLocationForeignKeyMixin:
 @admin.register(Employee)
 class EmployeeAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
     list_display = (
-        'sorting', 'full_name', 'phone_number', 'organization',
+        'sorting', 'type', 'full_name', 'phone_number', 'organization',
         'department', 'position', 'region', 'district', 'gom', 'mahalla'
     )
     list_select_related = (
@@ -60,7 +60,7 @@ class EmployeeAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
         'region', 'district', 'gom', 'mahalla', 'gender'
     )
     fields = (
-        'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number',
+        'sorting', 'type', 'full_name', 'date_of_birthday', 'gender', 'phone_number',
         'organization', 'department', 'date_of_appointment', 'position',
         'region', 'district', 'gom', 'mahalla', 'address', 'avatar'
     )

@@ -10,7 +10,7 @@ class EmployeeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Employee
-        fields = ('organization', 'department', 'position', 'region', 'district', 'gom', 'mahalla', 'gender', 'full_name', 'phone_number', 'sorting')
+        fields = ('organization', 'department', 'position', 'region', 'district', 'gom', 'mahalla', 'gender', 'full_name', 'phone_number', 'sorting', 'type')
 
 
 class MahallaInformationCategoryFilter(django_filters.FilterSet):
@@ -135,9 +135,15 @@ class ShopFilter(django_filters.FilterSet):
 class ShopCameraFilter(django_filters.FilterSet):
     url = django_filters.CharFilter(field_name='url', lookup_expr='icontains')
 
+    block_type = django_filters.ChoiceFilter(
+        field_name='shop__block_type',
+        choices=Shop.BlockType.choices,
+        label="Blok turi"
+    )
+
     class Meta:
         model = ShopCamera
-        fields = ('shop', 'title', 'url')
+        fields = ('shop', 'title', 'url', 'block_type')
 
 
 class ShopTenantFilter(django_filters.FilterSet):

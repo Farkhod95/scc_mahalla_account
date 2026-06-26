@@ -9,10 +9,16 @@ GENDERS = (
     ('female', _('Female')),
 )
 
+TYPE = (
+    ('mahalla', _('Mahalla')),
+    ('malika', _('Malika')),
+)
+
 class Employee(BaseModel):
     full_name = models.CharField(max_length=255, help_text=_("Hodim fio"))
     date_of_birthday = models.DateField(_('date of birthday'), null=True, blank=True, help_text=_("Tug‘ilgan sanasi"))
     gender = models.CharField(choices=GENDERS, max_length=6, null=True, blank=True, )
+    type = models.CharField(choices=TYPE, max_length=50, null=True, blank=True, )
     phone_number = models.CharField(_("Phone number"), max_length=100, help_text=_("Telefon raqami"))
     organization = models.ForeignKey(Organization, related_name='employees', on_delete=models.SET_NULL, null=True,
                                      blank=True, help_text=_("Tashkilot"))

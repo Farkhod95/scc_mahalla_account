@@ -17,7 +17,7 @@ class LocaleSerializer(serializers.ModelSerializer):
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
-        fields = ('id', 'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'gom', 'district', 'mahalla', 'address', 'avatar')
+        fields = ('id', 'sorting', 'type', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'department', 'date_of_appointment', 'position', 'region', 'gom', 'district', 'mahalla', 'address', 'avatar')
         extra_kwargs = {
             'full_name': {"required": True},
             'phone_number': {"required": True},
@@ -36,7 +36,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Employee
-        fields = ('id', 'sorting', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail',
+        fields = ('id', 'sorting', 'type', 'full_name', 'date_of_birthday', 'gender', 'phone_number', 'organization', 'organization_detail',
                   'department', 'department_detail', 'date_of_appointment', 'position', 'position_detail', 'region', 'region_detail', 'district', 'district_detail', 'gom', 'gom_detail', 'mahalla', 'mahalla_detail', 'address', 'avatar')
 
     def get_avatar(self, obj):
