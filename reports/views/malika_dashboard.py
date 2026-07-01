@@ -26,6 +26,12 @@ TAX_CODE_NDFL = 46          # Jismoniy shaxs daromad solig'i (ishchilar yonida)
 DAILY_TAX_RATE_YTT = Decimal("0.01")    # YTT  -> 1%
 DAILY_TAX_RATE_MCHJ = Decimal("0.04")   # MCHJ / boshqa -> 4%
 
+# VAQTINCHA: soliq API davr (periodFrom/periodTo) filtri bermagani uchun STIR'siz
+# YaTT tushumini oylik ololmaymiz. Shuning uchun "Soliq tushumlari" = savdo tushumi
+# x 4% qilib ko'rsatiladi. API ga davr filtri qo'shilgach — get() ichidagi "VAQTINCHA"
+# blokini o'chirib, real TaxRevenueMonthly (_tax_window) qiymatiga qaytariladi.
+TEMP_TAX_FROM_SALES_RATE = Decimal("0.04")
+
 
 class MalikaDashboardReportView(APIView):
     """
@@ -368,20 +374,33 @@ class MalikaDashboardReportView(APIView):
         #     NDFL(46) ishchilar yonida (oyna yig'indisi).
         #   - kunlik: o'zimiz savdodan hisoblaymiz (MCHJ 4% + YTT 1%), kod ajralmaydi.
         # =========================
-        tax_total = self._d(sum(item["value"] for item in tax_chart))  # = grafik yig'indisi
+        # --- VAQTINCHA: soliq tushumi = savdo tushumi x 4% ------------------
+        # Real soliq (yuqoridagi tax_chart / tax_window_by_code) o'rniga savdo
+        # grafigini 4% ga ko'paytiramiz — count = savdo count x 4%, chart bar-ba-bar
+        # 4%, breakdown "Aylanma soliq" ga yig'iladi (QQS/Foyda 0). NDFL (income_tax)
+        # real qiymatida qoladi. API ga davr filtri qo'shilsa — SHU blokni o'chirib,
+        # ostidagi (izohga olingan) real hisobga qaytariladi.
+        tax_chart = [
+            {"label": c["label"],
+             "value": self._chart_value(self._d(c["value"]) * TEMP_TAX_FROM_SALES_RATE)}
+            for c in sales_chart
+        ]
+        tax_total = sales_total * TEMP_TAX_FROM_SALES_RATE
         if period == "daily":
             tax_items = []                  # kunlik — kod breakdown yo'q
             income_tax_value = None         # NDFL faqat oylik/yillik
         else:
-            qqs = tax_window_by_code.get(TAX_CODE_QQS, Decimal("0"))
-            foyda = tax_window_by_code.get(TAX_CODE_FOYDA, Decimal("0"))
-            aylanma = tax_window_by_code.get(TAX_CODE_AYLANMA, Decimal("0"))
             tax_items = [
-                {"key": "QQS", "name": "QQS", "count": float(qqs)},
-                {"key": "FOYDA", "name": "Foyda solig'i", "count": float(foyda)},
-                {"key": "AYLANMA", "name": "Aylanma soliq", "count": float(aylanma)},
+                {"key": "QQS", "name": "QQS", "count": 0.0},
+                {"key": "FOYDA", "name": "Foyda solig'i", "count": 0.0},
+                {"key": "AYLANMA", "name": "Aylanma soliq", "count": float(tax_total)},
             ]
             income_tax_value = float(tax_window_by_code.get(TAX_CODE_NDFL, Decimal("0")))
+        # --- /VAQTINCHA. Real soliqqa qaytarish uchun yuqoridagi blok o'rniga:
+        #   tax_total = self._d(sum(item["value"] for item in tax_chart))
+        #   if period == "daily": tax_items = []; income_tax_value = None
+        #   else: qqs/foyda/aylanma = tax_window_by_code.get(...); tax_items=[...]
+        #         income_tax_value = float(tax_window_by_code.get(TAX_CODE_NDFL, 0))
 
         # =========================
         # 6. CASH REGISTERS
