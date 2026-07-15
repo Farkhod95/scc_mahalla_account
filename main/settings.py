@@ -291,6 +291,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'restapp.authentication.StaticTokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication'
     ),
@@ -305,6 +306,15 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+# =========================
+# Raqamli bozor (scc_raqamli_bozor) proxy — statik token
+# Boshqa loyiha shu token bilan (X-Api-Key header) barcha API ma'lumotlarini
+# o'qiy oladi (restapp.authentication.StaticTokenAuthentication).
+# Qiymat FAQAT environment (.env / docker-compose secret) orqali beriladi —
+# kodga hardcode qilinmaydi.
+# =========================
+MALIKA_PROXY_STATIC_TOKEN = os.environ.get('MALIKA_PROXY_STATIC_TOKEN', '')
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {

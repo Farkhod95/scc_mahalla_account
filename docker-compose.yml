@@ -3,6 +3,8 @@ services:
     build: .
     container_name: mahalla_account_web
     restart: always
+    env_file:
+      - .env
     volumes:
       - .:/app
       - static_volume:/app/media_static
@@ -46,6 +48,8 @@ services:
     container_name: mahalla_account_celery
     restart: always
     command: celery -A main worker --loglevel=info
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:
@@ -57,6 +61,8 @@ services:
     container_name: mahalla_account_celery_beat
     restart: always
     command: celery -A main beat --loglevel=info
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:

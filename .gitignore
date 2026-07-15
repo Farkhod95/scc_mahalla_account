@@ -13,3 +13,4 @@ wait-for-it.sh
 #docker-compose.yml
 #Dockerfile
 media_static/
+.env
