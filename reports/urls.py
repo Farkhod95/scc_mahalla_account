@@ -5,6 +5,7 @@ from reports.views.detection_count_api import DetectionCountProxyView
 from reports.views.face_detection_count_api import FaceDetectionCountProxyView
 from reports.views.malika_dashboard import MalikaDashboardReportView
 from reports.views.malika_flow import MalikaFlowReportView
+from reports.views.raqamli_bozor_proxy import RaqamliBozorProxyView
 from reports.views.sales_revenue_excel import SalesRevenueExcelView
 from reports.views.tax_revenue import TaxRevenueReportView
 from reports.views.tax_revenue_excel import TaxRevenueExcelView
@@ -19,5 +20,6 @@ urlpatterns = [
     path("reports/tax-revenue", TaxRevenueReportView.as_view(), name="tax-revenue-report"),
     path("reports/tax-revenue/excel", TaxRevenueExcelView.as_view(), name="tax-revenue-excel"),
     path("reports/sales-revenue/excel", SalesRevenueExcelView.as_view(), name="sales-revenue-excel"),
+    path("reports/raqamli-bozor/<path:endpoint>", RaqamliBozorProxyView.as_view(), name="raqamli-bozor-proxy"),
 
 ]
