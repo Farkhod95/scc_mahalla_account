@@ -7,8 +7,6 @@ from monitoring.models import CarFlow
 from monitoring.serializer.car_flow import CarFlowCreateSerializer, CarFlowListSerializer
 from restapp.pagination import ResultsSetPagination
 
-CAR_FLOW_API_KEY = "f441ad4eb7cf8d5f3f474162baa49a30cda1e3c5643e6701e6077d727c75984e"
-
 
 class CarFlowView(APIView):
 
@@ -16,10 +14,6 @@ class CarFlowView(APIView):
         if self.request.method == 'POST':
             return []
         return [IsAuthenticated()]
-
-    def _check_api_key(self, request):
-        key = request.headers.get('X-Api-Key') or request.query_params.get('api_key')
-        return key == CAR_FLOW_API_KEY
 
     def get(self, request):
         qs = CarFlow.objects.all()
@@ -45,8 +39,6 @@ class CarFlowView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
-        if not self._check_api_key(request):
-            return Response({'detail': 'Invalid or missing API key.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = CarFlowCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
