@@ -924,6 +924,30 @@ def warm_shop_cash_status_task():
     return {"ok": True, **counts}
 
 
+@shared_task(name="celery_task.cleanup_carflow_images_task")
+def cleanup_carflow_images_task(days=7):
+    """
+    CarFlow.image (base64 JPEG) faqat DAYS kunlik saqlanadi — shundan eski
+    yozuvlarning rasmi tozalanadi (baza hajmi cheksiz o'smasligi uchun).
+    Boshqa maydonlar (plate, type, recorded_at va h.k.) saqlanib qoladi.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from monitoring.models import CarFlow
+
+    cutoff = timezone.now() - timedelta(days=days)
+    cleared = (
+        CarFlow.objects
+        .filter(recorded_at__lt=cutoff)
+        .exclude(image__isnull=True)
+        .exclude(image='')
+        .update(image=None)
+    )
+    return {"ok": True, "cleared": cleared, "cutoff": cutoff.isoformat()}
+
+
 @shared_task
 def sync_patrol_cars_task():
     api_url = "http://25.1.1.217:80/api/mobject/lastData"

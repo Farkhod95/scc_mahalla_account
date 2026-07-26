@@ -194,6 +194,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'celery_task.sync_tax_revenue_monthly_task',
         'schedule': crontab(hour=6, minute=0),
     },
+    # Har kuni 01:00 da 7 kundan eski CarFlow rasmlarini (base64 JPEG) tozalaydi
+    # (baza hajmi cheksiz o'smasligi uchun; boshqa maydonlar saqlanadi).
+    'cleanup-carflow-images': {
+        'task': 'celery_task.cleanup_carflow_images_task',
+        'schedule': crontab(hour=1, minute=0),
+    },
 }
 
 # Damafon (Dahua VTO intercom) mikroservis — bizning backend faqat PROXY qiladi

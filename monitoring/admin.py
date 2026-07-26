@@ -297,8 +297,8 @@ class MFYCitizenAdmin(ActiveLocationForeignKeyMixin, admin.ModelAdmin):
 
 @admin.register(CarFlow)
 class CarFlowAdmin(admin.ModelAdmin):
-    list_display = ('ip_address', 'location_type', 'type', 'region_soato', 'recorded_at', 'created_time')
+    list_display = ('ip_address', 'plate', 'location_type', 'type', 'region_soato', 'recorded_at', 'created_time')
     list_filter = ('location_type', 'type')
-    search_fields = ('ip_address',)
+    search_fields = ('ip_address', 'plate')
     readonly_fields = ('created_time',)
-    fields = ('camera', 'ip_address', 'location_type', 'region_soato', 'type', 'recorded_at', 'created_time')
+    fields = ('camera', 'ip_address', 'location_type', 'region_soato', 'type', 'plate', 'image', 'recorded_at', 'created_time')

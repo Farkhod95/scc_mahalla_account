@@ -310,6 +310,8 @@ class CarFlow(models.Model):
     )
     region_soato = models.IntegerField(null=True, blank=True, help_text=_("Viloyat SOATO"))
     type = models.CharField(max_length=10, choices=TYPE.choices, help_text=_("Kirdi/Chiqdi"))
+    plate = models.CharField(max_length=50, null=True, blank=True, help_text=_("Davlat raqami"))
+    image = models.TextField(null=True, blank=True, help_text=_("Mashina rasmi (base64 JPEG)"))
     recorded_at = models.DateTimeField(help_text=_("Qayd etilgan vaqt"))
     created_time = models.DateTimeField(auto_now_add=True)
 
