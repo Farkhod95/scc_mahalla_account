@@ -109,6 +109,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://10.6.189.50:8080",
     "https://10.6.189.50",
     "https://10.6.189.50:3000",
+
+    "https://87.192.235.232:1998",
+    "https://87.192.235.232",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
