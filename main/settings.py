@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-+z(00bq*+-lxrzdvn3-6ti8czltg_8r0-+c$+q8+!e&j%u2m_v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['mm.safecity.uz','192.168.168.149','192.168.168.171','api-mm.safecity.uz','localhost','127.0.0.1', '10.6.189.50']
+ALLOWED_HOSTS = ['mm.safecity.uz','192.168.168.149','192.168.168.171','api-mm.safecity.uz','localhost','127.0.0.1', '10.6.189.50', '87.192.235.232']
 
 INSTALLED_APPS = [
     'modeltranslation',
