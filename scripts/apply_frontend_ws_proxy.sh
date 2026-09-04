@@ -86,6 +86,33 @@ fi
 log "Konfig fayl: $CONF   (listen $PORT)"
 LISTEN_RE="$(listen_re "$PORT")"
 
+# Konteyner ichidagi o'zgarish DOIMIY bo'lishi uchun konfig bind-mount bo'lishi kerak,
+# aks holda `docker compose up -d --build` da yo'qoladi.
+if [ "$IN_DOCKER" -eq 1 ]; then
+    echo
+    log "Konteyner mount'lari:"
+    docker inspect -f '{{range .Mounts}}      {{.Destination}}  <-  {{.Source}}{{"
+"}}{{end}}' "$CONTAINER" || true
+    MOUNTED=0
+    while IFS= read -r dest; do
+        [ -n "$dest" ] || continue
+        case "$CONF/" in "$dest"/*|"$dest"/) MOUNTED=1 ;; esac
+        [ "$CONF" = "$dest" ] && MOUNTED=1
+        case "/etc/nginx/conf.d/" in "$dest"/*|"$dest"/) MOUNTED=1 ;; esac
+    done <<EOF
+$(docker inspect -f '{{range .Mounts}}{{.Destination}}{{"
+"}}{{end}}' "$CONTAINER" 2>/dev/null)
+EOF
+    if [ "$MOUNTED" -eq 1 ]; then
+        log "Konfig bind-mount ichida — o'zgarish konteyner qayta yaratilsa ham saqlanadi"
+    else
+        warn "DIQQAT: konfig bind-mount EMAS. Bu o'zgarish faqat hozirgi konteynerda yashaydi va"
+        warn "  'docker compose up -d --build' da YO'QOLADI. Doimiy qilish uchun snippet'ni"
+        warn "  frontend repo'siga (nginx konfigi yoniga) qo'shib, image'ni qayta build qiling."
+    fi
+    echo
+fi
+
 if run sh -c "grep -q '$TARGET_NAME' '$CONF'"; then
     warn "include allaqachon mavjud — faqat snippet yangilanadi."
     ALREADY=1
