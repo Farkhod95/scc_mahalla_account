@@ -6,22 +6,29 @@
 # Sabab: frontend build https sahifada WS ni majburan wss:// ga o'giradi, backend
 # nginx esa 8080 portda faqat plain HTTP (docker-compose: "8080:80").
 #
-# Ishlatish:
-#   scp nginx/frontend-3000-proxy.conf scripts/apply_frontend_ws_proxy.sh root@192.168.168.149:/tmp/
-#   ssh root@192.168.168.149 'bash /tmp/apply_frontend_ws_proxy.sh /tmp/frontend-3000-proxy.conf'
+# Ishlatish (repo katalogidan):
+#   sudo bash scripts/apply_frontend_ws_proxy.sh nginx/frontend-3000-proxy.conf
+#
+# Konfig avtomatik topilmasa, qo'lda ko'rsatish mumkin:
+#   sudo CONF=/etc/nginx/conf.d/default.conf bash scripts/apply_frontend_ws_proxy.sh nginx/frontend-3000-proxy.conf
 #
 # Idempotent. Xatoda konfig backupdan tiklanadi va nginx tegilmagan holida qoladi.
 set -euo pipefail
 
-SNIPPET_SRC="${1:-/tmp/frontend-3000-proxy.conf}"
+SNIPPET_SRC="${1:-nginx/frontend-3000-proxy.conf}"
 TARGET_NAME="frontend-3000-proxy.conf"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-# 'listen ... 3000' — 'listen 13000' va 'return 301 ...:3000' ga tushmaydi.
-LISTEN_RE='^[[:space:]]*listen[[:space:]]+([0-9.]*:|[[][0-9a-fA-F:]*[]]:)?3000[;[:space:]]'
+CONF="${CONF:-}"          # env orqali qo'lda ko'rsatish mumkin
+BACKEND="192.168.168.149:8080"
 
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
+
+# 'listen <port>' — 'listen 1<port>' va 'return 301 ...:<port>' ga tushmaydi.
+listen_re() {
+    printf '^[[:space:]]*listen[[:space:]]+([0-9.]*:|[[][0-9a-fA-F:]*[]]:)?%s[;[:space:]]' "$1"
+}
 
 [ -f "$SNIPPET_SRC" ] || die "Snippet topilmadi: $SNIPPET_SRC"
 
@@ -31,8 +38,16 @@ if command -v docker >/dev/null 2>&1; then
     CONTAINER="$(docker ps --format '{{.ID}} {{.Ports}}' 2>/dev/null | awk '/:3000->/ {print $1; exit}')"
 fi
 
+# Konteyner ichidagi HAQIQIY port (docker 3000 ni 443/80 ga map qilgan bo'lishi mumkin)
+PORTS="3000 443 80 8443"
 if [ -n "$CONTAINER" ]; then
     log ":3000 docker konteynerda: $(docker inspect -f '{{.Name}}' "$CONTAINER" | sed 's#^/##') ($CONTAINER)"
+    docker port "$CONTAINER" | sed 's/^/      /' || true
+    INNER="$(docker port "$CONTAINER" 2>/dev/null | sed -n 's#^\([0-9]\{1,5\}\)/tcp[[:space:]]*->[[:space:]]*.*:3000$#\1#p' | head -1)"
+    if [ -n "$INNER" ]; then
+        log "Konteyner ichidagi port: $INNER  (host 3000 -> $INNER)"
+        PORTS="$INNER 3000 443 80 8443"
+    fi
     IN_DOCKER=1
 else
     command -v nginx >/dev/null 2>&1 || die ":3000 uchun na docker konteyner, na host nginx topildi."
@@ -47,11 +62,29 @@ copy_in() {
     if [ "$IN_DOCKER" -eq 1 ]; then docker cp "$1" "$CONTAINER:$2"; else install -m 0644 "$1" "$2"; fi
 }
 
-# --------------------------------------------------- 2. 'listen 3000' faylini top
-CONF="$(run sh -c "grep -rlE '$LISTEN_RE' /etc/nginx 2>/dev/null | head -1" || true)"
-CONF="$(printf '%s' "$CONF" | tr -d '\r')"
-[ -n "$CONF" ] || die "/etc/nginx ichida 'listen ... 3000' topilmadi — konfig faylini qo'lda ko'rsating."
-log "Konfig fayl: $CONF"
+# --------------------------------------------------- 2. Server konfigini topish
+PORT=""
+if [ -n "$CONF" ]; then
+    log "Konfig qo'lda berildi: $CONF"
+    for p in $PORTS; do
+        if run sh -c "grep -qE '$(listen_re "$p")' '$CONF'"; then PORT="$p"; break; fi
+    done
+    [ -n "$PORT" ] || die "$CONF ichida ($PORTS) portlaridan hech biri uchun 'listen' satri topilmadi."
+else
+    for p in $PORTS; do
+        f="$(run sh -c "grep -rlE '$(listen_re "$p")' /etc/nginx 2>/dev/null | head -1" || true)"
+        f="$(printf '%s' "$f" | tr -d '\r')"
+        if [ -n "$f" ]; then CONF="$f"; PORT="$p"; break; fi
+    done
+fi
+
+if [ -z "$CONF" ]; then
+    warn "/etc/nginx ichida mos 'listen' topilmadi. Mavjud 'listen' satrlari:"
+    run sh -c "grep -rnE '^[[:space:]]*listen[[:space:]]' /etc/nginx 2>/dev/null | head -40" || true
+    die "Kerakli faylni CONF=... bilan qo'lda ko'rsating."
+fi
+log "Konfig fayl: $CONF   (listen $PORT)"
+LISTEN_RE="$(listen_re "$PORT")"
 
 if run sh -c "grep -q '$TARGET_NAME' '$CONF'"; then
     warn "include allaqachon mavjud — faqat snippet yangilanadi."
@@ -69,8 +102,17 @@ run mkdir -p /etc/nginx/conf.d
 copy_in "$SNIPPET_SRC" "/etc/nginx/conf.d/${TARGET_NAME}"
 log "Snippet joylandi: /etc/nginx/conf.d/${TARGET_NAME}"
 
+# Backend'ga (8080) shu joydan yetib borishini tekshirish — majburiy emas
+if run sh -c "command -v wget >/dev/null 2>&1"; then
+    if run sh -c "wget -q -T 5 -O /dev/null http://${BACKEND}/api/v1/ 2>/dev/null || [ \$? -eq 8 ]"; then
+        log "Backend http://${BACKEND} shu joydan ko'rinadi"
+    else
+        warn "Backend http://${BACKEND} ga ulanib bo'lmadi — proxy ishlamasligi mumkin (docker tarmog'ini tekshiring)"
+    fi
+fi
+
 # ------------------------------------------------ 4. include ni server blokiga
-# 'listen ... 3000' satridan KEYIN qo'yiladi — server bloki ichidagi eng xavfsiz
+# 'listen ... <PORT>' satridan KEYIN qo'yiladi — server bloki ichidagi eng xavfsiz
 # nuqta (yopiluvchi qavsni topishga urinmaydi). nginx da location tartibi
 # joylashuvga bog'liq emas: eng uzun prefiks yutadi.
 # sed emas, awk — busybox (alpine) sed `0,/re/` ni bilmaydi.
@@ -80,7 +122,7 @@ if [ "$ALREADY" -eq 0 ]; then
         { print }
         END { if (!ins) exit 3 }
     ' '$CONF' > '$CONF.new'" \
-      || { run rm -f "$CONF.new"; die "awk: 'listen ... 3000' satri topilmadi — o'zgarish qilinmadi."; }
+      || { run rm -f "$CONF.new"; die "awk: 'listen ... $PORT' satri topilmadi — o'zgarish qilinmadi."; }
     run sh -c "cat '$CONF.new' > '$CONF' && rm -f '$CONF.new'"
     log "include qo'shildi"
 fi
