@@ -12,11 +12,21 @@
 # Konfig avtomatik topilmasa, qo'lda ko'rsatish mumkin:
 #   sudo CONF=/etc/nginx/conf.d/default.conf bash scripts/apply_frontend_ws_proxy.sh nginx/frontend-3000-proxy.conf
 #
-# Idempotent. Xatoda konfig backupdan tiklanadi va nginx tegilmagan holida qoladi.
+# Idempotent. Xatoda konfig backupdan tiklanadi, snippet o'chiriladi va nginx
+# tegilmagan holida qoladi.
 set -euo pipefail
 
 SNIPPET_SRC="${1:-nginx/frontend-3000-proxy.conf}"
 TARGET_NAME="frontend-3000-proxy.conf"
+
+# DIQQAT: snippet `conf.d/` ga QO'YILMAYDI. nginx.conf da
+# `include /etc/nginx/conf.d/*.conf;` bor — u yerdagi fayl `http` darajasida ham
+# yuklanadi va `location` u kontekstda taqiqlangani uchun nginx ko'tarilmaydi
+# ("location directive is not allowed here"). Shuning uchun `snippets/`.
+SNIPPET_DIR="/etc/nginx/snippets"
+SNIPPET_DST="${SNIPPET_DIR}/${TARGET_NAME}"
+STALE_DST="/etc/nginx/conf.d/${TARGET_NAME}"   # eski, xato joylashuv
+
 STAMP="$(date +%Y%m%d-%H%M%S)"
 CONF="${CONF:-}"          # env orqali qo'lda ko'rsatish mumkin
 BACKEND="192.168.168.149:8080"
@@ -62,6 +72,13 @@ copy_in() {
     if [ "$IN_DOCKER" -eq 1 ]; then docker cp "$1" "$CONTAINER:$2"; else install -m 0644 "$1" "$2"; fi
 }
 
+# ------------------------- 0. Avvalgi muvaffaqiyatsiz urinish qoldig'ini tozalash
+# Eski versiya snippet'ni conf.d/ ga qo'yardi — u yerda qolsa nginx ko'tarilmaydi.
+if run sh -c "[ -f '$STALE_DST' ]" 2>/dev/null; then
+    warn "Eski (xato joydagi) snippet topildi: $STALE_DST — o'chirilmoqda"
+    run rm -f "$STALE_DST"
+fi
+
 # --------------------------------------------------- 2. Server konfigini topish
 PORT=""
 if [ -n "$CONF" ]; then
@@ -90,18 +107,16 @@ LISTEN_RE="$(listen_re "$PORT")"
 # aks holda `docker compose up -d --build` da yo'qoladi.
 if [ "$IN_DOCKER" -eq 1 ]; then
     echo
-    log "Konteyner mount'lari:"
-    docker inspect -f '{{range .Mounts}}      {{.Destination}}  <-  {{.Source}}{{"
-"}}{{end}}' "$CONTAINER" || true
+    log "Konteyner mount'lari (Destination):"
+    docker inspect --format '{{range .Mounts}}{{println "     " .Destination "<-" .Source}}{{end}}' "$CONTAINER" || true
     MOUNTED=0
     while IFS= read -r dest; do
         [ -n "$dest" ] || continue
-        case "$CONF/" in "$dest"/*|"$dest"/) MOUNTED=1 ;; esac
         [ "$CONF" = "$dest" ] && MOUNTED=1
-        case "/etc/nginx/conf.d/" in "$dest"/*|"$dest"/) MOUNTED=1 ;; esac
+        case "$CONF" in "$dest"/*) MOUNTED=1 ;; esac
+        case "$SNIPPET_DIR" in "$dest"|"$dest"/*) MOUNTED=1 ;; esac
     done <<EOF
-$(docker inspect -f '{{range .Mounts}}{{.Destination}}{{"
-"}}{{end}}' "$CONTAINER" 2>/dev/null)
+$(docker inspect --format '{{range .Mounts}}{{println .Destination}}{{end}}' "$CONTAINER" 2>/dev/null || true)
 EOF
     if [ "$MOUNTED" -eq 1 ]; then
         log "Konfig bind-mount ichida — o'zgarish konteyner qayta yaratilsa ham saqlanadi"
@@ -125,17 +140,31 @@ BACKUP="${CONF}.bak-${STAMP}"
 run cp -a "$CONF" "$BACKUP"
 log "Backup: $BACKUP"
 
-run mkdir -p /etc/nginx/conf.d
-copy_in "$SNIPPET_SRC" "/etc/nginx/conf.d/${TARGET_NAME}"
-log "Snippet joylandi: /etc/nginx/conf.d/${TARGET_NAME}"
+run mkdir -p "$SNIPPET_DIR"
+copy_in "$SNIPPET_SRC" "$SNIPPET_DST"
+log "Snippet joylandi: $SNIPPET_DST"
 
-# Backend'ga (8080) shu joydan yetib borishini tekshirish — majburiy emas
-if run sh -c "command -v wget >/dev/null 2>&1"; then
-    if run sh -c "wget -q -T 5 -O /dev/null http://${BACKEND}/api/v1/ 2>/dev/null || [ \$? -eq 8 ]"; then
-        log "Backend http://${BACKEND} shu joydan ko'rinadi"
+# Xatoda hammasini joyiga qaytarish
+rollback() {
+    warn "Konfig backupdan tiklanmoqda va snippet o'chirilmoqda"
+    run sh -c "cat '$BACKUP' > '$CONF'" || true
+    run rm -f "$SNIPPET_DST" || true
+    if run nginx -t >/dev/null 2>&1; then
+        log "nginx konfigi yana toza (test o'tdi) — sayt ishlashda davom etadi"
     else
-        warn "Backend http://${BACKEND} ga ulanib bo'lmadi — proxy ishlamasligi mumkin (docker tarmog'ini tekshiring)"
+        warn "Diqqat: tiklangandan keyin ham 'nginx -t' o'tmadi:"
+        run nginx -t || true
     fi
+}
+
+# Backend'ga (8080) shu joydan yetib borishini tekshirish — majburiy emas.
+# 401 ham "ulanish bor" degani, shuning uchun javob HEADER i bo'yicha tekshiriladi.
+if run sh -c "command -v wget >/dev/null 2>&1"; then
+    CHK="$(run sh -c "wget -T 5 -S -O /dev/null 'http://${BACKEND}/api/v1/' 2>&1" || true)"
+    case "$CHK" in
+        *HTTP/1*) log "Backend http://${BACKEND} shu joydan ko'rinadi (javob keldi)" ;;
+        *)        warn "Backend http://${BACKEND} ga ulanib bo'lmadi: $(printf '%s' "$CHK" | tr '\n' ' ' | cut -c1-160)" ;;
+    esac
 fi
 
 # ------------------------------------------------ 4. include ni server blokiga
@@ -144,14 +173,17 @@ fi
 # joylashuvga bog'liq emas: eng uzun prefiks yutadi.
 # sed emas, awk — busybox (alpine) sed `0,/re/` ni bilmaydi.
 if [ "$ALREADY" -eq 0 ]; then
-    run sh -c "awk -v inc='    include /etc/nginx/conf.d/${TARGET_NAME};' '
+    if ! run sh -c "awk -v inc='    include ${SNIPPET_DST};' '
         /$LISTEN_RE/ && !ins { print; print inc; ins=1; next }
         { print }
         END { if (!ins) exit 3 }
-    ' '$CONF' > '$CONF.new'" \
-      || { run rm -f "$CONF.new"; die "awk: 'listen ... $PORT' satri topilmadi — o'zgarish qilinmadi."; }
+    ' '$CONF' > '$CONF.new'"; then
+        run rm -f "$CONF.new" || true
+        run rm -f "$SNIPPET_DST" || true
+        die "awk: 'listen ... $PORT' satri topilmadi — o'zgarish qilinmadi."
+    fi
     run sh -c "cat '$CONF.new' > '$CONF' && rm -f '$CONF.new'"
-    log "include qo'shildi"
+    log "include qo'shildi: $SNIPPET_DST"
 fi
 
 # ------------------------------------------------------------ 5. Test + reload
@@ -159,9 +191,7 @@ if run nginx -t; then
     run nginx -s reload
     log "nginx reload qilindi"
 else
-    warn "nginx -t xato berdi — konfig backupdan tiklanmoqda"
-    run sh -c "cat '$BACKUP' > '$CONF'"
-    run nginx -t >/dev/null 2>&1 || warn "Diqqat: tiklangan konfig ham test o'tmadi!"
+    rollback
     die "O'zgarish bekor qilindi. Yuqoridagi 'nginx -t' xatosiga qarang."
 fi
 
