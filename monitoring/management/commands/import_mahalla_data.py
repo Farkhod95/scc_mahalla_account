@@ -266,8 +266,9 @@ POSITION_SUFFIX_RULES = (
      "Profilaktika inspektori"),
 )
 
-# Lavozim BO'SH ekanini bildiruvchi yozuv — bu xodim emas, qator o'tkaziladi.
-VACANT_NAMES = {"vokant", "vakant", "bosh", "yoq", "vb"}
+# Lavozim/ism/telefon BO'SH ekanini bildiruvchi yozuv — qator o'tkaziladi.
+# "йуқ" (ў o'rniga у) ham uchraydi: lotinda "yuq" bo'ladi.
+VACANT_NAMES = {"vokant", "vakant", "bosh", "yoq", "yuq", "vb"}
 
 NS = {
     "xdr": "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing",
@@ -495,9 +496,38 @@ CITIZEN_HEADER = {
     "location": ("локац", "лакатц"),
 }
 
+# `умумий` faollar bloki. Odatdagi tartib: 2=Ф.И.Ш, 3=Лавозими, 5=манzil,
+# 6=телефон — lekin ba'zi fayllarda ortiqcha "Tug'ilgan sanasi" ustuni bor va
+# undan keyingi hamma narsa bir katak suriladi. Qat'iy raqamga ishonilsa
+# manzil telefon maydoniga, tug'ilgan sana esa manzil maydoniga tushib qoladi.
+#
+# "туғилган" yolg'iz kalit sifatida YARAMAYDI: F.I.Sh sarlavhasining o'zi
+# "Ф.И.Ш, туғилган йили ва жойи" deb yoziladi. Shuning uchun "сана" bilan.
+ACTIVIST_HEADER = {
+    "full_name": ("ф.и.ш", "фиш"),
+    "position": ("лавозим",),
+    "photo": ("расм",),
+    "birthday": ("туғилган сана", "тугилган сана", "ilgan sanasi"),
+    "address": ("яшаш манзил", "манзил"),
+    "phone": ("телефон",),
+}
+
 OBJECT_HEADER = {
     "leader": ("раҳбар", "рахбар"),
     "photo": ("расм",),
+    "phone": ("телефон",),
+    "address": ("манзил",),
+    "location": ("локац", "лакатц"),
+}
+
+# `умумий` obyektlar bloki. Odatdagi tartib: 2=Объект номи, 4=Ташкилот,
+# 5=Раҳбар Ф.И.Ш, 6=Телефон, 7=манzil, 8=локация. Faollar blokidagi kabi,
+# ba'zi fayllarda ortiqcha "Tug'ilgan sanasi" ustuni bor va undan keyingi
+# ustunlar suriladi — o'shanda telefon maydoniga tug'ilgan sana tushardi.
+UMUMIY_OBJECT_HEADER = {
+    "label": ("объект номи", "обьект номи"),
+    "org": ("ташкилот",),
+    "leader": ("раҳбар", "рахбар"),
     "phone": ("телефон",),
     "address": ("манзил",),
     "location": ("локац", "лакатц"),
@@ -530,16 +560,32 @@ def find_header(ws, keywords, max_row=8):
 
 
 def parse_phone(value):
-    """`91-198-58-24` -> `+998911985824`. Tanib bo'lmasa asl matn qaytadi."""
+    """
+    `91-198-58-24` -> `+998911985824`.
+
+    Telefon katagida har doim ham telefon turmaydi: "йўқ"/"Yo'q" (= yo'q),
+    bitta katakda ikkita raqam, ba'zan manzil yoki sana. Yo'qlik belgisi
+    bo'lsa None, tanib bo'lmagan matn esa LOTINGA o'girib qaytariladi —
+    aks holda bazada kirill matn qolib ketadi.
+    """
     raw = clean(value)
     if not raw:
         return None
+    if norm_name(to_latin(raw)) in VACANT_NAMES:
+        return None
+
     digits = re.sub(r"\D", "", raw)
     if len(digits) == 9:
         return "+998" + digits
     if len(digits) == 12 and digits.startswith("998"):
         return "+" + digits
-    return raw or None
+    # Bitta katakka ikkita raqam yozilgan ("95 001 00 44 93 517 13 13") —
+    # birinchisi olinadi, modelda bitta maydon bor.
+    if len(digits) == 18:
+        return "+998" + digits[:9]
+    if len(digits) == 24 and digits.startswith("998"):
+        return "+" + digits[:12]
+    return to_latin(raw) or None
 
 
 def parse_date(value):
@@ -1110,14 +1156,29 @@ class Command(BaseCommand):
             self.warnings.append("умумий: faollar sarlavhasi topilmadi")
             return
 
+        # Ustunlar sarlavha matni bo'yicha aniqlanadi; topilmagani odatdagi
+        # o'rnida deb olinadi (`ACTIVIST_HEADER` izohiga qarang).
+        cols = {}
+        for col in range(1, min(ws.max_column, 30) + 1):
+            label = norm_key(ws.cell(start, col).value)
+            if not label:
+                continue
+            for key, words in ACTIVIST_HEADER.items():
+                if key not in cols and any(w in label for w in words):
+                    cols[key] = col
+        name_col = cols.get("full_name", 2)
+        role_col = cols.get("position", 3)
+        addr_col = cols.get("address", 5)
+        phone_col = cols.get("phone", 6)
+
         empty_streak = 0
         for row in range(start + 1, ws.max_row + 1):
             # Keyingi blok sarlavhasi — faollar tugadi
-            if norm_key(ws.cell(row, 2).value) in BLOCK_HEADER_LABELS:
+            if norm_key(ws.cell(row, name_col).value) in BLOCK_HEADER_LABELS:
                 break
 
-            full_name = person_name(ws.cell(row, 2).value)
-            role, appointed = position_name(ws.cell(row, 3).value)
+            full_name = person_name(ws.cell(row, name_col).value)
+            role, appointed = position_name(ws.cell(row, role_col).value)
 
             # "Вокант"/"ВБ" — lavozim bo'sh degani. Bunday qatordan xodim
             # yaratilsa bazada "Vokant" ismli soxta rais paydo bo'ladi.
@@ -1139,10 +1200,14 @@ class Command(BaseCommand):
                 continue
             empty_streak = 0
 
-            _, birthday, _ = take_date_out(split_lines(ws.cell(row, 2).value))
+            _, birthday, _ = take_date_out(split_lines(ws.cell(row, name_col).value))
+            # Alohida "Tug'ilgan sanasi" ustuni bo'lsa — F.I.Sh katagida sana
+            # yozilmagan bo'lishi mumkin.
+            if birthday is None and cols.get("birthday"):
+                birthday = parse_date(ws.cell(row, cols["birthday"]).value)
             position = self.resolve_position(role, row)
 
-            phone = parse_phone(ws.cell(row, 6).value) or "-"
+            phone = parse_phone(ws.cell(row, phone_col).value) or "-"
             obj, created = self.upsert_employee(
                 full_name, phone, row,
                 defaults={
@@ -1150,7 +1215,7 @@ class Command(BaseCommand):
                     "date_of_birthday": birthday,
                     "date_of_appointment": appointed,
                     "phone_number": phone,
-                    "address": to_latin(clean(ws.cell(row, 5).value)) or None,
+                    "address": to_latin(clean(ws.cell(row, addr_col).value)) or None,
                     "type": "mahalla",
                     "region": self.mahalla.region, "district": self.mahalla.district,
                     "gom": self.mahalla.gom,
@@ -1403,6 +1468,22 @@ class Command(BaseCommand):
             self.warnings.append("умумий: obyektlar bloki topilmadi")
             return
 
+        # Ustunlar sarlavha matni bo'yicha (`UMUMIY_OBJECT_HEADER` izohiga qarang)
+        cols = {}
+        for col in range(1, min(ws.max_column, 30) + 1):
+            head = norm_key(ws.cell(start, col).value)
+            if not head:
+                continue
+            for key, words in UMUMIY_OBJECT_HEADER.items():
+                if key not in cols and any(w in head for w in words):
+                    cols[key] = col
+        label_col = cols.get("label", 2)
+        org_col = cols.get("org", 4)
+        leader_col = cols.get("leader", 5)
+        phone_col = cols.get("phone", 6)
+        addr_col = cols.get("address", 7)
+        loc_col = cols.get("location", 8)
+
         photo_index = self._object_photo_index(ws)
         categories = {c.key: c for c in ObjectCategory.objects.all()}
         current_key = None
@@ -1410,7 +1491,7 @@ class Command(BaseCommand):
         seen_phones = set()
 
         for row in range(start + 1, ws.max_row + 1):
-            label = clean(ws.cell(row, 2).value)
+            label = clean(ws.cell(row, label_col).value)
             unknown_label = None
             if label:
                 normalized = norm_key(label)
@@ -1427,7 +1508,7 @@ class Command(BaseCommand):
                         unknown_label = label
                     current_key = None
 
-            leader = clean(ws.cell(row, 5).value)
+            leader = clean(ws.cell(row, leader_col).value)
             if not leader:
                 continue
             if current_key is None:
@@ -1444,23 +1525,23 @@ class Command(BaseCommand):
                     f"умумий r{row}: ObjectCategory topilmadi (key={current_key})")
                 continue
 
-            lat, lng, note = parse_location(ws.cell(row, 8).value)
+            lat, lng, note = parse_location(ws.cell(row, loc_col).value)
             cx, cy = self.check_coords(lat, lng, f"умумий r{row}", note)
-            full_name = person_name(ws.cell(row, 5).value)
+            full_name = person_name(ws.cell(row, leader_col).value)
 
             # "Yo'q"/"Vokant" — rahbar yo'q degani, ism emas. Aks holda
             # obyekt rahbari sifatida bazaga "Yo'q" yozilib qoladi.
             if norm_name(full_name) in VACANT_NAMES:
                 full_name = ""
 
-            phone = parse_phone(ws.cell(row, 6).value) or "-"
+            phone = parse_phone(ws.cell(row, phone_col).value) or "-"
             obj, created = self.upsert_by_name(
                 Object, full_name, {"category": category},
                 match_phone=phone if phone != "-" else None,
                 defaults={
-                    "name": to_latin(clean(ws.cell(row, 4).value))[:100] or None,
+                    "name": to_latin(clean(ws.cell(row, org_col).value))[:100] or None,
                     "phone_number": phone,
-                    "address": to_latin(clean(ws.cell(row, 7).value)) or None,
+                    "address": to_latin(clean(ws.cell(row, addr_col).value)) or None,
                     "coordinate_x": cx, "coordinate_y": cy,
                     "region": self.mahalla.region, "district": self.mahalla.district,
                     "gom": self.mahalla.gom,

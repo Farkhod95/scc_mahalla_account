@@ -61,7 +61,27 @@ maydonlarini to'ldiradi.
 
 Obyektlarning o'zi `умумий` dan olinadi (u yerda tashkilot nomi ham bor),
 rasmlari esa alohida varaqlardan rahbar F.I.Sh bo'yicha topib qo'shiladi.
-Matn kirilldan lotinga o'giriladi (`restapp/utils/translit.py`).
+
+Ustunlar qat'iy raqam bo'yicha emas, **sarlavha matni bo'yicha** topiladi:
+ba'zi passportlarda ortiqcha `Tug'ilgan sanasi` ustuni bor va undan keyingi
+hamma narsa bir katak suriladi (manzil telefon maydoniga tushib qolardi).
+
+### Lotinga o'girish
+
+Barcha matn maydonlari kirilldan lotinga o'giriladi
+(`restapp/utils/translit.py`, 1995 yil alifbosi; `oʻ`/`gʻ` da U+02BB — bazadagi
+mavjud yozuvlar bilan bir xil):
+
+* **F.I.Sh** — `to_latin_name`, har so'z bosh harf bilan
+  (`АКРАМОВ Акмалхон` → `Akramov Akmalxon`)
+* **manzil, tashkilot nomi, jinoyat tasnifi va tavsifi, ko'rsatkich nomi** —
+  `to_latin`
+* **telefon** — raqamga keltiriladi (`90-805-60-06` → `+998908056006`, bitta
+  katakda ikkita raqam bo'lsa birinchisi). Katakda telefon o'rniga matn bo'lsa
+  u ham lotinga o'giriladi, `йўқ`/`Yo'q` kabilar esa bo'sh qoldiriladi.
+
+`Mahalla.name_ru` ataylab **kirillcha** qoladi — bazadagi mavjud mahallalarda
+ham shunday (`Чакар`, `Гулбазар`, `Хадра`).
 
 ## Ogohlantirishlarni o'qish
 
@@ -94,12 +114,12 @@ Har bir fayldan keyin ogohlantirishlar ro'yxati chiqadi. Ko'pi axborot uchun
 | Kamolon Darvoza | 63 | 3 | 28 | 1 | 6 | 51 |
 | Katta Oqtepa | 46 | 3 | 50 | 3 | 6 | 87 |
 | Kattabogʻ | 74 | 2 | 22 | 4 | 6 | 29 |
-| Olim Xoʻjayev | 53 | 3 | 9 | 2 | 6 | 60 |
+| Olim Xoʻjayev | 50 | 3 | 9 | 2 | 6 | 57 |
 | Samarqand Darvoza | 42 | 3 | 31 | 5 | 6 | 70 |
 | Suzukota | 14 | 2 | 23 | 3 | 6 | 29 |
 | Yangi Kamolon | 27 | 3 | 14 | 0 | 6 | 39 |
 | Zangiota | 116 | 3 | 9 | 4 | 5 | 16 |
-| **Jami** | **604** | **36** | **249** | **31** | **72** | **512** |
+| **Jami** | **601** | **36** | **249** | **31** | **72** | **509** |
 
 Qo'shimcha yaratiladigan ma'lumotnoma yozuvlari:
 
