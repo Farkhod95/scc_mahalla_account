@@ -14,3 +14,6 @@ wait-for-it.sh
 #Dockerfile
 media_static/
 .env
+# `files/` — mahalla passportlari (yuzlab MB, ichida rasmlar bilan).
+# `import_mahalla_folder` shu papkadan o'qiydi, lekin fayllar repoga tushmaydi.
+files/
