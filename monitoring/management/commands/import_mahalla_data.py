@@ -685,14 +685,15 @@ def in_bbox(lat, lng, bbox, margin=0.05):
 # ------------------------------------------------------------------ rasmlar
 def apply_src_rect(data, crop, label, warnings):
     """
-    Excel'dagi kesishni (`a:srcRect`) rasmga qo'llaydi.
+    Excel'dagi kesishni (`a:srcRect`) rasmga qo'llaydi -> (baytlar, kesildimi).
 
     l/t/r/b — asl rasmning har tomonidan OLIB TASHLANADIGAN ulush, foizning
     mingdan bir ulushida (9369 = 9.369%). Excel faqat ko'rsatishda kesadi,
-    fayl ichida asl rasm to'liq qoladi — shuning uchun qo'lda kesish kerak.
+    fayl ichida asl rasm to'liq qoladi — shuning uchun qo'lda kesish kerak:
+    bazaga Excel'da KO'RINIB turgan qism tushishi kerak.
     """
     if not crop:
-        return data
+        return data, False
 
     from io import BytesIO
 
@@ -702,9 +703,13 @@ def apply_src_rect(data, crop, label, warnings):
         return int(crop.get(key, 0) or 0) / 100000.0
 
     left, top, right, bottom = frac("l"), frac("t"), frac("r"), frac("b")
+    # `<a:srcRect l="0" t="0" r="0" b="0"/>` — kesish yo'q. Qayta kodlash
+    # rasmni yaxshilamaydi, faqat JPEG ni PNG ga aylantirib kattalashtiradi.
+    if not any((left, top, right, bottom)):
+        return data, False
     if left + right >= 1 or top + bottom >= 1:
         warnings.append(f"{label}: kesish chegarasi noto'g'ri {crop} — asl rasm olindi")
-        return data
+        return data, False
 
     try:
         with Image.open(BytesIO(data)) as im:
@@ -713,13 +718,13 @@ def apply_src_rect(data, crop, label, warnings):
                    round(w * (1 - right)), round(h * (1 - bottom)))
             if box[2] <= box[0] or box[3] <= box[1]:
                 warnings.append(f"{label}: kesishdan keyin bo'sh rasm — asl olindi")
-                return data
+                return data, False
             out = BytesIO()
             im.crop(box).save(out, format="PNG")
-            return out.getvalue()
+            return out.getvalue(), True
     except Exception as exc:
         warnings.append(f"{label}: rasm kesilmadi ({type(exc).__name__}: {exc})")
-        return data
+        return data, False
 
 
 def load_photos(path):
@@ -775,15 +780,22 @@ def load_photos(path):
                     src = a.find(".//a:srcRect", NS)
                     crop = dict(src.attrib) if src is not None and src.attrib else None
                     data = z.read(media)
+                    filename = media.rsplit("/", 1)[-1]
                     if crop:
                         before = len(data)
-                        data = apply_src_rect(data, crop, f"{name} r{row}", conflicts)
-                        conflicts.append(
-                            f"{name} r{row}: Excel'dagi kesish qo'llandi "
-                            f"({_crop_text(crop)}), {before // 1024} KB -> "
-                            f"{len(data) // 1024} KB")
+                        data, cropped = apply_src_rect(
+                            data, crop, f"{name} r{row}", conflicts)
+                        if cropped:
+                            # Kesilgan rasm PNG bo'lib qayta kodlanadi — kengaytma
+                            # ham mos bo'lishi kerak, aks holda `image3.jpeg` nomli
+                            # faylga nginx `image/jpeg` Content-Type beradi.
+                            filename = filename.rsplit(".", 1)[0] + ".png"
+                            conflicts.append(
+                                f"{name} r{row}: Excel'dagi kesish qo'llandi "
+                                f"({_crop_text(crop)}), {before // 1024} KB -> "
+                                f"{len(data) // 1024} KB")
 
-                    photos[key] = (media.rsplit("/", 1)[-1], data)
+                    photos[key] = (filename, data)
 
     return photos, conflicts
 
