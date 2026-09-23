@@ -1501,6 +1501,7 @@ class Command(BaseCommand):
         current_key = None
         seen_leaders = set()
         seen_phones = set()
+        seen_rows = set()
 
         for row in range(start + 1, ws.max_row + 1):
             label = clean(ws.cell(row, label_col).value)
@@ -1537,9 +1538,28 @@ class Command(BaseCommand):
                     f"умумий r{row}: ObjectCategory topilmadi (key={current_key})")
                 continue
 
+            full_name = person_name(ws.cell(row, leader_col).value)
+
+            # Ba'zi passportlarda obyektlar jadvali ikki-uch marta ko'chirilgan
+            # va NUSXADA turkum ustuni bo'sh qolgan. Bunday qator o'zidan
+            # oldingi turkumni meros oladi va bitta obyekt xaritada ikki xil
+            # turkumda, bir xil koordinatada ikki marta chiqadi (Zangiota
+            # passportida 59 ta shunday qator bor edi).
+            #
+            # Turkumi YOZILGAN takror esa ataylab: bitta obyekt rostdan ikki
+            # turkumga tegishli bo'lishi mumkin ("Sartaroshxona" + "Goʻzallik
+            # saloni", "Maktab" + "Sport maydonchasi") — unga tegilmaydi.
+            source_key = (norm_name(clean(ws.cell(row, org_col).value)),
+                          norm_name(full_name))
+            if not label and source_key in seen_rows:
+                self.warnings.append(
+                    f"умумий r{row}: jadvalning takroriy nusxasi (turkum ustuni "
+                    f"bo'sh, '{current_key}' meros olingan) — obyekt qo'shilmadi")
+                continue
+            seen_rows.add(source_key)
+
             lat, lng, note = parse_location(ws.cell(row, loc_col).value)
             cx, cy = self.check_coords(lat, lng, f"умумий r{row}", note)
-            full_name = person_name(ws.cell(row, leader_col).value)
 
             # "Yo'q"/"Vokant" — rahbar yo'q degani, ism emas. Aks holda
             # obyekt rahbari sifatida bazaga "Yo'q" yozilib qoladi.

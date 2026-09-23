@@ -17,7 +17,12 @@ class GomView(ListCreateAPIView):
     filter_backends = (filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = GomFilter
     search_fields = ('name_ru', 'name_en', 'name_uz', 'code')
-    ordering = ['pk']
+    # Nomi bo'yicha: '1-Gom', '2-Gom', '3-Gom'. `pk` bo'yicha tartiblansa
+    # ro'yxat yaratilish vaqtiga qarab chiqadi — 1-Gom keyinroq qo'shilgani
+    # uchun frontend'dagi tanlovda oxirida turardi.
+    # (Ikki xonali raqam — '10-Gom' — paydo bo'lsa tartib alifbo bo'yicha
+    #  '10' ni '2' dan oldin qo'yadi; o'shanda tabiiy tartib kerak bo'ladi.)
+    ordering = ['name']
 
     def get_queryset(self):
         queryset = Gom.objects.all()
